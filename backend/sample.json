@@ -1,0 +1,474 @@
+{
+    "info": {
+        "_postman_id": "9c02b7b3-8fd8-4833-a673-b84394d3eae6",
+        "name": "AgriLink",
+        "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "55594056",
+        "_collection_link": "https://go.postman.co/collection/55594056-9c02b7b3-8fd8-4833-a673-b84394d3eae6?source=collection_link"
+    },
+    "item": [
+        {
+            "name": "/createScheme",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Successful POST request\", function () {",
+                            "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                            "});",
+                            ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"schemeName\": \"el Kisan Input Subsidy\",\n  \"category\": \"InputSubsidy\",\n  \"eligibilityCriteria\": \"Small & marginal farmers with land < 2 hectares\",\n  \"benefitAmount\": 8500.0,\n  \"fundingSource\": \"Central Government\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\",\n  \"status\": \"Upcoming\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:8081/agriLink/subsidyScheme/createScheme",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "createScheme"
+                    ]
+                },
+                "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+            },
+            "response": []
+        },
+        {
+            "name": "/createScheme Copy",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Successful POST request\", function () {",
+                            "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                            "});",
+                            ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"schemeName\": \"el Kisan Input Subsidy\",\n  \"category\": \"InputSubsidy\",\n  \"eligibilityCriteria\": \"Small & marginal farmers with land < 2 hectares\",\n  \"benefitAmount\": 8500.0,\n  \"fundingSource\": \"Central Government\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\",\n  \"status\": \"Upcoming\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:8081/agriLink/subsidyScheme/createScheme",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "createScheme"
+                    ]
+                },
+                "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+            },
+            "response": []
+        },
+        {
+            "name": "/fetchSchemes",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/fetchSchemes",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "fetchSchemes"
+                    ]
+                },
+                "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+            },
+            "response": []
+        },
+        {
+            "name": "/fetchSchemeById",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/fetchSchemeById/3",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "fetchSchemeById",
+                        "3"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "/updateScheme",
+            "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\r\n  \"benefitAmount\": 4500.0,\r\n  \"endDate\": \"2027-12-31\",\r\n  \"eligibilityCriteria\": \"Updated criteria text\"\r\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:8081/agriLink/subsidyScheme/updateScheme/2",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "updateScheme",
+                        "2"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/deleteScheme/1",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "deleteScheme",
+                        "1"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\r\n  \"farmerID\": 103,\r\n  \"schemeID\": 3\r\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/createApplication",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "createApplication"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "/fetchApplications",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/fetchApplications",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "fetchApplications"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "/fetchApplicationById",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/fetchApplicationById/1",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "fetchApplicationById",
+                        "1"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "/fetchApplicationsByFarmer",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/fetchApplicationsByFarmer/102",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "fetchApplicationsByFarmer",
+                        "102"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "/reviewApplication",
+            "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\r\n  \"reviewedBy\": 501,\r\n  \"eligibilityScore\": 85.5\r\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "http://localhost:8085/agriLink/subsidyScheme/reviewApplication/2",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8085",
+                    "path": [
+                        "agriLink",
+                        "subsidyScheme",
+                        "reviewApplication",
+                        "2"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Actuator EndPoints",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        },
+        {
+            "name": "Health",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8090/actuator/health",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8090",
+                    "path": [
+                        "actuator",
+                        "health"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Beans",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8090/actuator/beans",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8090",
+                    "path": [
+                        "actuator",
+                        "beans"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Env",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Auth-UserId",
+                        "value": "1",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-Auth-Role",
+                        "value": "AgriLinkAdmin",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-Auth-RegionId",
+                        "value": "1",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8082/agriLink/analyticsAndReporting/reports/export/excel",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8082",
+                    "path": [
+                        "agriLink",
+                        "analyticsAndReporting",
+                        "reports",
+                        "export",
+                        "excel"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        },
+        {
+            "name": "New Request",
+            "request": {
+                "method": "GET",
+                "header": []
+            },
+            "response": []
+        }
+    ]
+}

@@ -20,34 +20,30 @@ import { ToastService } from '../../../services/toast.service';
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-3">
         <div class="form-group">
           <label for="email">Email Address</label>
-          <input 
-            type="email" 
-            id="email" 
-            formControlName="email" 
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
             placeholder="name@agrilink.com"
             [class.input-error]="isFieldInvalid('email')" />
-          @if (isFieldInvalid('email')) {
-            <span class="error-text">Please enter a valid email address</span>
-          }
+          <span class="error-text" [class.visible]="isFieldInvalid('email')">Please enter a valid email address</span>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            formControlName="password" 
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
             placeholder="••••••••"
             [class.input-error]="isFieldInvalid('password')" />
-          @if (isFieldInvalid('password')) {
-            <span class="error-text">Password is required</span>
-          }
+          <span class="error-text" [class.visible]="isFieldInvalid('password')">Password is required</span>
         </div>
 
         <div class="form-group">
-          <label for="role">Role (Optional)</label>
+          <label for="role">Role</label>
           <select id="role" formControlName="role">
-            <option value="">Detect automatically</option>
+            <option value="">Select</option>
             <option value="AgriLinkAdmin">System Administrator</option>
             <option value="ExtensionOfficer">Extension Officer</option>
             <option value="ProcurementOfficer">Procurement Officer</option>
@@ -57,7 +53,7 @@ import { ToastService } from '../../../services/toast.service';
           </select>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="isLoading() || loginForm.invalid">
+        <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="isLoading()">
           @if (isLoading()) {
             <span class="loading-spinner"></span>
             Signing In...
@@ -96,6 +92,16 @@ import { ToastService } from '../../../services/toast.service';
     .input-error {
       border-color: var(--danger) !important;
     }
+    .error-text {
+      display: block;
+      min-height: 1.1rem;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .error-text.visible {
+      opacity: 1;
+      visibility: visible;
+    }
     .form-footer {
       text-align: center;
       font-size: 0.85rem;
@@ -131,6 +137,7 @@ export class LoginComponent {
   private route = inject(ActivatedRoute);
 
   isLoading = signal(false);
+  submitted = signal(false);
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
@@ -139,10 +146,11 @@ export class LoginComponent {
 
   isFieldInvalid(field: string): boolean {
     const control = this.loginForm.get(field);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+    return !!(control && control.invalid && this.submitted());
   }
 
   onSubmit(): void {
+    this.submitted.set(true);
     if (this.loginForm.invalid) return;
 
     this.isLoading.set(true);

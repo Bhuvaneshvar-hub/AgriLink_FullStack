@@ -94,7 +94,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
             <div class="chart-container">
               <!-- Inline SVG Line Chart -->
-              <svg viewBox="0 0 500 200" class="svg-chart">
+              <svg viewBox="-20 0 520 220" class="svg-chart">
                 <!-- Gradients -->
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
@@ -154,6 +154,10 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <circle cx="60" cy="134" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
                 <circle cx="120" cy="134" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
                 <circle cx="240" cy="144" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
+
+                <!-- Axis Titles -->
+                <text x="260" y="215" text-anchor="middle" class="chart-axis-title">Month (2026)</text>
+                <text x="-8" y="95" text-anchor="middle" transform="rotate(-90 -8 95)" class="chart-axis-title">Amount (₹)</text>
               </svg>
             </div>
           </div>
@@ -162,9 +166,15 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           <div class="chart-card">
             <div class="chart-header">
               <h3>Expected Crop Yield Distribution (Acre Area)</h3>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="color-dot paddy"></span>Paddy</span>
+                <span class="legend-item"><span class="color-dot wheat"></span>Wheat</span>
+                <span class="legend-item"><span class="color-dot cotton"></span>Cotton</span>
+                <span class="legend-item"><span class="color-dot groundnut"></span>Groundnut</span>
+              </div>
             </div>
             <div class="chart-container">
-              <svg viewBox="0 0 500 200" class="svg-chart">
+              <svg viewBox="-20 0 520 220" class="svg-chart">
                 <!-- Grid Lines -->
                 <line x1="40" y1="20" x2="480" y2="20" stroke="#f1f5f9" stroke-width="1"/>
                 <line x1="40" y1="60" x2="480" y2="60" stroke="#f1f5f9" stroke-width="1"/>
@@ -201,6 +211,10 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <!-- Groundnut -->
                 <rect x="380" y="80" width="40" height="90" rx="4" fill="#a855f7" class="svg-bar"/>
                 <text x="400" y="72" text-anchor="middle" font-weight="600" font-size="11" fill="#6b21a8">15 Ac</text>
+
+                <!-- Axis Titles -->
+                <text x="260" y="215" text-anchor="middle" class="chart-axis-title">Crop</text>
+                <text x="-8" y="95" text-anchor="middle" transform="rotate(-90 -8 95)" class="chart-axis-title">Area (Acres)</text>
               </svg>
             </div>
           </div>
@@ -533,7 +547,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     }
     .color-dot.sales { background-color: #16a34a; }
     .color-dot.subsidies { background-color: #3b82f6; }
-    
+    .color-dot.paddy { background-color: #16a34a; }
+    .color-dot.wheat { background-color: #f59e0b; }
+    .color-dot.cotton { background-color: #3b82f6; }
+    .color-dot.groundnut { background-color: #a855f7; }
+
     .chart-container {
       position: relative;
       width: 100%;
@@ -546,6 +564,12 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     }
     .chart-text {
       font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: inherit;
+    }
+    .chart-axis-title {
+      font-size: 11px;
+      font-weight: 600;
       fill: var(--text-secondary);
       font-family: inherit;
     }

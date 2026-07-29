@@ -17,73 +17,67 @@ import { ToastService } from '../../../services/toast.service';
         <p class="text-secondary">Create a pending profile for verification</p>
       </div>
 
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="mt-3">
-        <div class="form-group">
-          <label for="name">Full Name</label>
-          <input 
-            type="text" 
-            id="name" 
-            formControlName="name" 
-            placeholder="John Doe"
-            [class.input-error]="isFieldInvalid('name')" />
-          @if (isFieldInvalid('name')) {
-            <span class="error-text">Full name is required</span>
-          }
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input
+              type="text"
+              id="name"
+              formControlName="name"
+              placeholder="John Doe"
+              [class.input-error]="isFieldInvalid('name')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('name')">Full name is required</span>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              placeholder="john.doe@example.com"
+              [class.input-error]="isFieldInvalid('email')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('email')">Please enter a valid email address</span>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <input 
-            type="email" 
-            id="email" 
-            formControlName="email" 
-            placeholder="john.doe@example.com"
-            [class.input-error]="isFieldInvalid('email')" />
-          @if (isFieldInvalid('email')) {
-            <span class="error-text">Please enter a valid email address</span>
-          }
-        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="phone">Phone Number (10 digits)</label>
+            <input
+              type="text"
+              id="phone"
+              formControlName="phone"
+              placeholder="9876543210"
+              [class.input-error]="isFieldInvalid('phone')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('phone')">Phone must be exactly 10 digits</span>
+          </div>
 
-        <div class="form-group">
-          <label for="phone">Phone Number (10 digits)</label>
-          <input 
-            type="text" 
-            id="phone" 
-            formControlName="phone" 
-            placeholder="9876543210"
-            [class.input-error]="isFieldInvalid('phone')" />
-          @if (isFieldInvalid('phone')) {
-            <span class="error-text">Phone number must be exactly 10 digits</span>
-          }
-        </div>
-
-        <div class="form-group">
-          <label for="regionId">Region ID</label>
-          <input 
-            type="number" 
-            id="regionId" 
-            formControlName="regionId" 
-            placeholder="1"
-            [class.input-error]="isFieldInvalid('regionId')" />
-          @if (isFieldInvalid('regionId')) {
-            <span class="error-text">Region ID is required</span>
-          }
+          <div class="form-group">
+            <label for="regionId">Region ID</label>
+            <input
+              type="number"
+              id="regionId"
+              formControlName="regionId"
+              placeholder="1"
+              [class.input-error]="isFieldInvalid('regionId')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('regionId')">Region ID is required</span>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="password">Password (min 8 characters)</label>
-          <input 
-            type="password" 
-            id="password" 
-            formControlName="password" 
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
             placeholder="••••••••"
             [class.input-error]="isFieldInvalid('password')" />
-          @if (isFieldInvalid('password')) {
-            <span class="error-text">Password must be at least 8 characters</span>
-          }
+          <span class="error-text" [class.visible]="isFieldInvalid('password')">Password must be at least 8 characters</span>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="isLoading() || registerForm.invalid">
+        <button type="submit" class="btn btn-primary w-100 mt-2" [disabled]="isLoading()">
           @if (isLoading()) {
             <span class="loading-spinner"></span>
             Registering...
@@ -93,7 +87,7 @@ import { ToastService } from '../../../services/toast.service';
         </button>
       </form>
 
-      <div class="form-footer mt-3">
+      <div class="form-footer mt-2">
         <p class="text-secondary">Already have an account? <a routerLink="/login">Sign In</a></p>
       </div>
     </div>
@@ -104,27 +98,55 @@ import { ToastService } from '../../../services/toast.service';
     }
     .brand {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
     .brand-icon {
-      font-size: 48px;
+      font-size: 36px;
       color: var(--primary-color);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
     }
     .brand h1 {
-      font-size: 1.75rem;
+      font-size: 1.4rem;
       font-weight: 700;
     }
     .brand p {
+      font-size: 0.8rem;
+      margin-top: 0.15rem;
+    }
+    .register-form .form-group {
+      margin-bottom: 0.75rem;
+      gap: 0.2rem;
+    }
+    .register-form label {
+      font-size: 0.8rem;
+    }
+    .register-form input {
+      padding: 0.55rem 0.85rem;
       font-size: 0.9rem;
-      margin-top: 0.25rem;
+    }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 1rem;
     }
     .input-error {
       border-color: var(--danger) !important;
     }
+    .error-text {
+      display: block;
+      min-height: 1rem;
+      font-size: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .error-text.visible {
+      opacity: 1;
+      visibility: visible;
+    }
     .form-footer {
       text-align: center;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      margin-top: 0.75rem !important;
     }
     .form-footer a {
       color: var(--primary-color);
@@ -156,6 +178,7 @@ export class RegisterComponent {
   private router = inject(Router);
 
   isLoading = signal(false);
+  submitted = signal(false);
   registerForm: FormGroup = this.fb.group({
     name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
@@ -167,10 +190,11 @@ export class RegisterComponent {
 
   isFieldInvalid(field: string): boolean {
     const control = this.registerForm.get(field);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+    return !!(control && control.invalid && this.submitted());
   }
 
   onSubmit(): void {
+    this.submitted.set(true);
     if (this.registerForm.invalid) return;
 
     this.isLoading.set(true);

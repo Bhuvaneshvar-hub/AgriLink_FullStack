@@ -157,6 +157,45 @@ input:disabled, select:disabled, textarea:disabled {
   cursor: not-allowed;
 }
 
+/* --- Date / Time pickers: prominent calendar affordance (all modules) --- */
+/* Native inputs already allow typing AND a calendar; this just makes the
+   calendar picker obvious and easy to click across every screen. */
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+input[type="time"] {
+  cursor: pointer;
+  position: relative;
+}
+
+/* Enlarge, brand-tint and highlight the built-in calendar/clock button */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0.15rem;
+  margin-left: 0.25rem;
+  border-radius: 0.35rem;
+  opacity: 0.85;
+  /* Recolor the default (dark grey) glyph to the brand leaf-green */
+  filter: invert(41%) sepia(72%) saturate(560%) hue-rotate(89deg) brightness(93%) contrast(90%);
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover,
+input[type="week"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: var(--primary-light);
+}
+
 .error-text {
   font-size: 0.8rem;
   color: var(--danger);

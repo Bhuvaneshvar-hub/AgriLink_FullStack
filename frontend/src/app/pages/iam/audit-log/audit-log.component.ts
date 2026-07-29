@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
 import { ToastService } from '../../../services/toast.service';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
+import { exportTableToExcel } from '../../../utils/export-excel.util';
 
 @Component({
   selector: 'app-audit-log',
@@ -11,9 +12,15 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
   imports: [CommonModule, FormsModule, PaginationComponent],
   template: `
     <div class="audit-logs-page">
-      <div class="page-header mb-3">
-        <h1>Audit Trail</h1>
-        <p class="text-secondary">View user actions, system operations, and security logs for compliance tracking.</p>
+      <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1>Audit Trail</h1>
+          <p class="text-secondary">View user actions, system operations, and security logs for compliance tracking.</p>
+        </div>
+        <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredLogs().length === 0">
+          <i class="material-icons-round">file_download</i>
+          <span>Export to Excel</span>
+        </button>
       </div>
 
       <!-- Filters & Search -->
@@ -208,5 +215,18 @@ export class AuditLogComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+  }
+
+  exportToExcel(): void {
+    const headers = ['Audit ID', 'User ID', 'Module', 'Action Performed', 'IP Address', 'Timestamp'];
+    const rows = this.filteredLogs().map(log => [
+      log.auditId,
+      log.userId,
+      log.module,
+      log.action,
+      log.ipAddress || '127.0.0.1',
+      log.timestamp ? new Date(log.timestamp).toLocaleString() : ''
+    ]);
+    exportTableToExcel(headers, rows, `audit-trail-${Date.now()}`);
   }
 }

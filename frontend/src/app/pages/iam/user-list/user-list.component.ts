@@ -7,6 +7,7 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
 import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { exportTableToExcel } from '../../../utils/export-excel.util';
 
 @Component({
   selector: 'app-user-list',
@@ -19,10 +20,16 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           <h1>User Accounts</h1>
           <p class="text-secondary">Manage system user profiles, permissions, and status.</p>
         </div>
-        <button class="btn btn-primary" (click)="openCreateModal()">
-          <i class="material-icons-round">person_add</i>
-          <span>Add User</span>
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredUsers().length === 0">
+            <i class="material-icons-round">file_download</i>
+            <span>Export to Excel</span>
+          </button>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="material-icons-round">person_add</i>
+            <span>Add User</span>
+          </button>
+        </div>
       </div>
 
       <!-- Filters & Search -->
@@ -441,6 +448,20 @@ export class UserListComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+  }
+
+  exportToExcel(): void {
+    const headers = ['User ID', 'Name', 'Email', 'Phone', 'Role', 'Region ID', 'Status'];
+    const rows = this.filteredUsers().map(u => [
+      u.userId,
+      u.name,
+      u.email,
+      u.phone,
+      u.roleName,
+      u.regionId ?? 'N/A',
+      this.getStatusLabel(u.status)
+    ]);
+    exportTableToExcel(headers, rows, `user-accounts-${Date.now()}`);
   }
 
   getStatusLabel(status: string): string {

@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SubsidyService } from '../../../services/subsidy.service';
+import { FarmerService } from '../../../services/farmer.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
@@ -87,7 +88,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             <table>
               <thead>
                 <tr>
-                  <th>Farmer ID</th>
+                  <th>Farmer Name</th>
                   <th>Scheme Name</th>
                   <th>Application Date</th>
                   <th>Eligibility Score</th>
@@ -100,7 +101,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
               <tbody>
                 @for (app of paginatedApplications(); track app.applicationId) {
                   <tr>
-                    <td><strong>Farmer #{{ app.farmerId }}</strong></td>
+                    <td><strong>{{ getFarmerName(app.farmerId) }}</strong></td>
                     <td>{{ getSchemeName(app.schemeId) }}</td>
                     <td>{{ app.applicationDate | date:'mediumDate' }}</td>
                     <td>
@@ -381,6 +382,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
 })
 export class ApplicationListComponent implements OnInit {
   private subsidyService = inject(SubsidyService);
+  private farmerService = inject(FarmerService);
   public authService = inject(AuthService);
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
@@ -390,6 +392,7 @@ export class ApplicationListComponent implements OnInit {
   filteredApplications = signal<any[]>([]);
   schemes = signal<any[]>([]);
   activeSchemes = signal<any[]>([]);
+  farmerProfiles = signal<any[]>([]);
   isLoading = signal(true);
 
   // Modals state
@@ -421,7 +424,15 @@ export class ApplicationListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSchemes();
+    this.loadFarmers();
     this.loadApplications();
+  }
+
+  loadFarmers(): void {
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (data) => this.farmerProfiles.set(data),
+      error: () => this.toastService.error('Failed to load farmer profiles.')
+    });
   }
 
   loadSchemes(): void {
@@ -513,6 +524,11 @@ export class ApplicationListComponent implements OnInit {
     return scheme ? scheme.schemeName : `Scheme #${schemeId}`;
   }
 
+  getFarmerName(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof && prof.name ? prof.name : `Farmer #${farmerId}`;
+  }
+
   getStatusLabel(status: string): string {
     switch (status) {
       case 'PE': return 'Pending';
@@ -538,6 +554,7 @@ export class ApplicationListComponent implements OnInit {
     this.detailTitle.set(`Application #${app.applicationId}`);
     this.detailRows.set([
       { label: 'App ID', value: app.applicationId },
+      { label: 'Farmer Name', value: this.getFarmerName(app.farmerId) },
       { label: 'Farmer ID', value: 'Farmer #' + app.farmerId },
       { label: 'Scheme Name', value: this.getSchemeName(app.schemeId) },
       { label: 'Application Date', value: this.fmtDate(app.applicationDate) },

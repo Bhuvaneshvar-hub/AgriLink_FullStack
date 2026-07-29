@@ -53,7 +53,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         <!-- 1. CROP CATALOG TAB -->
         @if (activeTab() === 'catalog') {
           <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center">
               <h3>Crop Catalog Database</h3>
               @if (isAdmin()) {
                 <button class="btn btn-primary" (click)="openCatalogModal()">
@@ -62,6 +62,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </button>
               }
             </div>
+            <p class="text-secondary mb-3">
+              Master list of supported crops that farmers choose from when creating crop plans.
+            </p>
 
             @if (cropCatalogs().length === 0) {
               <div class="empty-state card">
@@ -126,7 +129,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         <!-- 2. CROP PLANS TAB -->
         @if (activeTab() === 'plans') {
           <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center">
               <h3>Crop Seeding & Harvesting Plans</h3>
               @if (isFarmer()) {
                 <button class="btn btn-primary" (click)="openPlanModal()">
@@ -135,6 +138,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </button>
               }
             </div>
+            <p class="text-secondary mb-3">
+              Farmers' seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.
+            </p>
 
             @if (cropPlans().length === 0) {
               <div class="empty-state card">
@@ -347,11 +353,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <label for="cYield">Exp. Yield per Acre (Tons)</label>
                     <input type="number" step="0.1" id="cYield" formControlName="expectedYieldPerAcre" placeholder="e.g. 2.5" />
                   </div>
-                </div>
-                <div class="form-group">
-                  <label for="cDescription">Description</label>
-                  <textarea id="cDescription" formControlName="description" rows="3"
-                    placeholder="Short description of the crop (growing notes, uses, ideal conditions...)"></textarea>
                 </div>
                 <div class="form-group">
                   <label for="cStatus">Status</label>
@@ -870,7 +871,6 @@ export class CropsComponent implements OnInit {
       season: ['', Validators.required],
       typicalDurationDays: [90, [Validators.required, Validators.min(1)]],
       expectedYieldPerAcre: [1.0, [Validators.required, Validators.min(0.01)]],
-      description: [''],
       status: ['AC', Validators.required]
     });
 
@@ -1114,7 +1114,6 @@ export class CropsComponent implements OnInit {
       { label: 'Season', value: crop.season },
       { label: 'Typical Duration', value: crop.typicalDurationDays + ' Days' },
       { label: 'Expected Yield (in Acres)', value: crop.expectedYieldPerAcre + ' Tons' },
-      { label: 'Description', value: crop.description || '—' },
       { label: 'Status', value: this.getStatusLabel(crop.status) }
     ]);
     this.showDetailModal.set(true);

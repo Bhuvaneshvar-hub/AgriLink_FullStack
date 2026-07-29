@@ -37,7 +37,6 @@ public class CropCatalogService {
 				.season(dto.getSeason())
 				.typicalDurationDays(dto.getTypicalDurationDays())
 				.expectedYieldPerAcre(dto.getExpectedYieldPerAcre())
-				.description(dto.getDescription())
 				.status(dto.getStatus() != null ? dto.getStatus() : Status.AC)
 				.build();
 		return cropCatalogRepository.save(cropCatalog);
@@ -55,7 +54,6 @@ public class CropCatalogService {
 		cropCatalog.setSeason(dto.getSeason());
 		cropCatalog.setTypicalDurationDays(dto.getTypicalDurationDays());
 		cropCatalog.setExpectedYieldPerAcre(dto.getExpectedYieldPerAcre());
-		cropCatalog.setDescription(dto.getDescription());
 		cropCatalog.setStatus(dto.getStatus());
 		return cropCatalogRepository.save(cropCatalog);
 	}

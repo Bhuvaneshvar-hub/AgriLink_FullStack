@@ -42,9 +42,6 @@ public class CropCatalog {
 	@Column(name = "expectedYieldPerAcre")
 	private Double expectedYieldPerAcre;
 
-	@Column(name = "description", length = 500)
-	private String description;
-
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
 	private Status status;

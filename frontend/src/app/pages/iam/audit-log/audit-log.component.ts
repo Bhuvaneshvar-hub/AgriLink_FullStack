@@ -21,12 +21,15 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
         <div class="form-row">
           <div class="form-group">
             <label for="searchUser">Search User ID</label>
-            <input 
-              type="number" 
-              id="searchUser" 
-              [(ngModel)]="userIdFilter" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. 1" />
+            <div class="search-field">
+              <input
+                type="number"
+                id="searchUser"
+                [(ngModel)]="userIdFilter"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. 1" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
           </div>
           <div class="form-group">
             <label for="moduleFilter">Module</label>
@@ -44,12 +47,15 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
           </div>
           <div class="form-group">
             <label for="actionQuery">Search Action</label>
-            <input 
-              type="text" 
-              id="actionQuery" 
-              [(ngModel)]="actionQuery" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. login, delete" />
+            <div class="search-field">
+              <input
+                type="text"
+                id="actionQuery"
+                [(ngModel)]="actionQuery"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. login, delete" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
           </div>
         </div>
       </div>

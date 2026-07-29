@@ -18,5 +18,6 @@ public class CropCatalogDto {
 	private String season;
 	private Integer typicalDurationDays;
 	private Double expectedYieldPerAcre;
+	private String description;
 	private Status status;
 }

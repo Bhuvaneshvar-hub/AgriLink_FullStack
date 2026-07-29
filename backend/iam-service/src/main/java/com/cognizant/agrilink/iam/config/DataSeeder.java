@@ -24,9 +24,8 @@ public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
-    private static final String ADMIN_ROLE  = "AgriLinkAdmin";
-    private static final String ADMIN_EMAIL = "admin@agrilink.com";
-    private static final String ADMIN_PASSWORD = "Admin@1234";   // change after first login
+    // Shared demo password for all seeded accounts — change after first login.
+    private static final String DEMO_PASSWORD = "Agrilink@123";
 
     // The six static roles for the IAM module (roleName -> description)
     private static final Map<String, String> ROLES = new LinkedHashMap<>() {{
@@ -36,6 +35,16 @@ public class DataSeeder implements CommandLineRunner {
         put("SubsidyAdmin",       "Reviews and approves subsidy applications");
         put("ComplianceAnalyst",  "Audits actions and ensures compliance");
         put("Farmer",             "Manages own crop plans and subsidy requests");
+    }};
+
+    // One demo login per role: email -> {roleName, display name, phone}
+    private static final Map<String, String[]> DEMO_USERS = new LinkedHashMap<>() {{
+        put("admin@agrilink.com",       new String[]{"AgriLinkAdmin",      "System Administrator", "9000000001"});
+        put("officer@agrilink.com",     new String[]{"ExtensionOfficer",   "Extension Officer",    "9000000002"});
+        put("procurement@agrilink.com", new String[]{"ProcurementOfficer", "Procurement Officer",  "9000000003"});
+        put("subsidy@agrilink.com",     new String[]{"SubsidyAdmin",       "Subsidy Admin",        "9000000004"});
+        put("compliance@agrilink.com",  new String[]{"ComplianceAnalyst",  "Compliance Analyst",   "9000000005"});
+        put("farmer@agrilink.com",      new String[]{"Farmer",             "Demo Farmer",          "9000000006"});
     }};
 
     private final UserRoleRepository    userRoleRepository;
@@ -56,23 +65,24 @@ public class DataSeeder implements CommandLineRunner {
                             .build());
                 }));
 
-        UserRole adminRole = userRoleRepository.findByRoleName(ADMIN_ROLE)
-                .orElseThrow(() -> new IllegalStateException("Admin role was not seeded"));
-
-        // 2. Ensure the admin user exists
-        if (!userDetailsRepository.existsByEmail(ADMIN_EMAIL)) {
-            UserDetails admin = UserDetails.builder()
-                    .role(adminRole)
-                    .name("System Administrator")
-                    .email(ADMIN_EMAIL)
-                    .phone("0000000000")
-                    .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
-                    .regionId(1)
-                    .status(UserDetails.Status.A)
-                    .build();
-            userDetailsRepository.save(admin);
-            log.info("Seeded admin user '{}' (password '{}') — change it after first login.",
-                    ADMIN_EMAIL, ADMIN_PASSWORD);
-        }
+        // 2. Ensure one active demo login exists per role (idempotent)
+        DEMO_USERS.forEach((email, info) -> {
+            if (!userDetailsRepository.existsByEmail(email)) {
+                UserRole role = userRoleRepository.findByRoleName(info[0])
+                        .orElseThrow(() -> new IllegalStateException("Role was not seeded: " + info[0]));
+                UserDetails user = UserDetails.builder()
+                        .role(role)
+                        .name(info[1])
+                        .email(email)
+                        .phone(info[2])
+                        .passwordHash(passwordEncoder.encode(DEMO_PASSWORD))
+                        .regionId(1)
+                        .status(UserDetails.Status.A)
+                        .build();
+                userDetailsRepository.save(user);
+                log.info("Seeded demo user '{}' ({}) with password '{}' — change after first login.",
+                        email, info[0], DEMO_PASSWORD);
+            }
+        });
     }
 }

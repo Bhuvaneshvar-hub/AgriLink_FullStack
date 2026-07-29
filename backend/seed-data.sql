@@ -56,7 +56,7 @@ DELETE FROM crop_plan;
 DELETE FROM crop_catalog;
 
 INSERT INTO crop_catalog (cropId, cropName, category, season, typicalDurationDays, expectedYieldPerAcre, status) VALUES
-(1, 'Paddy (Rice)', 'Cereal', 'Kharif', 120, 24.0, 'AC'),
+(1, 'Rice', 'Cereal', 'Kharif', 120, 24.0, 'AC'),
 (2, 'Wheat', 'Cereal', 'Rabi', 110, 18.5, 'AC'),
 (3, 'Cotton', 'Fibre', 'Kharif', 180, 12.0, 'AC'),
 (4, 'Groundnut', 'Oilseed', 'Rabi', 105, 15.0, 'AC');

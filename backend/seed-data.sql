@@ -22,12 +22,12 @@ INSERT INTO user_role (roleId, roleName, description, status) VALUES
 (5, 'ComplianceAnalyst', 'Audits actions and ensures compliance', 'A'),
 (6, 'Farmer', 'Manages own crop plans and subsidy requests', 'A');
 
-INSERT INTO user_details (userId, regionId, roleId, phone, email, name, passwordHash, status) VALUES
-(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$wdBgUJZCPwmKN7A6CvfFN./VY.kZXCCo.uPPiXHO2Jy/lhZcFKzAe', 'A'),
-(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$7bcoVuN/w2YcGtlGq0m5UeWMeruDk4RIQtmlpL3CE3fancTs2HeQi', 'A'),
-(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$DvVV340QTMMqpzf1WCC9GOUI9mbznBzU0PhX1web97vT5SBskYJ3i', 'A'),
-(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$U4ZjFtacSL9YKOokvwc6hOLYI6vsF2mGe0ntYK9Zubey/wPSCEq6.', 'A'),
-(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$tKhjkE9jZWMZ3COgSHRcP.dYjk073OGXZ7FjbBK3jK1dPclpxbdvO', 'A');
+INSERT INTO user_details (userId, regionId, roleId, phone, email, name, passwordHash, status, createdAt) VALUES
+(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$wdBgUJZCPwmKN7A6CvfFN./VY.kZXCCo.uPPiXHO2Jy/lhZcFKzAe', 'A', NOW()),
+(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$7bcoVuN/w2YcGtlGq0m5UeWMeruDk4RIQtmlpL3CE3fancTs2HeQi', 'A', NOW()),
+(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$DvVV340QTMMqpzf1WCC9GOUI9mbznBzU0PhX1web97vT5SBskYJ3i', 'A', NOW()),
+(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$U4ZjFtacSL9YKOokvwc6hOLYI6vsF2mGe0ntYK9Zubey/wPSCEq6.', 'A', NOW()),
+(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$tKhjkE9jZWMZ3COgSHRcP.dYjk073OGXZ7FjbBK3jK1dPclpxbdvO', 'A', NOW());
 
 -- =====================================================================
 -- 2) agrilink_farmer
@@ -37,14 +37,14 @@ USE agrilink_farmer;
 DELETE FROM land_holding;
 DELETE FROM farmer_profile;
 
-INSERT INTO farmer_profile (farmerId, userId, name, dateOfBirth, gender, nationalIdNumber, village, district, state, phone, bankAccountNumber, status) VALUES
-(1, 2, 'Asha Devi', '1988-04-12', 'Female', 'ID-908123', 'Hosur', 'Krishnagiri', 'Tamil Nadu', '9876543210', 'SBI-009823412', 'AC'),
-(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC');
+INSERT INTO farmer_profile (farmerId, userId, name, dateOfBirth, gender, nationalIdNumber, village, district, state, phone, bankAccountNumber, status, createdAt, updatedAt) VALUES
+(1, 2, 'Asha Devi', '1988-04-12', 'Female', 'ID-908123', 'Hosur', 'Krishnagiri', 'Tamil Nadu', '9876543210', 'SBI-009823412', 'AC', NOW(), NOW()),
+(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC', NOW(), NOW());
 
-INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType, irrigationSource, ownershipType, status) VALUES
-(1, 1, 'SVY-101A', 4.2, 'Loam', 'Borewell', 'Owned', 'AC'),
-(2, 1, 'SVY-101B', 2.5, 'Clay', 'Rainfed', 'Leased', 'AC'),
-(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC');
+INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType, irrigationSource, ownershipType, status, createdAt, updatedAt) VALUES
+(1, 1, 'SVY-101A', 4.2, 'Loam', 'Borewell', 'Owned', 'AC', NOW(), NOW()),
+(2, 1, 'SVY-101B', 2.5, 'Clay', 'Rainfed', 'Leased', 'AC', NOW(), NOW()),
+(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC', NOW(), NOW());
 
 -- =====================================================================
 -- 3) agrilink_crop

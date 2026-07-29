@@ -533,7 +533,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     }
     .color-dot.sales { background-color: #16a34a; }
     .color-dot.subsidies { background-color: #3b82f6; }
-    
+
     .chart-container {
       position: relative;
       width: 100%;

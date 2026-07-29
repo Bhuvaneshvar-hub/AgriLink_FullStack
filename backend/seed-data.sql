@@ -37,14 +37,14 @@ USE agrilink_farmer;
 DELETE FROM land_holding;
 DELETE FROM farmer_profile;
 
-INSERT INTO farmer_profile (farmerId, userId, name, dateOfBirth, gender, nationalIdNumber, village, district, state, phone, bankAccountNumber, status, createdAt, updatedAt) VALUES
-(1, 2, 'Asha Devi', '1988-04-12', 'Female', 'ID-908123', 'Hosur', 'Krishnagiri', 'Tamil Nadu', '9876543210', 'SBI-009823412', 'AC', NOW(), NOW()),
-(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC', NOW(), NOW());
+INSERT INTO farmer_profile (farmerId, userId, name, dateOfBirth, gender, nationalIdNumber, village, district, state, phone, bankAccountNumber, status) VALUES
+(1, 2, 'Asha Devi', '1988-04-12', 'Female', 'ID-908123', 'Hosur', 'Krishnagiri', 'Tamil Nadu', '9876543210', 'SBI-009823412', 'AC'),
+(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC');
 
-INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType, irrigationSource, ownershipType, status, createdAt, updatedAt) VALUES
-(1, 1, 'SVY-101A', 4.2, 'Loam', 'Borewell', 'Owned', 'AC', NOW(), NOW()),
-(2, 1, 'SVY-101B', 2.5, 'Clay', 'Rainfed', 'Leased', 'AC', NOW(), NOW()),
-(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC', NOW(), NOW());
+INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType, irrigationSource, ownershipType, status) VALUES
+(1, 1, 'SVY-101A', 4.2, 'Loam', 'Borewell', 'Owned', 'AC'),
+(2, 1, 'SVY-101B', 2.5, 'Clay', 'Rainfed', 'Leased', 'AC'),
+(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC');
 
 -- =====================================================================
 -- 3) agrilink_crop

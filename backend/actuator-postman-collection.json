@@ -1,0 +1,140 @@
+{
+	"info": {
+		"_postman_id": "d2b062b3-5fa8-4b72-a7d2-1be812d4fae8",
+		"name": "AgriLink - Spring Boot Actuator Endpoints",
+		"description": "Collection of Actuator health, info, env, metrics, and mappings endpoints for monitoring and diagnostics of subsidy-service and report-service.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Subsidy Service Actuator (8085)",
+			"item": [
+				{
+					"name": "List Actuator Endpoints",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator",
+						"description": "List all active Actuator endpoints exposed in subsidy-service."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator/health",
+						"description": "Get detailed application health status including database connectivity, disk space, and discovery composite."
+					},
+					"response": []
+				},
+				{
+					"name": "Application Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator/info",
+						"description": "Retrieve custom build/info attributes from the application configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator/metrics",
+						"description": "Retrieve JVM performance, threads, CPU usage, and database connection pool metrics."
+					},
+					"response": []
+				},
+				{
+					"name": "Environment Properties",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator/env",
+						"description": "Get list of active Spring profile properties and system variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Web Mappings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8085/actuator/mappings",
+						"description": "Check the list of all registered HTTP controller request path mappings."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Service Actuator (8087)",
+			"item": [
+				{
+					"name": "List Actuator Endpoints",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator",
+						"description": "List all active Actuator endpoints exposed in report-service under the context-path."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator/health",
+						"description": "Get detailed application health status including database connectivity, disk space, and load balancer details."
+					},
+					"response": []
+				},
+				{
+					"name": "Application Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator/info",
+						"description": "Retrieve custom build/info attributes from the application configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator/metrics",
+						"description": "Retrieve JVM performance, threads, CPU usage, and database connection pool metrics."
+					},
+					"response": []
+				},
+				{
+					"name": "Environment Properties",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator/env",
+						"description": "Get list of active Spring profile properties and system variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Web Mappings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8087/agriLink/analytics/actuator/mappings",
+						"description": "Check the list of all registered HTTP controller request path mappings."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

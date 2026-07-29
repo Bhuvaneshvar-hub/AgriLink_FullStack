@@ -1,0 +1,307 @@
+{
+	"info": {
+		"_postman_id": "b3e042b3-5fa8-4b72-a7d2-1be812d4fae6",
+		"name": "AgriLink - Subsidy Scheme Service",
+		"description": "Collection of all 14 Subsidy Scheme Service endpoints including government scheme management and subsidy applications workflow, routed via the API Gateway.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login successful\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@agrilink.com\",\n  \"password\": \"Admin@1234\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/session/login",
+						"description": "Authenticate user and automatically store the JWT Bearer Token into the collection variable `token` for subsequent requests."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Schemes",
+			"item": [
+				{
+					"name": "Create Scheme",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"schemeName\": \"PM Kisan Input Subsidy\",\n  \"category\": \"InputSubsidy\",\n  \"eligibilityCriteria\": \"Small farmers < 2 acres\",\n  \"benefitAmount\": 5000.00,\n  \"fundingSource\": \"Central Govt\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-12-31\",\n  \"status\": \"Upcoming\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/createScheme",
+						"description": "Create a new government subsidy scheme. Supported categories: InputSubsidy, CropInsurance, EquipmentGrant, WelfareSupport."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Schemes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/fetchSchemes",
+						"description": "Retrieve all government subsidy schemes."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Scheme By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/fetchSchemeById/2",
+						"description": "Retrieve a specific government scheme by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Scheme",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"schemeName\": \"PM Kisan Input Subsidy\",\n  \"category\": \"InputSubsidy\",\n  \"eligibilityCriteria\": \"Small farmers < 2 acres\",\n  \"benefitAmount\": 5500.00,\n  \"fundingSource\": \"Central Govt\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-12-31\",\n  \"status\": \"Active\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/updateScheme/2",
+						"description": "Update the fields of an existing scheme."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Scheme Status",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Active\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/updateSchemeStatus/2",
+						"description": "Change status of a scheme catalog."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Scheme",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/deleteScheme/2",
+						"description": "Remove a scheme catalog entry from the database."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Applications",
+			"item": [
+				{
+					"name": "Create Application",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"farmerId\": 1,\n  \"userId\": 1,\n  \"schemeId\": 2,\n  \"applicationDate\": \"2026-06-10\",\n  \"eligibilityScore\": 85.0,\n  \"status\": \"Approved\",\n  \"disbursedAmount\": 5000.0,\n  \"disbursedDate\": \"2026-07-01\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/createApplication",
+						"description": "Create a new subsidy application."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Applications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/fetchApplications",
+						"description": "Retrieve all subsidy applications."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Application By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/fetchApplicationById/1",
+						"description": "Retrieve a specific subsidy application by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Applications By Farmer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/fetchApplicationsByFarmer/1",
+						"description": "Retrieve all subsidy applications filed by a specific farmer."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"farmerId\": 1,\n  \"userId\": 1,\n  \"schemeId\": 2,\n  \"applicationDate\": \"2026-06-10\",\n  \"eligibilityScore\": 80.0,\n  \"status\": \"Pending\",\n  \"disbursedAmount\": 0.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/updateApplication/1",
+						"description": "Modify the attributes of an application."
+					},
+					"response": []
+				},
+				{
+					"name": "Review Application",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reviewedBy\": 2,\n  \"eligibilityScore\": 92.5,\n  \"status\": \"Approved\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/reviewApplication/1",
+						"description": "Review and update the score / status of an application."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application Status",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Disbursed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/updateApplicationStatus/1",
+						"description": "Directly update the state status of a subsidy application."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Application",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/agriLink/subsidyScheme/deleteApplication/1",
+						"description": "Delete a subsidy application from the database."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:9091",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

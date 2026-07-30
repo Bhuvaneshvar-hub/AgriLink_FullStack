@@ -5,6 +5,7 @@ import { CropService } from '../../services/crop.service';
 import { FarmerService } from '../../services/farmer.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { ExportService } from '../../services/export.service';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -55,12 +56,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
               <h3>Crop Catalog Database</h3>
-              @if (isAdmin()) {
-                <button class="btn btn-primary" (click)="openCatalogModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Add Crop</span>
-                </button>
-              }
+              <div class="header-actions">
+                @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
+                  <button class="btn btn-secondary" (click)="exportCatalog('excel')">
+                    <i class="material-icons-round">grid_on</i>
+                    <span>Export Excel</span>
+                  </button>
+                  <button class="btn btn-secondary" (click)="exportCatalog('pdf')">
+                    <i class="material-icons-round">picture_as_pdf</i>
+                    <span>Export PDF</span>
+                  </button>
+                }
+                @if (isAdmin()) {
+                  <button class="btn btn-primary" (click)="openCatalogModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Add Crop</span>
+                  </button>
+                }
+              </div>
             </div>
             <p class="text-secondary mb-3">
               Master list of supported crops that farmers choose from when creating crop plans.
@@ -131,12 +144,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
               <h3>{{ isFarmer() ? 'My Crop Plans' : 'Crop Seeding & Harvesting Plans' }}</h3>
-              @if (isFarmer()) {
-                <button class="btn btn-primary" (click)="openPlanModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Create Plan</span>
-                </button>
-              }
+              <div class="header-actions">
+                @if (isAdminOrOfficer() && cropPlans().length > 0) {
+                  <button class="btn btn-secondary" (click)="exportPlans('excel')">
+                    <i class="material-icons-round">grid_on</i>
+                    <span>Export Excel</span>
+                  </button>
+                  <button class="btn btn-secondary" (click)="exportPlans('pdf')">
+                    <i class="material-icons-round">picture_as_pdf</i>
+                    <span>Export PDF</span>
+                  </button>
+                }
+                @if (isFarmer()) {
+                  <button class="btn btn-primary" (click)="openPlanModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Create Plan</span>
+                  </button>
+                }
+              </div>
             </div>
             <p class="text-secondary mb-3">
               {{ isFarmer()
@@ -242,10 +267,22 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <p class="text-secondary">Field inspection observations registered by extension officers.</p>
               </div>
               @if (isAdminOrOfficer()) {
-                <button class="btn btn-primary" (click)="openAddObservationModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Log Growth Observation</span>
-                </button>
+                <div class="header-actions">
+                  @if (growthObservations().length > 0) {
+                    <button class="btn btn-secondary" (click)="exportObservations('excel')">
+                      <i class="material-icons-round">grid_on</i>
+                      <span>Export Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" (click)="exportObservations('pdf')">
+                      <i class="material-icons-round">picture_as_pdf</i>
+                      <span>Export PDF</span>
+                    </button>
+                  }
+                  <button class="btn btn-primary" (click)="openAddObservationModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Log Growth Observation</span>
+                  </button>
+                </div>
               }
             </div>
 
@@ -749,6 +786,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
       padding: 0.4rem 0.8rem !important;
       font-size: 0.8rem !important;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
     .table-actions {
       display: flex;
       align-items: center;
@@ -811,6 +854,7 @@ export class CropsComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private authService = inject(AuthService);
   private toast = inject(ToastService);
+  private exportService = inject(ExportService);
   private fb = inject(FormBuilder);
 
   // States
@@ -1401,6 +1445,85 @@ export class CropsComponent implements OnInit {
       },
       error: () => this.toast.error('Could not delete observation log')
     });
+  }
+
+  // ================= EXPORT (Admin & Extension Officer only) =================
+  // Crop plans and growth observations can be exported to Excel (.xls) or PDF.
+  // Buttons are gated in the template via isAdminOrOfficer(); we re-check here
+  // as a safety net so the data can never be exported by other roles.
+
+  exportCatalog(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const catalogs = this.cropCatalogs();
+    if (catalogs.length === 0) {
+      this.toast.error('No crops in catalog to export.');
+      return;
+    }
+    const columns = ['Crop Name', 'Category', 'Season', 'Typical Duration (Days)', 'Expected Yield (Tons)', 'Status'];
+    const rows = catalogs.map(c => [
+      c.cropName,
+      c.category,
+      c.season,
+      c.typicalDurationDays,
+      c.expectedYieldPerAcre,
+      this.getStatusLabel(c.status)
+    ]);
+    this.doExport(format, columns, rows, 'crop-catalog', 'Crop Catalog Database');
+  }
+
+  exportPlans(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const plans = this.filteredPlans();
+    if (plans.length === 0) {
+      this.toast.error('No crop plans to export.');
+      return;
+    }
+    const columns = ['Farmer', 'Farmer ID', 'Crop Type', 'Season', 'Year', 'Sowing Date', 'Estimated Harvest', 'Area (Acres)', 'Status'];
+    const rows = plans.map(p => [
+      this.getFarmerName(p.farmerId),
+      '#' + p.farmerId,
+      this.getCropName(p.cropId),
+      p.season,
+      p.year,
+      this.fmtDate(p.sowingDate),
+      this.fmtDate(p.expectedHarvestDate),
+      p.areaPlanted,
+      this.getPlanStatusLabel(p.status)
+    ]);
+    this.doExport(format, columns, rows, 'crop-plans', 'Crop Seeding & Harvesting Plans');
+  }
+
+  exportObservations(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const observations = this.growthObservations();
+    if (observations.length === 0) {
+      this.toast.error('No growth observations to export.');
+      return;
+    }
+    const columns = ['Farmer', 'Crop Plan', 'Observation Date', 'Growth Stage', 'Pest/Disease Flag', 'Remarks'];
+    const rows = observations.map(o => [
+      this.getFarmerNameForPlan(o.planId),
+      '#' + o.planId + ' — ' + this.getCropNameForPlan(o.planId),
+      this.fmtDate(o.observationDate),
+      this.getStageLabel(o.stage),
+      o.pestOrDiseaseFlag ? 'Disease/Pest Detected' : 'Healthy / Clear',
+      o.remarks
+    ]);
+    this.doExport(format, columns, rows, 'growth-observations', 'Crop Growth Observation Reports');
+  }
+
+  private doExport(format: 'excel' | 'pdf', columns: string[], rows: (string | number)[][], fileName: string, title: string) {
+    if (format === 'excel') {
+      this.exportService.exportToExcel(columns, rows, fileName, title);
+      this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
+    } else {
+      const opened = this.exportService.exportToPdf(columns, rows, fileName, title);
+      if (opened) {
+        this.toast.success('Opened PDF print view. Choose "Save as PDF" to download.');
+      } else {
+        this.toast.error('Please allow pop-ups to export as PDF.');
+      }
+    }
   }
 
   // ================= FARMER PROFILE & HOLDINGS CRUD =================

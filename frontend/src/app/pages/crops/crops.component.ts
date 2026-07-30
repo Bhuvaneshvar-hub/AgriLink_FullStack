@@ -299,6 +299,25 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <p>Observations will populate once extension officers submit growth reports on crop plans.</p>
               </div>
             } @else {
+              <div class="card filters-card mb-3">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="obsSearch">Search</label>
+                  <div class="search-field">
+                    <input type="text" id="obsSearch" [(ngModel)]="obsSearch"
+                      (ngModelChange)="onObsSearchChange()"
+                      placeholder="Search by farmer, crop, stage, remarks or flag..." />
+                    <i class="material-icons-round search-icon">search</i>
+                  </div>
+                </div>
+              </div>
+
+              @if (filteredObservations().length === 0) {
+                <div class="empty-state card">
+                  <i class="material-icons-round">search_off</i>
+                  <h3>No Matching Observations</h3>
+                  <p>No observations match "{{ obsSearch }}".</p>
+                </div>
+              } @else {
               <div class="table-container">
                 <div class="table-responsive">
                   <table>
@@ -350,11 +369,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <app-pagination
                   [currentPage]="obsPage"
                   [pageSize]="obsPageSize"
-                  [totalElements]="growthObservations().length"
+                  [totalElements]="filteredObservations().length"
                   (pageChange)="onObsPageChange($event)"
                   (pageSizeChange)="onObsPageSizeChange($event)">
                 </app-pagination>
               </div>
+              }
             }
           </div>
         }
@@ -1132,7 +1152,27 @@ export class CropsComponent implements OnInit {
   onPlanPageChange(p: number) { this.planPage = p; }
   onPlanPageSizeChange(s: number) { this.planPageSize = s; this.planPage = 0; }
 
-  paginatedObservations(): any[] { return this.page(this.growthObservations(), this.obsPage, this.obsPageSize); }
+  obsSearch = '';
+  onObsSearchChange() { this.obsPage = 0; }
+
+  // Observations filtered by the search box: matches farmer name, crop, growth
+  // stage, remarks and the pest/disease flag wording.
+  filteredObservations(): any[] {
+    const list = this.growthObservations();
+    const q = this.obsSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(o => {
+      const flagText = o.pestOrDiseaseFlag ? 'danger disease pest' : 'healthy clear';
+      return this.getFarmerNameForPlan(o.planId).toLowerCase().includes(q) ||
+        this.getCropNameForPlan(o.planId).toLowerCase().includes(q) ||
+        this.getStageLabel(o.stage).toLowerCase().includes(q) ||
+        (o.stage || '').toLowerCase().includes(q) ||
+        (o.remarks || '').toLowerCase().includes(q) ||
+        flagText.includes(q);
+    });
+  }
+
+  paginatedObservations(): any[] { return this.page(this.filteredObservations(), this.obsPage, this.obsPageSize); }
   onObsPageChange(p: number) { this.obsPage = p; }
   onObsPageSizeChange(s: number) { this.obsPageSize = s; this.obsPage = 0; }
 

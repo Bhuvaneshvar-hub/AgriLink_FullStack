@@ -84,7 +84,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>User ID</th>
+                  <th>S.No</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Phone</th>
@@ -95,9 +95,9 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (user of paginatedUsers(); track user.userId) {
+                @for (user of paginatedUsers(); track user.userId; let i = $index) {
                   <tr>
-                    <td>{{ user.userId }}</td>
+                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ user.name }}</strong></td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.phone }}</td>
@@ -451,9 +451,9 @@ export class UserListComponent implements OnInit {
   }
 
   exportToExcel(): void {
-    const headers = ['User ID', 'Name', 'Email', 'Phone', 'Role', 'Region ID', 'Status'];
-    const rows = this.filteredUsers().map(u => [
-      u.userId,
+    const headers = ['S.No', 'Name', 'Email', 'Phone', 'Role', 'Region ID', 'Status'];
+    const rows = this.filteredUsers().map((u, i) => [
+      i + 1,
       u.name,
       u.email,
       u.phone,

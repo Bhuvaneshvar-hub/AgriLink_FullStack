@@ -85,7 +85,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>Audit ID</th>
+                  <th>S.No</th>
                   <th>User Name</th>
                   <th>Module</th>
                   <th>Action performed</th>
@@ -94,10 +94,10 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (log of paginatedLogs(); track log.auditId) {
+                @for (log of paginatedLogs(); track log.auditId; let i = $index) {
                   <tr>
-                    <td>{{ log.auditId }}</td>
-                    <td><strong>User #{{ log.userId }}</strong></td>
+                    <td>{{ currentPage * pageSize + i + 1 }}</td>
+                    <td><strong>{{ getUserName(log.userId) }}</strong></td>
                     <td><span class="module-label">{{ log.module }}</span></td>
                     <td>{{ log.action }}</td>
                     <td><code>{{ log.ipAddress || '127.0.0.1' }}</code></td>
@@ -159,6 +159,7 @@ export class AuditLogComponent implements OnInit {
   logs = signal<any[]>([]);
   filteredLogs = signal<any[]>([]);
   isLoading = signal(true);
+  userNamesById = new Map<number, string>();
 
   // Filters
   userIdFilter: number | null = null;
@@ -170,7 +171,23 @@ export class AuditLogComponent implements OnInit {
   pageSize = 20;
 
   ngOnInit(): void {
+    this.loadUsers();
     this.loadLogs();
+  }
+
+  loadUsers(): void {
+    this.userService.getAllUsers().subscribe({
+      next: (data) => {
+        this.userNamesById = new Map(data.map(u => [u.userId, u.name]));
+      },
+      error: () => {
+        this.toastService.error('Failed to load user list.');
+      }
+    });
+  }
+
+  getUserName(userId: number): string {
+    return this.userNamesById.get(userId) || `User #${userId}`;
   }
 
   loadLogs(): void {
@@ -224,10 +241,10 @@ export class AuditLogComponent implements OnInit {
   }
 
   exportToExcel(): void {
-    const headers = ['Audit ID', 'User ID', 'Module', 'Action Performed', 'IP Address', 'Timestamp'];
-    const rows = this.filteredLogs().map(log => [
-      log.auditId,
-      log.userId,
+    const headers = ['S.No', 'User Name', 'Module', 'Action Performed', 'IP Address', 'Timestamp'];
+    const rows = this.filteredLogs().map((log, i) => [
+      i + 1,
+      this.getUserName(log.userId),
       log.module,
       log.action,
       log.ipAddress || '127.0.0.1',

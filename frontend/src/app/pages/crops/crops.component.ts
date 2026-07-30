@@ -5,6 +5,7 @@ import { CropService } from '../../services/crop.service';
 import { FarmerService } from '../../services/farmer.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { ExportService } from '../../services/export.service';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -55,12 +56,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
               <h3>Crop Catalog Database</h3>
-              @if (isAdmin()) {
-                <button class="btn btn-primary" (click)="openCatalogModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Add Crop</span>
-                </button>
-              }
+              <div class="header-actions">
+                @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
+                  <button class="btn btn-secondary" (click)="exportCatalog('excel')">
+                    <i class="material-icons-round">grid_on</i>
+                    <span>Export Excel</span>
+                  </button>
+                  <button class="btn btn-secondary" (click)="exportCatalog('pdf')">
+                    <i class="material-icons-round">picture_as_pdf</i>
+                    <span>Export PDF</span>
+                  </button>
+                }
+                @if (isAdmin()) {
+                  <button class="btn btn-primary" (click)="openCatalogModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Add Crop</span>
+                  </button>
+                }
+              </div>
             </div>
             <p class="text-secondary mb-3">
               Master list of supported crops that farmers choose from when creating crop plans.
@@ -131,12 +144,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
               <h3>{{ isFarmer() ? 'My Crop Plans' : 'Crop Seeding & Harvesting Plans' }}</h3>
-              @if (isFarmer()) {
-                <button class="btn btn-primary" (click)="openPlanModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Create Plan</span>
-                </button>
-              }
+              <div class="header-actions">
+                @if (isAdminOrOfficer() && cropPlans().length > 0) {
+                  <button class="btn btn-secondary" (click)="exportPlans('excel')">
+                    <i class="material-icons-round">grid_on</i>
+                    <span>Export Excel</span>
+                  </button>
+                  <button class="btn btn-secondary" (click)="exportPlans('pdf')">
+                    <i class="material-icons-round">picture_as_pdf</i>
+                    <span>Export PDF</span>
+                  </button>
+                }
+                @if (isFarmer()) {
+                  <button class="btn btn-primary" (click)="openPlanModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Create Plan</span>
+                  </button>
+                }
+              </div>
             </div>
             <p class="text-secondary mb-3">
               {{ isFarmer()
@@ -157,7 +182,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="search-field">
                     <input type="text" id="planSearch" [(ngModel)]="planSearch"
                       (ngModelChange)="onPlanSearchChange()"
-                      [placeholder]="isFarmer() ? 'Search by crop...' : 'Search by farmer name or crop...'" />
+                      [placeholder]="isFarmer() ? 'Search by crop, status or season...' : 'Search by farmer, crop, status or season...'" />
                     <i class="material-icons-round search-icon">search</i>
                   </div>
                 </div>
@@ -182,6 +207,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Sowing Date</th>
                         <th>Estimated Harvest</th>
                         <th>Area (in Acres)</th>
+                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -195,6 +221,11 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>{{ plan.sowingDate | date:'mediumDate' }}</td>
                           <td>{{ plan.expectedHarvestDate | date:'mediumDate' }}</td>
                           <td>{{ plan.areaPlanted }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getPlanStatusClass(plan.status)">
+                              {{ getPlanStatusLabel(plan.status) }}
+                            </span>
+                          </td>
                           <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewPlanDetails(plan)">
@@ -242,10 +273,22 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <p class="text-secondary">Field inspection observations registered by extension officers.</p>
               </div>
               @if (isAdminOrOfficer()) {
-                <button class="btn btn-primary" (click)="openAddObservationModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Log Growth Observation</span>
-                </button>
+                <div class="header-actions">
+                  @if (growthObservations().length > 0) {
+                    <button class="btn btn-secondary" (click)="exportObservations('excel')">
+                      <i class="material-icons-round">grid_on</i>
+                      <span>Export Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" (click)="exportObservations('pdf')">
+                      <i class="material-icons-round">picture_as_pdf</i>
+                      <span>Export PDF</span>
+                    </button>
+                  }
+                  <button class="btn btn-primary" (click)="openAddObservationModal()">
+                    <i class="material-icons-round">add_circle</i>
+                    <span>Log Growth Observation</span>
+                  </button>
+                </div>
               }
             </div>
 
@@ -256,6 +299,25 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <p>Observations will populate once extension officers submit growth reports on crop plans.</p>
               </div>
             } @else {
+              <div class="card filters-card mb-3">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="obsSearch">Search</label>
+                  <div class="search-field">
+                    <input type="text" id="obsSearch" [(ngModel)]="obsSearch"
+                      (ngModelChange)="onObsSearchChange()"
+                      placeholder="Search by farmer, crop, stage, remarks or flag..." />
+                    <i class="material-icons-round search-icon">search</i>
+                  </div>
+                </div>
+              </div>
+
+              @if (filteredObservations().length === 0) {
+                <div class="empty-state card">
+                  <i class="material-icons-round">search_off</i>
+                  <h3>No Matching Observations</h3>
+                  <p>No observations match "{{ obsSearch }}".</p>
+                </div>
+              } @else {
               <div class="table-container">
                 <div class="table-responsive">
                   <table>
@@ -277,7 +339,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>{{ getCropNameForPlan(obs.planId) }}</td>
                           <td>{{ obs.observationDate | date:'mediumDate' }}</td>
                           <td>
-                            <span class="badge badge-info">
+                            <span class="badge" [ngClass]="getStageClass(obs.stage)">
                               {{ getStageLabel(obs.stage) }}
                             </span>
                           </td>
@@ -307,11 +369,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <app-pagination
                   [currentPage]="obsPage"
                   [pageSize]="obsPageSize"
-                  [totalElements]="growthObservations().length"
+                  [totalElements]="filteredObservations().length"
                   (pageChange)="onObsPageChange($event)"
                   (pageSizeChange)="onObsPageSizeChange($event)">
                 </app-pagination>
               </div>
+              }
             }
           </div>
         }
@@ -425,10 +488,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <label for="pCrop">Crop Type</label>
                   <select id="pCrop" formControlName="cropId">
                     <option value="">Select Crop Catalog</option>
-                    @for (crop of cropCatalogs(); track crop.cropId) {
+                    @for (crop of cropsForPlanSeason(); track crop.cropId) {
                       <option [value]="crop.cropId">{{ crop.cropName }} ({{ crop.season }})</option>
                     }
                   </select>
+                  @if (planForm.get('season')?.value && cropsForPlanSeason().length === 0) {
+                    <p class="text-secondary" style="margin: 0.4rem 0 0;">
+                      No active crops in the catalog for the {{ planForm.get('season')?.value }} season.
+                    </p>
+                  }
                 </div>
 
                 <div class="form-row">
@@ -749,6 +817,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
       padding: 0.4rem 0.8rem !important;
       font-size: 0.8rem !important;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
     .table-actions {
       display: flex;
       align-items: center;
@@ -811,6 +885,7 @@ export class CropsComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private authService = inject(AuthService);
   private toast = inject(ToastService);
+  private exportService = inject(ExportService);
   private fb = inject(FormBuilder);
 
   // States
@@ -911,6 +986,26 @@ export class CropsComponent implements OnInit {
       expectedHarvestDate: ['', Validators.required],
       areaPlanted: [0.5, [Validators.required, Validators.min(0.01)]],
       status: ['PLANNED', Validators.required]
+    });
+
+    // Two-way sync between Season and Crop Type on the plan form.
+    // Picking a crop fills the season from its catalog entry; changing the
+    // season clears a crop that no longer belongs to that season.
+    this.planForm.get('cropId')!.valueChanges.subscribe(cropId => {
+      if (!cropId) return;
+      const crop = this.cropCatalogs().find(c => c.cropId == cropId);
+      if (crop && crop.season) {
+        this.planForm.get('season')!.setValue(crop.season, { emitEvent: false });
+      }
+    });
+    this.planForm.get('season')!.valueChanges.subscribe(season => {
+      if (!season) return;
+      const cropId = this.planForm.get('cropId')!.value;
+      if (!cropId) return;
+      const crop = this.cropCatalogs().find(c => c.cropId == cropId);
+      if (crop && crop.season !== season) {
+        this.planForm.get('cropId')!.setValue('', { emitEvent: false });
+      }
     });
 
     this.observationForm = this.fb.group({
@@ -1035,15 +1130,49 @@ export class CropsComponent implements OnInit {
     if (!q) return list;
     return list.filter(p =>
       this.getFarmerName(p.farmerId).toLowerCase().includes(q) ||
-      this.getCropName(p.cropId).toLowerCase().includes(q)
+      this.getCropName(p.cropId).toLowerCase().includes(q) ||
+      this.getPlanStatusLabel(p.status).toLowerCase().includes(q) ||
+      (p.status || '').toLowerCase().includes(q) ||
+      (p.season || '').toLowerCase().includes(q)
     );
   }
 
   paginatedPlans(): any[] { return this.page(this.filteredPlans(), this.planPage, this.planPageSize); }
+
+  // Crop Type options for the plan form: only Active catalog crops, and when a
+  // season is chosen, only crops grown in that season (the currently selected
+  // crop is always kept so editing an existing plan never loses its value).
+  cropsForPlanSeason(): any[] {
+    const active = this.cropCatalogs().filter(c => c.status === 'AC');
+    const season = this.planForm?.get('season')?.value;
+    if (!season) return active;
+    const currentId = this.planForm?.get('cropId')?.value;
+    return active.filter(c => c.season === season || c.cropId == currentId);
+  }
   onPlanPageChange(p: number) { this.planPage = p; }
   onPlanPageSizeChange(s: number) { this.planPageSize = s; this.planPage = 0; }
 
-  paginatedObservations(): any[] { return this.page(this.growthObservations(), this.obsPage, this.obsPageSize); }
+  obsSearch = '';
+  onObsSearchChange() { this.obsPage = 0; }
+
+  // Observations filtered by the search box: matches farmer name, crop, growth
+  // stage, remarks and the pest/disease flag wording.
+  filteredObservations(): any[] {
+    const list = this.growthObservations();
+    const q = this.obsSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(o => {
+      const flagText = o.pestOrDiseaseFlag ? 'danger disease pest' : 'healthy clear';
+      return this.getFarmerNameForPlan(o.planId).toLowerCase().includes(q) ||
+        this.getCropNameForPlan(o.planId).toLowerCase().includes(q) ||
+        this.getStageLabel(o.stage).toLowerCase().includes(q) ||
+        (o.stage || '').toLowerCase().includes(q) ||
+        (o.remarks || '').toLowerCase().includes(q) ||
+        flagText.includes(q);
+    });
+  }
+
+  paginatedObservations(): any[] { return this.page(this.filteredObservations(), this.obsPage, this.obsPageSize); }
   onObsPageChange(p: number) { this.obsPage = p; }
   onObsPageSizeChange(s: number) { this.obsPageSize = s; this.obsPage = 0; }
 
@@ -1130,6 +1259,29 @@ export class CropsComponent implements OnInit {
       case 'HARVESTED': return 'Harvested';
       case 'FAILED': return 'Failed';
       default: return status;
+    }
+  }
+
+  // Colour class for a crop plan's lifecycle status badge.
+  getPlanStatusClass(status: string): string {
+    switch (status) {
+      case 'PLANNED': return 'badge-secondary';
+      case 'SOWING': return 'badge-warning';
+      case 'GROWING': return 'badge-success';
+      case 'HARVESTED': return 'badge-primary';
+      case 'FAILED': return 'badge-danger';
+      default: return 'badge-info';
+    }
+  }
+
+  // Colour class for a growth observation's stage badge (progression palette).
+  getStageClass(stage: string): string {
+    switch (stage) {
+      case 'GERMINATION': return 'badge-info';
+      case 'VEGETATIVE': return 'badge-success';
+      case 'FLOWERING': return 'badge-warning';
+      case 'MATURITY': return 'badge-primary';
+      default: return 'badge-info';
     }
   }
 
@@ -1401,6 +1553,85 @@ export class CropsComponent implements OnInit {
       },
       error: () => this.toast.error('Could not delete observation log')
     });
+  }
+
+  // ================= EXPORT (Admin & Extension Officer only) =================
+  // Crop plans and growth observations can be exported to Excel (.xls) or PDF.
+  // Buttons are gated in the template via isAdminOrOfficer(); we re-check here
+  // as a safety net so the data can never be exported by other roles.
+
+  exportCatalog(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const catalogs = this.cropCatalogs();
+    if (catalogs.length === 0) {
+      this.toast.error('No crops in catalog to export.');
+      return;
+    }
+    const columns = ['Crop Name', 'Category', 'Season', 'Typical Duration (Days)', 'Expected Yield (Tons)', 'Status'];
+    const rows = catalogs.map(c => [
+      c.cropName,
+      c.category,
+      c.season,
+      c.typicalDurationDays,
+      c.expectedYieldPerAcre,
+      this.getStatusLabel(c.status)
+    ]);
+    this.doExport(format, columns, rows, 'crop-catalog', 'Crop Catalog Database');
+  }
+
+  exportPlans(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const plans = this.filteredPlans();
+    if (plans.length === 0) {
+      this.toast.error('No crop plans to export.');
+      return;
+    }
+    const columns = ['Farmer', 'Farmer ID', 'Crop Type', 'Season', 'Year', 'Sowing Date', 'Estimated Harvest', 'Area (Acres)', 'Status'];
+    const rows = plans.map(p => [
+      this.getFarmerName(p.farmerId),
+      '#' + p.farmerId,
+      this.getCropName(p.cropId),
+      p.season,
+      p.year,
+      this.fmtDate(p.sowingDate),
+      this.fmtDate(p.expectedHarvestDate),
+      p.areaPlanted,
+      this.getPlanStatusLabel(p.status)
+    ]);
+    this.doExport(format, columns, rows, 'crop-plans', 'Crop Seeding & Harvesting Plans');
+  }
+
+  exportObservations(format: 'excel' | 'pdf') {
+    if (!this.isAdminOrOfficer()) return;
+    const observations = this.growthObservations();
+    if (observations.length === 0) {
+      this.toast.error('No growth observations to export.');
+      return;
+    }
+    const columns = ['Farmer', 'Crop Plan', 'Observation Date', 'Growth Stage', 'Pest/Disease Flag', 'Remarks'];
+    const rows = observations.map(o => [
+      this.getFarmerNameForPlan(o.planId),
+      '#' + o.planId + ' — ' + this.getCropNameForPlan(o.planId),
+      this.fmtDate(o.observationDate),
+      this.getStageLabel(o.stage),
+      o.pestOrDiseaseFlag ? 'Disease/Pest Detected' : 'Healthy / Clear',
+      o.remarks
+    ]);
+    this.doExport(format, columns, rows, 'growth-observations', 'Crop Growth Observation Reports');
+  }
+
+  private doExport(format: 'excel' | 'pdf', columns: string[], rows: (string | number)[][], fileName: string, title: string) {
+    if (format === 'excel') {
+      this.exportService.exportToExcel(columns, rows, fileName, title);
+      this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
+    } else {
+      const opened = this.exportService.exportToPdf(columns, rows, fileName, title);
+      if (opened) {
+        this.toast.success('Opened PDF print view. Choose "Save as PDF" to download.');
+      } else {
+        this.toast.error('Please allow pop-ups to export as PDF.');
+      }
+    }
   }
 
   // ================= FARMER PROFILE & HOLDINGS CRUD =================

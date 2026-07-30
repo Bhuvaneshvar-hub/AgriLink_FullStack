@@ -47,7 +47,7 @@ class GrowthObservationControllerTest {
 				.observationId(1)
 				.planId(1)
 				.officerId(2)
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -59,7 +59,7 @@ class GrowthObservationControllerTest {
 
 		mockMvc.perform(get("/growth-observations"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].stage").value("GR"));
+				.andExpect(jsonPath("$[0].stage").value("FLOWERING"));
 	}
 
 	@Test
@@ -100,3 +100,5 @@ class GrowthObservationControllerTest {
 				.andExpect(jsonPath("$.message").value("GrowthObservation deleted successfully"));
 	}
 }
+
+

@@ -82,7 +82,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Category</th>
                         <th>Season</th>
                         <th>Typical Duration</th>
-                        <th>Expected Yield (in Acres)</th>
+                        <th>Expected Yield (in Tons)</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -93,7 +93,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>{{ crop.category }}</td>
                           <td>{{ crop.season }}</td>
                           <td>{{ crop.typicalDurationDays }} Days</td>
-                          <td>{{ crop.expectedYieldPerAcre }} Tons</td>
+                          <td>{{ crop.expectedYieldPerAcre }}</td>
                           <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewCatalogDetails(crop)">
@@ -130,7 +130,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         @if (activeTab() === 'plans') {
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
-              <h3>Crop Seeding & Harvesting Plans</h3>
+              <h3>{{ isFarmer() ? 'My Crop Plans' : 'Crop Seeding & Harvesting Plans' }}</h3>
               @if (isFarmer()) {
                 <button class="btn btn-primary" (click)="openPlanModal()">
                   <i class="material-icons-round">add_circle</i>
@@ -139,7 +139,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
               }
             </div>
             <p class="text-secondary mb-3">
-              Farmers' seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.
+              {{ isFarmer()
+                ? 'Your seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.'
+                : 'Seasonal planting schedules of farmers — which crop is sown on which land, and when it is expected to be harvested.' }}
             </p>
 
             @if (cropPlans().length === 0) {
@@ -155,7 +157,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="search-field">
                     <input type="text" id="planSearch" [(ngModel)]="planSearch"
                       (ngModelChange)="onPlanSearchChange()"
-                      placeholder="Search by farmer name or crop..." />
+                      [placeholder]="isFarmer() ? 'Search by crop...' : 'Search by farmer name or crop...'" />
                     <i class="material-icons-round search-icon">search</i>
                   </div>
                 </div>
@@ -173,7 +175,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Farmer</th>
+                        @if (!isFarmer()) { <th>Farmer</th> }
                         <th>Crop Type</th>
                         <th>Season</th>
                         <th>Year</th>
@@ -186,7 +188,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (plan of paginatedPlans(); track plan.planId) {
                         <tr>
-                          <td><strong>{{ getFarmerName(plan.farmerId) }}</strong></td>
+                          @if (!isFarmer()) { <td><strong>{{ getFarmerName(plan.farmerId) }}</strong></td> }
                           <td>{{ getCropName(plan.cropId) }}</td>
                           <td>{{ plan.season }}</td>
                           <td>{{ plan.year }}</td>
@@ -337,11 +339,27 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cCategory">Category</label>
-                    <input type="text" id="cCategory" formControlName="category" placeholder="e.g. Cereal, Vegetable" />
+                    <select id="cCategory" formControlName="category">
+                      <option value="">Select Category</option>
+                      <option value="Cereal">Cereal</option>
+                      <option value="Pulse">Pulse</option>
+                      <option value="Oilseed">Oilseed</option>
+                      <option value="Fibre">Fibre</option>
+                      <option value="Cash Crop">Cash Crop</option>
+                      <option value="Vegetable">Vegetable</option>
+                      <option value="Fruit">Fruit</option>
+                      <option value="Spice">Spice</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="cSeason">Season</label>
-                    <input type="text" id="cSeason" formControlName="season" placeholder="e.g. Kharif, Rabi" />
+                    <select id="cSeason" formControlName="season">
+                      <option value="">Select Season</option>
+                      <option value="Kharif">Kharif</option>
+                      <option value="Rabi">Rabi</option>
+                      <option value="Zaid">Zaid</option>
+                      <option value="Perennial">Perennial</option>
+                    </select>
                   </div>
                 </div>
                 <div class="form-row">
@@ -416,7 +434,13 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-row">
                   <div class="form-group">
                     <label for="pSeason">Season</label>
-                    <input type="text" id="pSeason" formControlName="season" placeholder="e.g. Rabi" />
+                    <select id="pSeason" formControlName="season">
+                      <option value="">Select Season</option>
+                      <option value="Kharif">Kharif</option>
+                      <option value="Rabi">Rabi</option>
+                      <option value="Zaid">Zaid</option>
+                      <option value="Perennial">Perennial</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="pYear">Year</label>
@@ -443,8 +467,11 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="pStatus">Status</label>
                     <select id="pStatus" formControlName="status">
-                      <option value="AC">Active</option>
-                      <option value="IN">Inactive</option>
+                      <option value="PLANNED">Planned</option>
+                      <option value="SOWING">Sowing</option>
+                      <option value="GROWING">Growing</option>
+                      <option value="HARVESTED">Harvested</option>
+                      <option value="FAILED">Failed</option>
                     </select>
                   </div>
                 </div>
@@ -493,10 +520,10 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="oStage">Growth Stage Flow</label>
                     <select id="oStage" formControlName="stage">
-                      <option value="PL">Planned</option>
-                      <option value="SO">Sowing</option>
-                      <option value="GR">Growing</option>
-                      <option value="HA">Harvesting</option>
+                      <option value="GERMINATION">Germination</option>
+                      <option value="VEGETATIVE">Vegetative</option>
+                      <option value="FLOWERING">Flowering</option>
+                      <option value="MATURITY">Maturity</option>
                     </select>
                   </div>
                 </div>
@@ -799,11 +826,11 @@ export class CropsComponent implements OnInit {
   landHoldings = signal<any[]>([]);
 
   // Pagination state (page index is 0-based)
-  catalogPage = 0;   catalogPageSize = 10;
-  planPage = 0;      planPageSize = 10;
-  obsPage = 0;       obsPageSize = 10;
-  profilePage = 0;   profilePageSize = 10;
-  holdingPage = 0;   holdingPageSize = 10;
+  catalogPage = 0;   catalogPageSize = 5;
+  planPage = 0;      planPageSize = 5;
+  obsPage = 0;       obsPageSize = 5;
+  profilePage = 0;   profilePageSize = 5;
+  holdingPage = 0;   holdingPageSize = 5;
 
   // Selected entities for actions
   selectedCatalogItem = signal<any | null>(null);
@@ -883,13 +910,13 @@ export class CropsComponent implements OnInit {
       sowingDate: ['', Validators.required],
       expectedHarvestDate: ['', Validators.required],
       areaPlanted: [0.5, [Validators.required, Validators.min(0.01)]],
-      status: ['AC', Validators.required]
+      status: ['PLANNED', Validators.required]
     });
 
     this.observationForm = this.fb.group({
       planId: ['', Validators.required],
       observationDate: [new Date().toISOString().split('T')[0], Validators.required],
-      stage: ['SO', Validators.required],
+      stage: ['GERMINATION', Validators.required],
       pestOrDiseaseFlag: [false],
       remarks: ['', Validators.required]
     });
@@ -1077,19 +1104,31 @@ export class CropsComponent implements OnInit {
 
   getStageLabel(stage: string): string {
     switch (stage) {
-      case 'PL': return 'Planned';
-      case 'SO': return 'Sowing';
-      case 'GR': return 'Growing';
-      case 'HA': return 'Harvesting';
+      case 'GERMINATION': return 'Germination';
+      case 'VEGETATIVE': return 'Vegetative';
+      case 'FLOWERING': return 'Flowering';
+      case 'MATURITY': return 'Maturity';
       default: return stage;
     }
   }
 
-  // Full status label (backend stores 2-letter codes AC/IN).
+  // Full status label for crop catalog (backend stores 2-letter codes AC/IN).
   getStatusLabel(status: string): string {
     switch (status) {
       case 'AC': return 'Active';
       case 'IN': return 'Inactive';
+      default: return status;
+    }
+  }
+
+  // Lifecycle status label for a crop plan.
+  getPlanStatusLabel(status: string): string {
+    switch (status) {
+      case 'PLANNED': return 'Planned';
+      case 'SOWING': return 'Sowing';
+      case 'GROWING': return 'Growing';
+      case 'HARVESTED': return 'Harvested';
+      case 'FAILED': return 'Failed';
       default: return status;
     }
   }
@@ -1113,7 +1152,7 @@ export class CropsComponent implements OnInit {
       { label: 'Category', value: crop.category },
       { label: 'Season', value: crop.season },
       { label: 'Typical Duration', value: crop.typicalDurationDays + ' Days' },
-      { label: 'Expected Yield (in Acres)', value: crop.expectedYieldPerAcre + ' Tons' },
+      { label: 'Expected Yield (in Tons)', value: crop.expectedYieldPerAcre },
       { label: 'Status', value: this.getStatusLabel(crop.status) }
     ]);
     this.showDetailModal.set(true);
@@ -1134,9 +1173,9 @@ export class CropsComponent implements OnInit {
       { label: 'Sowing Date', value: this.fmtDate(plan.sowingDate) },
       { label: 'Estimated Harvest Date', value: this.fmtDate(plan.expectedHarvestDate) },
       { label: 'Estimated Duration', value: crop?.typicalDurationDays ? crop.typicalDurationDays + ' Days' : '—' },
-      { label: 'Expected Yield (in Acres)', value: crop?.expectedYieldPerAcre ? crop.expectedYieldPerAcre + ' Tons' : '—' },
+      { label: 'Expected Yield (in Tons)', value: crop?.expectedYieldPerAcre ?? '—' },
       { label: 'Area Planted (in Acres)', value: plan.areaPlanted },
-      { label: 'Status', value: this.getStatusLabel(plan.status) }
+      { label: 'Status', value: this.getPlanStatusLabel(plan.status) }
     ]);
     this.showDetailModal.set(true);
   }
@@ -1255,7 +1294,7 @@ export class CropsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedPlan.set(null);
       this.planForm.reset({
-        status: 'AC',
+        status: 'PLANNED',
         year: new Date().getFullYear(),
         areaPlanted: 0.5,
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
@@ -1318,7 +1357,7 @@ export class CropsComponent implements OnInit {
     this.observationForm.reset({
       planId: plan ? plan.planId : '',
       observationDate: new Date().toISOString().split('T')[0],
-      stage: 'SO',
+      stage: 'GERMINATION',
       pestOrDiseaseFlag: false,
       remarks: ''
     });

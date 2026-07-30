@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
 import com.cognizant.agrilink.crop.entity.CropPlan;
 import com.cognizant.agrilink.crop.service.CropPlanService;
@@ -58,7 +58,7 @@ class CropPlanControllerExtendedTest {
 				.sowingDate(LocalDate.of(2026, 1, 10))
 				.expectedHarvestDate(LocalDate.of(2026, 5, 10))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -75,7 +75,7 @@ class CropPlanControllerExtendedTest {
 				.andExpect(jsonPath("$[0].season").value("Rabi"))
 				.andExpect(jsonPath("$[0].year").value(2026))
 				.andExpect(jsonPath("$[0].areaPlanted").value(5.5))
-				.andExpect(jsonPath("$[0].status").value("AC"));
+				.andExpect(jsonPath("$[0].status").value("PLANNED"));
 		verify(cropPlanService).getAll();
 	}
 
@@ -111,7 +111,7 @@ class CropPlanControllerExtendedTest {
 				.andExpect(jsonPath("$.season").value("Rabi"))
 				.andExpect(jsonPath("$.year").value(2026))
 				.andExpect(jsonPath("$.areaPlanted").value(5.5))
-				.andExpect(jsonPath("$.status").value("AC"));
+				.andExpect(jsonPath("$.status").value("PLANNED"));
 		verify(cropPlanService).getById(1);
 	}
 
@@ -182,3 +182,5 @@ class CropPlanControllerExtendedTest {
 		verify(cropPlanService).update(eq(id), any(CropPlanDto.class));
 	}
 }
+
+

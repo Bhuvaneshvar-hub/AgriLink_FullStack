@@ -53,7 +53,7 @@ class GrowthObservationControllerExtendedTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -68,7 +68,7 @@ class GrowthObservationControllerExtendedTest {
 				.andExpect(jsonPath("$[0].observationId").value(1))
 				.andExpect(jsonPath("$[0].planId").value(1))
 				.andExpect(jsonPath("$[0].officerId").value(2))
-				.andExpect(jsonPath("$[0].stage").value("GR"))
+				.andExpect(jsonPath("$[0].stage").value("FLOWERING"))
 				.andExpect(jsonPath("$[0].pestOrDiseaseFlag").value(false))
 				.andExpect(jsonPath("$[0].remarks").value("Healthy crop"));
 		verify(growthObservationService).getAll();
@@ -102,7 +102,7 @@ class GrowthObservationControllerExtendedTest {
 				.andExpect(jsonPath("$.observationId").value(1))
 				.andExpect(jsonPath("$.planId").value(1))
 				.andExpect(jsonPath("$.officerId").value(2))
-				.andExpect(jsonPath("$.stage").value("GR"))
+				.andExpect(jsonPath("$.stage").value("FLOWERING"))
 				.andExpect(jsonPath("$.pestOrDiseaseFlag").value(false))
 				.andExpect(jsonPath("$.remarks").value("Healthy crop"));
 		verify(growthObservationService).getById(1);
@@ -159,7 +159,7 @@ class GrowthObservationControllerExtendedTest {
 
 		mockMvc.perform(get("/growth-observations/" + id))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.stage").value("GR"));
+				.andExpect(jsonPath("$.stage").value("FLOWERING"));
 		verify(growthObservationService).getById(id);
 	}
 
@@ -185,3 +185,5 @@ class GrowthObservationControllerExtendedTest {
 		verify(growthObservationService).update(eq(id), any(GrowthObservationDto.class));
 	}
 }
+
+

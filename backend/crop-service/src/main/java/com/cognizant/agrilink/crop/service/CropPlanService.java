@@ -2,7 +2,7 @@ package com.cognizant.agrilink.crop.service;
 
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
 import com.cognizant.agrilink.crop.entity.CropPlan;
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
 import com.cognizant.agrilink.crop.exception.ResourceNotFoundException;
 import java.util.List;
@@ -41,7 +41,7 @@ public class CropPlanService {
 				.sowingDate(dto.getSowingDate())
 				.expectedHarvestDate(dto.getExpectedHarvestDate())
 				.areaPlanted(dto.getAreaPlanted())
-				.status(dto.getStatus() != null ? dto.getStatus() : Status.AC)
+				.status(dto.getStatus() != null ? dto.getStatus() : PlanStatus.PLANNED)
 				.build();
 		return cropPlanRepository.save(cropPlan);
 	}

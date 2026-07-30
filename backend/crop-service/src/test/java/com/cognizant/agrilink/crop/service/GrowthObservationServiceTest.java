@@ -41,7 +41,7 @@ class GrowthObservationServiceTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -49,7 +49,7 @@ class GrowthObservationServiceTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -67,7 +67,7 @@ class GrowthObservationServiceTest {
 	void getByIdReturnsRecord() {
 		when(growthObservationRepository.findById(1)).thenReturn(Optional.of(growthObservation));
 
-		assertThat(growthObservationService.getById(1).getStage()).isEqualTo(Stage.GR);
+		assertThat(growthObservationService.getById(1).getStage()).isEqualTo(Stage.FLOWERING);
 	}
 
 	@Test
@@ -81,7 +81,7 @@ class GrowthObservationServiceTest {
 	@Test
 	void createSavesRecord() {
 		when(growthObservationRepository.findByPlanId(1))
-				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.GR).build()));
+				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.FLOWERING).build()));
 		when(growthObservationRepository.save(any(GrowthObservation.class))).thenReturn(growthObservation);
 
 		growthObservationService.create(dto);
@@ -108,3 +108,4 @@ class GrowthObservationServiceTest {
 		verify(growthObservationRepository, times(1)).delete(growthObservation);
 	}
 }
+

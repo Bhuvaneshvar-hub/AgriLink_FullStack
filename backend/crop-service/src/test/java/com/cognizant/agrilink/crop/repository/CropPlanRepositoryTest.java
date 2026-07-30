@@ -2,7 +2,7 @@ package com.cognizant.agrilink.crop.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.entity.CropPlan;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ class CropPlanRepositoryTest {
 				.sowingDate(LocalDate.of(2026, 6, 15))
 				.expectedHarvestDate(LocalDate.of(2026, 10, 15))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -36,7 +36,7 @@ class CropPlanRepositoryTest {
 		CropPlan found = cropPlanRepository.findById(saved.getPlanId()).orElseThrow();
 
 		assertThat(found.getSeason()).isEqualTo("Rabi");
-		assertThat(found.getStatus()).isEqualTo(Status.AC);
+		assertThat(found.getStatus()).isEqualTo(PlanStatus.PLANNED);
 	}
 
 	@Test
@@ -60,3 +60,4 @@ class CropPlanRepositoryTest {
 		assertThat(cropPlanRepository.findById(saved.getPlanId())).isEmpty();
 	}
 }
+

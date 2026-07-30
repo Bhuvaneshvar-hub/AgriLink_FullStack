@@ -43,7 +43,7 @@ class GrowthObservationServiceExtendedTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -54,7 +54,7 @@ class GrowthObservationServiceExtendedTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -82,7 +82,7 @@ class GrowthObservationServiceExtendedTest {
 
 		GrowthObservation result = growthObservationService.getById(1);
 
-		assertThat(result.getStage()).isEqualTo(Stage.GR);
+		assertThat(result.getStage()).isEqualTo(Stage.FLOWERING);
 		assertThat(result.getPestOrDiseaseFlag()).isFalse();
 		assertThat(result.getObservationDate()).isEqualTo(LocalDate.of(2026, 6, 15));
 	}
@@ -100,7 +100,7 @@ class GrowthObservationServiceExtendedTest {
 	void createMapsAllFields() {
 		ArgumentCaptor<GrowthObservation> captor = ArgumentCaptor.forClass(GrowthObservation.class);
 		when(growthObservationRepository.findByPlanId(1))
-				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.GR).build()));
+				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.FLOWERING).build()));
 		when(growthObservationRepository.save(any(GrowthObservation.class))).thenReturn(buildGrowthObservation());
 
 		growthObservationService.create(buildDto());
@@ -110,7 +110,7 @@ class GrowthObservationServiceExtendedTest {
 		assertThat(saved.getPlanId()).isEqualTo(1);
 		assertThat(saved.getOfficerId()).isEqualTo(2);
 		assertThat(saved.getObservationDate()).isEqualTo(LocalDate.of(2026, 6, 15));
-		assertThat(saved.getStage()).isEqualTo(Stage.GR);
+		assertThat(saved.getStage()).isEqualTo(Stage.FLOWERING);
 		assertThat(saved.getPestOrDiseaseFlag()).isFalse();
 		assertThat(saved.getRemarks()).isEqualTo("Healthy crop");
 	}
@@ -126,7 +126,7 @@ class GrowthObservationServiceExtendedTest {
 				.planId(9)
 				.officerId(8)
 				.observationDate(LocalDate.of(2027, 3, 20))
-				.stage(Stage.PL)
+				.stage(Stage.GERMINATION)
 				.pestOrDiseaseFlag(true)
 				.remarks("Pest detected")
 				.build();
@@ -138,7 +138,7 @@ class GrowthObservationServiceExtendedTest {
 		assertThat(saved.getPlanId()).isEqualTo(9);
 		assertThat(saved.getOfficerId()).isEqualTo(8);
 		assertThat(saved.getObservationDate()).isEqualTo(LocalDate.of(2027, 3, 20));
-		assertThat(saved.getStage()).isEqualTo(Stage.PL);
+		assertThat(saved.getStage()).isEqualTo(Stage.GERMINATION);
 		assertThat(saved.getPestOrDiseaseFlag()).isTrue();
 		assertThat(saved.getRemarks()).isEqualTo("Pest detected");
 	}
@@ -185,7 +185,7 @@ class GrowthObservationServiceExtendedTest {
 	void createWithBothPestFlags(boolean flag) {
 		ArgumentCaptor<GrowthObservation> captor = ArgumentCaptor.forClass(GrowthObservation.class);
 		when(growthObservationRepository.findByPlanId(1))
-				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.GR).build()));
+				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.FLOWERING).build()));
 		when(growthObservationRepository.save(any(GrowthObservation.class))).thenReturn(buildGrowthObservation());
 
 		GrowthObservationDto dto = buildDto();
@@ -217,7 +217,7 @@ class GrowthObservationServiceExtendedTest {
 	void createWithVariousDates(String date) {
 		ArgumentCaptor<GrowthObservation> captor = ArgumentCaptor.forClass(GrowthObservation.class);
 		when(growthObservationRepository.findByPlanId(1))
-				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.GR).build()));
+				.thenReturn(List.of(GrowthObservation.builder().stage(Stage.FLOWERING).build()));
 		when(growthObservationRepository.save(any(GrowthObservation.class))).thenReturn(buildGrowthObservation());
 
 		GrowthObservationDto dto = buildDto();
@@ -230,9 +230,9 @@ class GrowthObservationServiceExtendedTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"5,10,PL,true",
-			"6,11,SO,false",
-			"7,12,GR,true"
+			"5,10,GERMINATION,true",
+			"6,11,VEGETATIVE,false",
+			"7,12,FLOWERING,true"
 	})
 	void createWithCsvData(int planId, int officerId, Stage stage, boolean flag) {
 		ArgumentCaptor<GrowthObservation> captor = ArgumentCaptor.forClass(GrowthObservation.class);
@@ -255,3 +255,4 @@ class GrowthObservationServiceExtendedTest {
 		assertThat(saved.getPestOrDiseaseFlag()).isEqualTo(flag);
 	}
 }
+

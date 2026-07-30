@@ -1,6 +1,6 @@
 package com.cognizant.agrilink.crop.dto;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,5 +22,5 @@ public class CropPlanDto {
 	private LocalDate sowingDate;
 	private LocalDate expectedHarvestDate;
 	private Double areaPlanted;
-	private Status status;
+	private PlanStatus status;
 }

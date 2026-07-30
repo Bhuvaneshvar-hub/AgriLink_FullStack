@@ -39,12 +39,22 @@ DELETE FROM farmer_profile;
 
 INSERT INTO farmer_profile (farmerId, userId, name, dateOfBirth, gender, nationalIdNumber, village, district, state, phone, bankAccountNumber, status) VALUES
 (1, 2, 'Asha Devi', '1988-04-12', 'Female', 'ID-908123', 'Hosur', 'Krishnagiri', 'Tamil Nadu', '9876543210', 'SBI-009823412', 'AC'),
-(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC');
+(2, 3, 'Babu Lal', '1982-08-25', 'Male', 'ID-702315', 'Shoolagiri', 'Krishnagiri', 'Tamil Nadu', '8765432109', 'HDFC-441209831', 'AC'),
+(3, 6, 'Chitra Murugan', '1990-11-03', 'Female', 'ID-556201', 'Denkanikottai', 'Krishnagiri', 'Tamil Nadu', '9543210876', 'ICICI-778120934', 'AC'),
+(4, 7, 'Devaraj Pillai', '1979-02-17', 'Male', 'ID-334789', 'Bargur', 'Krishnagiri', 'Tamil Nadu', '9432108765', 'AXIS-330912845', 'AC'),
+(5, 8, 'Eswari Nadar', '1993-07-29', 'Female', 'ID-661204', 'Uthangarai', 'Krishnagiri', 'Tamil Nadu', '9321087654', 'SBI-118273645', 'AC'),
+(6, 9, 'Ganesan Rao', '1985-05-09', 'Male', 'ID-889341', 'Pochampalli', 'Krishnagiri', 'Tamil Nadu', '9210876543', 'HDFC-556738291', 'IN');
 
 INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType, irrigationSource, ownershipType, status) VALUES
 (1, 1, 'SVY-101A', 4.2, 'Loam', 'Borewell', 'Owned', 'AC'),
 (2, 1, 'SVY-101B', 2.5, 'Clay', 'Rainfed', 'Leased', 'AC'),
-(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC');
+(3, 2, 'SVY-205C', 5.0, 'Sandy', 'Canal', 'Owned', 'AC'),
+(4, 2, 'SVY-205D', 3.1, 'Loam', 'Borewell', 'Owned', 'AC'),
+(5, 3, 'SVY-312E', 6.4, 'Black', 'Canal', 'Owned', 'AC'),
+(6, 4, 'SVY-418F', 2.8, 'Red', 'Rainfed', 'Leased', 'AC'),
+(7, 4, 'SVY-418G', 4.9, 'Loam', 'Borewell', 'Owned', 'AC'),
+(8, 5, 'SVY-527H', 3.7, 'Sandy', 'Drip', 'Owned', 'AC'),
+(9, 6, 'SVY-633J', 5.5, 'Clay', 'Canal', 'Leased', 'AC');
 
 -- =====================================================================
 -- 3) agrilink_crop
@@ -59,17 +69,51 @@ INSERT INTO crop_catalog (cropId, cropName, category, season, typicalDurationDay
 (1, 'Rice', 'Cereal', 'Kharif', 120, 24.0, 'AC'),
 (2, 'Wheat', 'Cereal', 'Rabi', 110, 18.5, 'AC'),
 (3, 'Cotton', 'Fibre', 'Kharif', 180, 12.0, 'AC'),
-(4, 'Groundnut', 'Oilseed', 'Rabi', 105, 15.0, 'AC');
+(4, 'Groundnut', 'Oilseed', 'Rabi', 105, 15.0, 'AC'),
+(5, 'Maize', 'Cereal', 'Kharif', 100, 20.0, 'AC'),
+(6, 'Sugarcane', 'Cash Crop', 'Perennial', 365, 40.0, 'AC'),
+(7, 'Soybean', 'Oilseed', 'Kharif', 95, 13.0, 'AC'),
+(8, 'Chickpea', 'Pulse', 'Rabi', 100, 9.0, 'AC'),
+(9, 'Tomato', 'Vegetable', 'Zaid', 90, 30.0, 'AC'),
+(10, 'Mustard', 'Oilseed', 'Rabi', 110, 11.0, 'IN');
 
 INSERT INTO crop_plan (planId, farmerId, holdingId, cropId, season, year, sowingDate, expectedHarvestDate, areaPlanted, status) VALUES
-(1, 1, 1, 1, 'Kharif', 2026, '2026-06-01', '2026-10-01', 4.0, 'AC'),
-(2, 1, 2, 3, 'Kharif', 2026, '2026-05-15', '2026-11-15', 2.0, 'AC'),
-(3, 2, 3, 2, 'Rabi', 2026, '2026-11-01', '2027-02-20', 5.0, 'AC');
+(1, 1, 1, 1, 'Kharif', 2026, '2026-06-01', '2026-10-01', 4.0, 'GROWING'),
+(2, 1, 2, 3, 'Kharif', 2026, '2026-05-15', '2026-11-15', 2.0, 'GROWING'),
+(3, 2, 3, 2, 'Rabi', 2026, '2026-11-01', '2027-02-20', 5.0, 'PLANNED'),
+(4, 2, 4, 4, 'Rabi', 2025, '2025-10-20', '2026-02-05', 3.0, 'HARVESTED'),
+(5, 3, 5, 5, 'Kharif', 2026, '2026-06-10', '2026-09-20', 6.0, 'GROWING'),
+(6, 3, 5, 6, 'Perennial', 2026, '2026-03-01', '2027-03-01', 5.5, 'GROWING'),
+(7, 4, 6, 7, 'Kharif', 2026, '2026-06-25', '2026-09-28', 2.5, 'SOWING'),
+(8, 4, 7, 3, 'Kharif', 2025, '2025-05-18', '2025-11-18', 4.5, 'HARVESTED'),
+(9, 5, 8, 9, 'Zaid', 2026, '2026-03-15', '2026-06-13', 3.5, 'GROWING'),
+(10, 5, 8, 8, 'Rabi', 2026, '2026-11-10', '2027-02-18', 3.0, 'PLANNED'),
+(11, 1, 1, 5, 'Kharif', 2025, '2025-06-05', '2025-09-13', 4.0, 'FAILED'),
+(12, 6, 9, 2, 'Rabi', 2026, '2026-11-05', '2027-02-25', 5.5, 'PLANNED'),
+(13, 2, 3, 1, 'Kharif', 2025, '2025-06-02', '2025-10-02', 5.0, 'HARVESTED');
 
 INSERT INTO growth_observation (observationId, planId, officerId, observationDate, stage, pestOrDiseaseFlag, remarks) VALUES
-(1, 1, 4, '2026-06-15', 'PL', 0, 'Plan review completed. Field is ready.'),
-(2, 1, 4, '2026-07-05', 'SO', 0, 'Germination observed. Healthy shoots.'),
-(3, 2, 4, '2026-06-20', 'PL', 0, 'Plan approved. Sowing scheduled.');
+(1, 1, 4, '2026-06-15', 'GERMINATION', 0, 'Seedlings emerged uniformly. Field is healthy.'),
+(2, 1, 4, '2026-07-05', 'VEGETATIVE', 0, 'Vegetative growth strong; good tillering.'),
+(3, 2, 4, '2026-06-20', 'GERMINATION', 0, 'Germination observed across the plot.'),
+(4, 2, 5, '2026-07-18', 'VEGETATIVE', 1, 'Early aphid presence noticed on cotton leaves; advised neem spray.'),
+(5, 4, 4, '2025-11-12', 'GERMINATION', 0, 'Groundnut germination uniform.'),
+(6, 4, 4, '2025-12-08', 'VEGETATIVE', 0, 'Vegetative canopy developing well.'),
+(7, 4, 4, '2026-01-05', 'FLOWERING', 0, 'Flowering phase reached; good pegging expected.'),
+(8, 4, 4, '2026-02-01', 'MATURITY', 0, 'Pods mature; crop ready for harvest.'),
+(9, 5, 5, '2026-06-25', 'GERMINATION', 0, 'Maize sprouts emerged evenly.'),
+(10, 5, 5, '2026-07-20', 'VEGETATIVE', 0, 'Strong vegetative growth, knee-high stage.'),
+(11, 6, 4, '2026-04-10', 'GERMINATION', 0, 'Sugarcane setts sprouted.'),
+(12, 6, 4, '2026-06-15', 'VEGETATIVE', 1, 'Minor borer damage on a few canes; monitoring.'),
+(13, 8, 5, '2025-06-10', 'GERMINATION', 0, 'Cotton germination good.'),
+(14, 8, 5, '2025-08-01', 'VEGETATIVE', 0, 'Healthy vegetative growth.'),
+(15, 8, 5, '2025-09-15', 'FLOWERING', 0, 'Bolls forming; flowering strong.'),
+(16, 8, 5, '2025-11-10', 'MATURITY', 0, 'Bolls opened; harvest completed.'),
+(17, 9, 4, '2026-03-25', 'GERMINATION', 0, 'Tomato seedlings transplanted and established.'),
+(18, 9, 4, '2026-04-28', 'VEGETATIVE', 1, 'Leaf curl virus symptoms on a few plants; roguing advised.'),
+(19, 13, 4, '2025-06-15', 'GERMINATION', 0, 'Paddy nursery transplanted; uniform stand.'),
+(20, 13, 4, '2025-08-20', 'FLOWERING', 0, 'Panicle initiation and flowering observed.'),
+(21, 13, 4, '2025-09-25', 'MATURITY', 0, 'Grains filled and mature; harvested.');
 
 -- =====================================================================
 -- 4) agrilink_input

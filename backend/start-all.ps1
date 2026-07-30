@@ -1,12 +1,19 @@
 <#
 .SYNOPSIS
-    Starts all AgriLink microservices in the correct order, each in its own window.
+    Starts all AgriLink microservices in the correct order.
 
 .DESCRIPTION
     Boots eureka-server first (service registry) and waits until its port is
     listening, then launches every other service, with the API gateway last.
-    Each service opens in its own PowerShell window titled "AgriLink: <service>"
-    so you can read logs and Ctrl+C individual services.
+
+    By default each service opens in its own PowerShell window titled
+    "AgriLink: <service>" so you can read logs and Ctrl+C individual services.
+
+    Pass -SingleWindow to instead run every service as a background process
+    from this one terminal, with each service's console output redirected to
+    a log file under .\logs\<service>.log. Use `Get-Job` / `Receive-Job` or
+    just tail the log files to watch output, and .\stop-all.ps1 to stop
+    everything (works the same way in both modes, since it kills by port).
 
     Prerequisites:
       - JDK 17 on PATH
@@ -23,14 +30,22 @@
 .PARAMETER SkipEureka
     Skip starting eureka-server (use if it is already running).
 
+.PARAMETER SingleWindow
+    Run all services as background processes from this one terminal instead
+    of opening a new window per service. Logs go to .\logs\<service>.log.
+
 .EXAMPLE
     .\start-all.ps1
+
+.EXAMPLE
+    .\start-all.ps1 -SingleWindow
 #>
 [CmdletBinding()]
 param(
     [int]$StartupDelaySeconds = 4,
     [int]$EurekaWaitSeconds = 90,
-    [switch]$SkipEureka
+    [switch]$SkipEureka,
+    [switch]$SingleWindow
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,15 +71,31 @@ $services = @(
     @{ Name = 'gateway-service';      Port = 9091 }
 )
 
+$logsDir = Join-Path $root 'logs'
+if ($SingleWindow -and -not (Test-Path $logsDir)) {
+    New-Item -ItemType Directory -Path $logsDir | Out-Null
+}
+
 function Start-ServiceWindow {
     param([string]$Name)
     $dir = Join-Path $root $Name
-    $cmd = "`$Host.UI.RawUI.WindowTitle = 'AgriLink: $Name'; " +
-           "Write-Host 'Starting $Name...' -ForegroundColor Cyan; " +
-           "Set-Location '$dir'; " +
-           "& '$mvnw' spring-boot:run"
-    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoExit', '-Command', $cmd) | Out-Null
-    Write-Host ("  -> launched {0,-22} (port {1})" -f $Name, ($services | Where-Object Name -eq $Name).Port) -ForegroundColor Green
+    $port = ($services | Where-Object Name -eq $Name).Port
+
+    if ($SingleWindow) {
+        $outFile = Join-Path $logsDir "$Name.log"
+        $errFile = Join-Path $logsDir "$Name.err.log"
+        Start-Process -FilePath $mvnw -ArgumentList @('spring-boot:run') `
+            -WorkingDirectory $dir -WindowStyle Hidden `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile | Out-Null
+        Write-Host ("  -> launched {0,-22} (port {1}, log: logs\{0}.log)" -f $Name, $port) -ForegroundColor Green
+    } else {
+        $cmd = "`$Host.UI.RawUI.WindowTitle = 'AgriLink: $Name'; " +
+               "Write-Host 'Starting $Name...' -ForegroundColor Cyan; " +
+               "Set-Location '$dir'; " +
+               "& '$mvnw' spring-boot:run"
+        Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoExit', '-Command', $cmd) | Out-Null
+        Write-Host ("  -> launched {0,-22} (port {1})" -f $Name, $port) -ForegroundColor Green
+    }
 }
 
 function Wait-ForPort {
@@ -112,3 +143,6 @@ Write-Host "All services launched. First run may take a while (Maven downloads +
 Write-Host "API Gateway:      http://localhost:9091" -ForegroundColor Cyan
 Write-Host "Eureka Dashboard: http://localhost:8761" -ForegroundColor Cyan
 Write-Host "Stop everything:  .\stop-all.ps1" -ForegroundColor Cyan
+if ($SingleWindow) {
+    Write-Host "Logs:             .\logs\<service>.log (e.g. Get-Content .\logs\gateway-service.log -Wait)" -ForegroundColor Cyan
+}

@@ -5,6 +5,8 @@ import com.cognizant.agrilink.crop.entity.CropPlan;
 import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
 import com.cognizant.agrilink.crop.exception.ResourceNotFoundException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,15 @@ public class CropPlanService {
 
 	public List<CropPlan> getAll() {
 		return cropPlanRepository.findAll();
+	}
+
+	// Only the plans owned by the given farmer-profile ids. An empty/blank input
+	// yields no plans (a farmer with no profile sees nothing).
+	public List<CropPlan> getByFarmerIds(Collection<Integer> farmerIds) {
+		if (farmerIds == null || farmerIds.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return cropPlanRepository.findByFarmerIdIn(farmerIds);
 	}
 
 	public CropPlan getById(Integer id) {

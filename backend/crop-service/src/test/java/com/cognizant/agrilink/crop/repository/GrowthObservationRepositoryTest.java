@@ -20,7 +20,7 @@ class GrowthObservationRepositoryTest {
 				.planId(1)
 				.officerId(2)
 				.observationDate(LocalDate.of(2026, 6, 15))
-				.stage(Stage.GR)
+				.stage(Stage.FLOWERING)
 				.pestOrDiseaseFlag(false)
 				.remarks("Healthy crop")
 				.build();
@@ -32,7 +32,7 @@ class GrowthObservationRepositoryTest {
 
 		GrowthObservation found = growthObservationRepository.findById(saved.getObservationId()).orElseThrow();
 
-		assertThat(found.getStage()).isEqualTo(Stage.GR);
+		assertThat(found.getStage()).isEqualTo(Stage.FLOWERING);
 		assertThat(found.getRemarks()).isEqualTo("Healthy crop");
 	}
 
@@ -53,3 +53,4 @@ class GrowthObservationRepositoryTest {
 		assertThat(growthObservationRepository.findById(saved.getObservationId())).isEmpty();
 	}
 }
+

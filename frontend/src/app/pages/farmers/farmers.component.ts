@@ -53,9 +53,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
               <div class="form-row">
                 <div class="form-group">
                   <label for="pSearch">Search</label>
-                  <input type="text" id="pSearch" [(ngModel)]="profileSearch"
-                    (ngModelChange)="applyProfileFilters()"
-                    placeholder="Name, village, district, national ID or phone..." />
+                  <div class="search-field">
+                    <input type="text" id="pSearch" [(ngModel)]="profileSearch"
+                      (ngModelChange)="applyProfileFilters()"
+                      placeholder="Name, village, district, national ID or phone..." />
+                    <i class="material-icons-round search-icon">search</i>
+                  </div>
                 </div>
               </div>
             </div>
@@ -72,7 +75,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Farmer ID</th>
                         <th>Name</th>
                         <th>Gender</th>
                         <th>Date of Birth</th>
@@ -86,7 +88,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (prof of paginatedProfiles(); track prof.farmerId) {
                         <tr>
-                          <td>#{{ prof.farmerId }}</td>
                           <td><strong>{{ prof.name }}</strong></td>
                           <td>{{ prof.gender }}</td>
                           <td>{{ prof.dateOfBirth | date:'mediumDate' }}</td>
@@ -139,9 +140,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
               <div class="form-row">
                 <div class="form-group">
                   <label for="hSearch">Search</label>
-                  <input type="text" id="hSearch" [(ngModel)]="holdingSearch"
-                    (ngModelChange)="applyHoldingFilters()"
-                    placeholder="Survey number, soil type or ownership..." />
+                  <div class="search-field">
+                    <input type="text" id="hSearch" [(ngModel)]="holdingSearch"
+                      (ngModelChange)="applyHoldingFilters()"
+                      placeholder="Survey number, soil type or ownership..." />
+                    <i class="material-icons-round search-icon">search</i>
+                  </div>
                 </div>
               </div>
             </div>
@@ -158,10 +162,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Holding ID</th>
                         <th>Farmer</th>
                         <th>Survey Number</th>
-                        <th>Area (Acres)</th>
+                        <th>Area (in Acres)</th>
                         <th>Soil Type</th>
                         <th>Irrigation</th>
                         <th>Ownership</th>
@@ -171,8 +174,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (land of paginatedHoldings(); track land.holdingId) {
                         <tr>
-                          <td>#{{ land.holdingId }}</td>
-                          <td>{{ getFarmerName(land.farmerId) }}</td>
+                          <td>{{ getFarmerNameOnly(land.farmerId) }}</td>
                           <td>{{ land.surveyNumber }}</td>
                           <td>{{ land.areaAcres }}</td>
                           <td>{{ land.soilType }}</td>
@@ -316,7 +318,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <input type="text" id="lSurvey" formControlName="surveyNumber" placeholder="e.g. SVY-4012" />
                   </div>
                   <div class="form-group">
-                    <label for="lArea">Area (Acres)</label>
+                    <label for="lArea">Area (in Acres)</label>
                     <input type="number" step="0.01" id="lArea" formControlName="areaAcres" />
                   </div>
                 </div>
@@ -536,6 +538,12 @@ export class FarmersComponent implements OnInit {
     return prof ? `${prof.name} (#${farmerId})` : `Farmer #${farmerId}`;
   }
 
+  // Name without the id, for table cells where ids are hidden.
+  getFarmerNameOnly(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof ? prof.name : `Farmer #${farmerId}`;
+  }
+
   getStatusLabel(status: string): string {
     return status === 'AC' ? 'Active' : status === 'IN' ? 'Inactive' : status;
   }
@@ -568,7 +576,7 @@ export class FarmersComponent implements OnInit {
       { label: 'Holding ID', value: '#' + land.holdingId },
       { label: 'Farmer', value: this.getFarmerName(land.farmerId) },
       { label: 'Survey Number', value: land.surveyNumber },
-      { label: 'Area (Acres)', value: land.areaAcres },
+      { label: 'Area (in Acres)', value: land.areaAcres },
       { label: 'Soil Type', value: land.soilType },
       { label: 'Irrigation', value: land.irrigationSource },
       { label: 'Ownership', value: land.ownershipType },
@@ -591,6 +599,8 @@ export class FarmersComponent implements OnInit {
         (p.phone || '').toLowerCase().includes(q)
       );
     }
+    // Newest registered first (higher auto-increment id = added more recently).
+    list = [...list].sort((a, b) => (b.farmerId || 0) - (a.farmerId || 0));
     this.filteredProfiles.set(list);
     this.profilePage = 0;
   }
@@ -614,6 +624,8 @@ export class FarmersComponent implements OnInit {
         (h.ownershipType || '').toLowerCase().includes(q)
       );
     }
+    // Newest registered first (higher auto-increment id = added more recently).
+    list = [...list].sort((a, b) => (b.holdingId || 0) - (a.holdingId || 0));
     this.filteredHoldings.set(list);
     this.holdingPage = 0;
   }

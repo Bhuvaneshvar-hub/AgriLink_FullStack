@@ -41,12 +41,15 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
         <div class="form-row">
           <div class="form-group">
             <label for="farmerSearch">Farmer ID</label>
-            <input 
-              type="number" 
-              id="farmerSearch" 
-              [(ngModel)]="farmerIdFilter" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. 102" />
+            <div class="search-field">
+              <input
+                type="number"
+                id="farmerSearch"
+                [(ngModel)]="farmerIdFilter"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. 102" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
           </div>
           <div class="form-group">
             <label for="schemeFilter">Scheme</label>

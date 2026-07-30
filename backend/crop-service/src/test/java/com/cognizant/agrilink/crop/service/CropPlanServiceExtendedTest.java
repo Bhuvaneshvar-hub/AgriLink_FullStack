@@ -8,7 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
 import com.cognizant.agrilink.crop.entity.CropPlan;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
@@ -48,7 +48,7 @@ class CropPlanServiceExtendedTest {
 				.sowingDate(LocalDate.of(2026, 1, 10))
 				.expectedHarvestDate(LocalDate.of(2026, 5, 10))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -62,7 +62,7 @@ class CropPlanServiceExtendedTest {
 				.sowingDate(LocalDate.of(2026, 1, 10))
 				.expectedHarvestDate(LocalDate.of(2026, 5, 10))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -120,7 +120,7 @@ class CropPlanServiceExtendedTest {
 		assertThat(saved.getSowingDate()).isEqualTo(LocalDate.of(2026, 1, 10));
 		assertThat(saved.getExpectedHarvestDate()).isEqualTo(LocalDate.of(2026, 5, 10));
 		assertThat(saved.getAreaPlanted()).isEqualTo(5.5);
-		assertThat(saved.getStatus()).isEqualTo(Status.AC);
+		assertThat(saved.getStatus()).isEqualTo(PlanStatus.PLANNED);
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class CropPlanServiceExtendedTest {
 				.sowingDate(LocalDate.of(2027, 7, 1))
 				.expectedHarvestDate(LocalDate.of(2027, 11, 1))
 				.areaPlanted(20.0)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 
 		cropPlanService.update(1, dto);
@@ -154,7 +154,7 @@ class CropPlanServiceExtendedTest {
 		assertThat(saved.getSowingDate()).isEqualTo(LocalDate.of(2027, 7, 1));
 		assertThat(saved.getExpectedHarvestDate()).isEqualTo(LocalDate.of(2027, 11, 1));
 		assertThat(saved.getAreaPlanted()).isEqualTo(20.0);
-		assertThat(saved.getStatus()).isEqualTo(Status.AC);
+		assertThat(saved.getStatus()).isEqualTo(PlanStatus.PLANNED);
 	}
 
 	@Test
@@ -237,8 +237,8 @@ class CropPlanServiceExtendedTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(Status.class)
-	void createWithVariousStatuses(Status status) {
+	@EnumSource(PlanStatus.class)
+	void createWithVariousStatuses(PlanStatus status) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
@@ -271,3 +271,4 @@ class CropPlanServiceExtendedTest {
 		assertThat(saved.getExpectedHarvestDate()).isEqualTo(LocalDate.parse(harvest));
 	}
 }
+

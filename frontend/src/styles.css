@@ -525,3 +525,22 @@ tbody tr:hover {
   color: var(--text-muted);
   margin-bottom: 1rem;
 }
+
+/* Search field with a mini search icon at the end */
+.search-field {
+  position: relative;
+  display: block;
+}
+.search-field input {
+  width: 100%;
+  padding-right: 2.25rem;
+}
+.search-field .search-icon {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}

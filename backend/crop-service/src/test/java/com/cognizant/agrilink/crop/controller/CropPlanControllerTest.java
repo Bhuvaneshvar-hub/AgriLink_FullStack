@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
 import com.cognizant.agrilink.crop.entity.CropPlan;
 import com.cognizant.agrilink.crop.service.CropPlanService;
@@ -51,7 +51,7 @@ class CropPlanControllerTest {
 				.season("Rabi")
 				.year(2026)
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -70,7 +70,7 @@ class CropPlanControllerTest {
 
 		mockMvc.perform(get("/crop-plans/1"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("AC"));
+				.andExpect(jsonPath("$.status").value("PLANNED"));
 	}
 
 	@Test
@@ -102,3 +102,5 @@ class CropPlanControllerTest {
 				.andExpect(jsonPath("$.message").value("CropPlan deleted successfully"));
 	}
 }
+
+

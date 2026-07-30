@@ -56,13 +56,14 @@ public class GrowthObservationService {
 	}
 
 	/**
-	 * Enforces a strict forward-only growth flow (PL -> SO -> GR -> HA) for a plan.
+	 * Enforces a strict forward-only growth flow
+	 * (GERMINATION -> VEGETATIVE -> FLOWERING -> MATURITY) for a plan.
 	 *
 	 * <p>The current stage is the maximum {@link Stage#ordinal()} among existing
 	 * observations for the plan. If none exist, the first observation must be
-	 * {@code PL}. Otherwise the new stage's ordinal must equal the current stage
-	 * or exactly one step ahead; anything else (skipping ahead or moving backward)
-	 * is rejected with an {@link IllegalStateException} (mapped to HTTP 409).</p>
+	 * {@code GERMINATION}. Otherwise the new stage's ordinal must equal the current
+	 * stage or exactly one step ahead; anything else (skipping ahead or moving
+	 * backward) is rejected with an {@link IllegalStateException} (mapped to HTTP 409).</p>
 	 */
 	private void validateStageTransition(Integer planId, Stage newStage) {
 		if (newStage == null) {
@@ -77,9 +78,9 @@ public class GrowthObservationService {
 			}
 		}
 		if (current == null) {
-			if (newStage != Stage.PL) {
+			if (newStage != Stage.GERMINATION) {
 				throw new IllegalStateException(
-						"First observation must be at the Planned (PL) stage");
+						"First observation must be at the Germination stage");
 			}
 			return;
 		}

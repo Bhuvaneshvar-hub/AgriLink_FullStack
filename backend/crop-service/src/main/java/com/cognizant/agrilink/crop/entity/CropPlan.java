@@ -1,6 +1,6 @@
 package com.cognizant.agrilink.crop.entity;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,5 +56,5 @@ public class CropPlan {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
-	private Status status;
+	private PlanStatus status;
 }

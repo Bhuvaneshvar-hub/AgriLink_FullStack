@@ -28,12 +28,15 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
         <div class="form-row">
           <div class="form-group">
             <label for="searchUser">Search User</label>
-            <input 
-              type="number" 
-              id="searchUser" 
-              [(ngModel)]="userIdFilter" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. 1" />
+            <div class="search-field">
+              <input
+                type="number"
+                id="searchUser"
+                [(ngModel)]="userIdFilter"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. 1" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
           </div>
           <div class="form-group">
             <label for="moduleFilter">Module</label>
@@ -51,12 +54,15 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           </div>
           <div class="form-group">
             <label for="actionQuery">Search Action</label>
-            <input 
-              type="text" 
-              id="actionQuery" 
-              [(ngModel)]="actionQuery" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. login, delete" />
+            <div class="search-field">
+              <input
+                type="text"
+                id="actionQuery"
+                [(ngModel)]="actionQuery"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. login, delete" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cognizant.agrilink.crop.enums.Status;
+import com.cognizant.agrilink.crop.enums.PlanStatus;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
 import com.cognizant.agrilink.crop.entity.CropPlan;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
@@ -46,7 +46,7 @@ class CropPlanServiceTest {
 				.sowingDate(LocalDate.of(2026, 6, 15))
 				.expectedHarvestDate(LocalDate.of(2026, 10, 15))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 		dto = CropPlanDto.builder()
 				.farmerId(1)
@@ -57,7 +57,7 @@ class CropPlanServiceTest {
 				.sowingDate(LocalDate.of(2026, 6, 15))
 				.expectedHarvestDate(LocalDate.of(2026, 10, 15))
 				.areaPlanted(5.5)
-				.status(Status.AC)
+				.status(PlanStatus.PLANNED)
 				.build();
 	}
 
@@ -112,3 +112,4 @@ class CropPlanServiceTest {
 		verify(cropPlanRepository, times(1)).delete(cropPlan);
 	}
 }
+

@@ -77,6 +77,13 @@ import { ToastService } from '../../services/toast.service';
             </a>
           }
 
+          @if (authService.hasRole(['Farmer'])) {
+            <a routerLink="/my-land" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">terrain</i>
+              <span>My Land Holdings</span>
+            </a>
+          }
+
           @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'Farmer'])) {
             <a routerLink="/crops" routerLinkActive="active" (click)="closeSidebar()">
               <i class="material-icons-round">eco</i>

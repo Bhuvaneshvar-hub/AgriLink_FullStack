@@ -74,6 +74,12 @@ export const routes: Routes = [
         data: { roles: ['AgriLinkAdmin', 'ExtensionOfficer'] }
       },
       {
+        path: 'my-land',
+        loadComponent: () => import('./pages/farmers/my-land-holdings.component').then(m => m.MyLandHoldingsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['Farmer'] }
+      },
+      {
         path: 'crops',
         loadComponent: () => import('./pages/crops/crops.component').then(m => m.CropsComponent),
         canActivate: [roleGuard],

@@ -28,9 +28,9 @@ public class SecurityConfig {
 						// audit-logs
 						.requestMatchers(HttpMethod.GET, "/audit-logs", "/audit-logs/**")
 						.hasAnyRole("ComplianceAnalyst", "AgriLinkAdmin")
-						// catalogs = Input Catalog (Farmer NO access)
+						// catalogs = Input Catalog (read: all roles incl. Farmer, who needs it to request inputs; write: Procurement/Admin)
 						.requestMatchers(HttpMethod.GET, "/catalogs", "/catalogs/**")
-						.hasAnyRole("ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
+						.hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
 								"ComplianceAnalyst", "AgriLinkAdmin")
 						.requestMatchers(HttpMethod.POST, "/catalogs")
 						.hasAnyRole("ProcurementOfficer", "AgriLinkAdmin")

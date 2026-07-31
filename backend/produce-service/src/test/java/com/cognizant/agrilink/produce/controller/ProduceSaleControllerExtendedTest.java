@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cognizant.agrilink.produce.client.FarmerClient;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.enums.PaymentStatus;
+import com.cognizant.agrilink.produce.exception.GlobalExceptionHandler;
 import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -30,6 +32,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -38,6 +43,9 @@ class ProduceSaleControllerExtendedTest {
 
 	@Mock
 	private ProduceSaleService produceSaleService;
+
+	@Mock
+	private FarmerClient farmerClient;
 
 	@InjectMocks
 	private ProduceSaleController produceSaleController;
@@ -49,7 +57,9 @@ class ProduceSaleControllerExtendedTest {
 
 	@BeforeEach
 	void setUp() {
-		mockMvc = MockMvcBuilders.standaloneSetup(produceSaleController).build();
+		mockMvc = MockMvcBuilders.standaloneSetup(produceSaleController)
+				.setControllerAdvice(new GlobalExceptionHandler())
+				.build();
 		produceSale = ProduceSale.builder()
 				.saleId(1)
 				.listingId(2)
@@ -246,5 +256,46 @@ class ProduceSaleControllerExtendedTest {
 		mockMvc.perform(delete("/produce-sales/1"))
 				.andExpect(status().isOk());
 		verify(produceSaleService, never()).getAll();
+	}
+
+	// ===================== View scoping (RBAC) =====================
+
+	private Authentication authWithRole(int userId, String role) {
+		return new UsernamePasswordAuthenticationToken(
+				userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+	}
+
+	@Test
+	void farmerGetAllReturnsOnlyOwnSales() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		when(produceSaleService.getByOwnerFarmerIds(List.of(2))).thenReturn(List.of(produceSale));
+
+		mockMvc.perform(get("/produce-sales").principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].saleId").value(1));
+		verify(produceSaleService).getByOwnerFarmerIds(List.of(2));
+		verify(produceSaleService, never()).getAll();
+	}
+
+	@Test
+	void farmerCannotViewAnotherFarmersSaleById() throws Exception {
+		when(produceSaleService.getById(1)).thenReturn(produceSale);
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(99));
+		when(produceSaleService.isSaleOwnedBy(produceSale, List.of(99))).thenReturn(false);
+
+		mockMvc.perform(get("/produce-sales/1").principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void extensionOfficerViewsAllSales() throws Exception {
+		when(produceSaleService.getAll()).thenReturn(List.of(produceSale));
+
+		mockMvc.perform(get("/produce-sales").principal(authWithRole(20, "ExtensionOfficer")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1));
+		verify(produceSaleService).getAll();
+		verify(farmerClient, never()).getOwnedFarmerIds(any());
 	}
 }

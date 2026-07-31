@@ -545,3 +545,16 @@ tbody tr:hover {
   color: var(--text-muted);
   pointer-events: none;
 }
+
+/* ---- Reactive-form validation feedback (applies to every form app-wide) ----
+   Angular auto-adds .ng-invalid / .ng-touched / .ng-dirty to form controls.
+   Any invalid field the user has interacted with gets a clear red outline. */
+input.ng-invalid.ng-touched,
+input.ng-invalid.ng-dirty,
+select.ng-invalid.ng-touched,
+select.ng-invalid.ng-dirty,
+textarea.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-dirty {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18) !important;
+}

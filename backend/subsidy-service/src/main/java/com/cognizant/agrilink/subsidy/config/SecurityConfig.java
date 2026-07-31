@@ -30,9 +30,9 @@ public class SecurityConfig {
 						// audit-logs
 						.requestMatchers(HttpMethod.GET, "/audit-logs", "/audit-logs/**")
 						.hasAnyRole("ComplianceAnalyst", "AgriLinkAdmin")
-						// scheme-catalogs (Farmer NO access)
+						// scheme-catalogs (read: all roles incl. Farmer, who needs it to apply; write: SubsidyAdmin/Admin)
 						.requestMatchers(HttpMethod.GET, "/agriLink/subsidyScheme/fetchSchemes", "/agriLink/subsidyScheme/fetchSchemeById/**")
-								.hasAnyRole("ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
+								.hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
 										"ComplianceAnalyst", "AgriLinkAdmin")
 						.requestMatchers(HttpMethod.POST, "/agriLink/subsidyScheme/createScheme")
 								.hasAnyRole("SubsidyAdmin", "AgriLinkAdmin")

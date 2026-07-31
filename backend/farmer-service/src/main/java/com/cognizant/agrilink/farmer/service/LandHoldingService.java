@@ -73,4 +73,11 @@ public class LandHoldingService {
 		LandHolding landHolding = getById(id);
 		landHoldingRepository.delete(landHolding);
 	}
+
+	/** Sets a land holding's status — used by the admin approve (Active) / reject (Disputed) actions. */
+	public LandHolding setStatus(Integer id, Status status) {
+		LandHolding landHolding = getById(id);
+		landHolding.setStatus(status);
+		return landHoldingRepository.save(landHolding);
+	}
 }

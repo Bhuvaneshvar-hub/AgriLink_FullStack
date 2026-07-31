@@ -25,6 +25,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // public farmer self-registration (creates login + Inactive profile)
+                        .requestMatchers(HttpMethod.POST, "/farmer-profiles/self-register").permitAll()
                         // audit-logs
                         .requestMatchers(HttpMethod.GET, "/audit-logs", "/audit-logs/**")
                         .hasAnyRole("ComplianceAnalyst", "AgriLinkAdmin")
@@ -42,6 +44,9 @@ public class SecurityConfig {
                         .hasAnyRole("Farmer", "ExtensionOfficer", "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.POST, "/land-holdings")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
+                        // approve/reject a land holding — Admin only (must precede the generic PUT rule)
+                        .requestMatchers(HttpMethod.PUT, "/land-holdings/*/approve", "/land-holdings/*/reject")
+                        .hasRole("AgriLinkAdmin")
                         .requestMatchers(HttpMethod.PUT, "/land-holdings/**")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.DELETE, "/land-holdings/**")

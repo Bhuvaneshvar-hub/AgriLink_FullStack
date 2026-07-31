@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { FarmerService } from '../../../services/farmer.service';
 import { ToastService } from '../../../services/toast.service';
+import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../../utils/validators';
+import { INDIAN_STATES } from '../../../utils/indian-states';
 
 @Component({
   selector: 'app-register',
@@ -27,7 +30,9 @@ import { ToastService } from '../../../services/toast.service';
               formControlName="name"
               placeholder="John Doe"
               [class.input-error]="isFieldInvalid('name')" />
-            <span class="error-text" [class.visible]="isFieldInvalid('name')">Full name is required</span>
+            <span class="error-text" [class.visible]="isFieldInvalid('name')">
+              {{ registerForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
+            </span>
           </div>
 
           <div class="form-group">
@@ -36,9 +41,9 @@ import { ToastService } from '../../../services/toast.service';
               type="email"
               id="email"
               formControlName="email"
-              placeholder="john.doe@example.com"
+              placeholder="john.doe@gmail.com"
               [class.input-error]="isFieldInvalid('email')" />
-            <span class="error-text" [class.visible]="isFieldInvalid('email')">Please enter a valid email address</span>
+            <span class="error-text" [class.visible]="isFieldInvalid('email')">Enter a valid Gmail address (must end with &#64;gmail.com)</span>
           </div>
         </div>
 
@@ -75,6 +80,68 @@ import { ToastService } from '../../../services/toast.service';
             placeholder="••••••••"
             [class.input-error]="isFieldInvalid('password')" />
           <span class="error-text" [class.visible]="isFieldInvalid('password')">Password must be at least 8 characters</span>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="dateOfBirth">Date of Birth</label>
+            <input type="date" id="dateOfBirth" formControlName="dateOfBirth"
+              [class.input-error]="isFieldInvalid('dateOfBirth')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('dateOfBirth')">
+              {{ registerForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
+            </span>
+          </div>
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select id="gender" formControlName="gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+            <span class="error-text"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="nationalIdNumber">National ID / Aadhar Number</label>
+          <input type="text" id="nationalIdNumber" formControlName="nationalIdNumber" placeholder="Unique ID"
+            [class.input-error]="isFieldInvalid('nationalIdNumber')" />
+          <span class="error-text" [class.visible]="isFieldInvalid('nationalIdNumber')">National ID is required</span>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="village">Village</label>
+            <input type="text" id="village" formControlName="village"
+              [class.input-error]="isFieldInvalid('village')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('village')">Village is required</span>
+          </div>
+          <div class="form-group">
+            <label for="district">District</label>
+            <input type="text" id="district" formControlName="district"
+              [class.input-error]="isFieldInvalid('district')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('district')">District is required</span>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="state">State</label>
+            <select id="state" formControlName="state"
+              [class.input-error]="isFieldInvalid('state')">
+              <option value="">Select State</option>
+              @for (st of indianStates; track st) {
+                <option [value]="st">{{ st }}</option>
+              }
+            </select>
+            <span class="error-text" [class.visible]="isFieldInvalid('state')">State is required</span>
+          </div>
+          <div class="form-group">
+            <label for="bankAccountNumber">Bank Account Number</label>
+            <input type="text" id="bankAccountNumber" formControlName="bankAccountNumber"
+              [class.input-error]="isFieldInvalid('bankAccountNumber')" />
+            <span class="error-text" [class.visible]="isFieldInvalid('bankAccountNumber')">Bank account is required</span>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100 mt-2" [disabled]="isLoading()">
@@ -174,18 +241,28 @@ import { ToastService } from '../../../services/toast.service';
 export class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private farmerService = inject(FarmerService);
   private toastService = inject(ToastService);
   private router = inject(Router);
 
   isLoading = signal(false);
   submitted = signal(false);
+  readonly indianStates = INDIAN_STATES;
   registerForm: FormGroup = this.fb.group({
-    name: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
+    // Login-account fields
+    name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
+    email: ['', [Validators.required, Validators.pattern(GMAIL_PATTERN)]],
     phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     regionId: [1, [Validators.required, Validators.min(1)]],
     password: ['', [Validators.required, Validators.minLength(8)]],
-    role: ['Farmer'] // Default role is Farmer
+    // Farmer profile fields (a full profile is created on registration, Inactive until approval)
+    dateOfBirth: ['', [Validators.required, notFutureDate]],
+    gender: ['Male', [Validators.required]],
+    nationalIdNumber: ['', [Validators.required]],
+    village: ['', [Validators.required]],
+    district: ['', [Validators.required]],
+    state: ['', [Validators.required]],
+    bankAccountNumber: ['', [Validators.required]]
   });
 
   isFieldInvalid(field: string): boolean {
@@ -198,7 +275,8 @@ export class RegisterComponent {
     if (this.registerForm.invalid) return;
 
     this.isLoading.set(true);
-    this.authService.register(this.registerForm.value).subscribe({
+    // Creates BOTH the login account (Pending) and a linked FarmerProfile (Inactive).
+    this.farmerService.selfRegisterFarmer(this.registerForm.value).subscribe({
       next: (res) => {
         this.isLoading.set(false);
         this.toastService.success(res.message || 'Registration submitted! Awaiting approval.');

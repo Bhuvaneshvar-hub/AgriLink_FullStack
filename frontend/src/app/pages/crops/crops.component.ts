@@ -10,6 +10,8 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
+import { notFutureDate, NAME_PATTERN } from '../../utils/validators';
+import { INDIAN_STATES } from '../../utils/indian-states';
 
 @Component({
   selector: 'app-crops',
@@ -665,7 +667,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   </div>
                   <div class="form-group">
                     <label for="fState">State</label>
-                    <input type="text" id="fState" formControlName="state" />
+                    <select id="fState" formControlName="state">
+                      <option value="">Select State</option>
+                      @for (st of indianStates; track st) {
+                        <option [value]="st">{{ st }}</option>
+                      }
+                    </select>
                   </div>
                 </div>
                 <div class="form-group">
@@ -715,16 +722,33 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lSoil">Soil Type</label>
-                    <input type="text" id="lSoil" formControlName="soilType" placeholder="e.g. Alluvial, Black, Clay" />
+                    <select id="lSoil" formControlName="soilType">
+                      <option value="">Select</option>
+                      <option value="Clay">Clay</option>
+                      <option value="Sandy">Sandy</option>
+                      <option value="Loam">Loam</option>
+                      <option value="Black">Black</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="lIrrigation">Irrigation Source</label>
-                    <input type="text" id="lIrrigation" formControlName="irrigationSource" placeholder="e.g. Well, Canal, Rainfed" />
+                    <select id="lIrrigation" formControlName="irrigationSource">
+                      <option value="">Select</option>
+                      <option value="Rain">Rain</option>
+                      <option value="Canal">Canal</option>
+                      <option value="Borewell">Borewell</option>
+                      <option value="None">None</option>
+                    </select>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="lOwnership">Ownership Type</label>
-                  <input type="text" id="lOwnership" formControlName="ownershipType" placeholder="e.g. Owned, Leased" />
+                  <select id="lOwnership" formControlName="ownershipType">
+                    <option value="">Select</option>
+                    <option value="Owned">Owned</option>
+                    <option value="Leased">Leased</option>
+                    <option value="SharedCropping">Shared Cropping</option>
+                  </select>
                 </div>
               </div>
               <div class="modal-footer">
@@ -891,6 +915,7 @@ export class CropsComponent implements OnInit {
   // States
   activeTab = signal<'catalog' | 'plans' | 'observations' | 'profiles'>('catalog');
   isLoading = signal<boolean>(false);
+  readonly indianStates = INDIAN_STATES;
   isEditMode = signal<boolean>(false);
 
   // Data signals (kept sorted most-recent-first)
@@ -1017,15 +1042,15 @@ export class CropsComponent implements OnInit {
     });
 
     this.profileForm = this.fb.group({
-      name: ['', Validators.required],
-      dateOfBirth: ['', Validators.required],
+      name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
+      dateOfBirth: ['', [Validators.required, notFutureDate]],
       gender: ['Male', Validators.required],
       nationalIdNumber: ['', Validators.required],
       village: ['', Validators.required],
       district: ['', Validators.required],
       state: ['', Validators.required],
-      phone: ['', Validators.required],
-      bankAccountNumber: ['', Validators.required]
+      phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      bankAccountNumber: ['', [Validators.required, Validators.pattern(/^\d{6,20}$/)]]
     });
 
     this.holdingForm = this.fb.group({

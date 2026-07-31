@@ -28,11 +28,11 @@ public class UserController {
     // AgriLinkAdmin can create any user; ExtensionOfficer can create Farmers only.
     // Coarse role gate is in SecurityConfig; the fine-grained rule is enforced in the service.
     @PostMapping("/createUser")
-    public ResponseEntity<Map<String, String>> createUser(@Valid @RequestBody CreateUserRequestDto dto,
+    public ResponseEntity<Map<String, Object>> createUser(@Valid @RequestBody CreateUserRequestDto dto,
                                                           @AuthenticationPrincipal UserDetails currentUser) {
-        userService.createUser(dto, currentUser);
+        UserResponseDto created = userService.createUser(dto, currentUser);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("message", "User created successfully"));
+                .body(Map.of("message", "User created successfully", "userId", created.getUserId()));
     }
 
     // GET /agriLink/user  — list all users

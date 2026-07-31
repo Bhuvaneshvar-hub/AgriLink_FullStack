@@ -8,8 +8,11 @@ import lombok.*;
 @AllArgsConstructor
 public class CreateUserRequestDto {
 
-    @NotNull(message = "roleId is required")
+    // Either roleId or roleName must be supplied. roleName lets callers that don't
+    // know role ids (e.g. farmer-registration) request a role by name (e.g. "Farmer").
     private Integer roleId;
+
+    private String roleName;
 
     @NotBlank(message = "Name is required")
     private String name;

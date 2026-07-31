@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.enums.PaymentStatus;
+import com.cognizant.agrilink.produce.repository.ProduceListingRepository;
 import com.cognizant.agrilink.produce.repository.ProduceSaleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -27,6 +28,9 @@ class ProduceSaleServiceTest {
 
 	@Mock
 	private ProduceSaleRepository produceSaleRepository;
+
+	@Mock
+	private ProduceListingRepository produceListingRepository;
 
 	@InjectMocks
 	private ProduceSaleService produceSaleService;

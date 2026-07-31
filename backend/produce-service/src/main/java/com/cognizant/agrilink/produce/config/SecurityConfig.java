@@ -33,16 +33,20 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/produce-listings", "/produce-listings/**")
                     .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer",
                                 "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
+                // Farmers create their own listings; Procurement may only update
+                // (status) existing ones, never create or delete.
                 .requestMatchers(HttpMethod.POST, "/produce-listings")
-                    .hasAnyRole("Farmer", "ProcurementOfficer", "AgriLinkAdmin")
+                    .hasAnyRole("Farmer", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.PUT, "/produce-listings/**")
                     .hasAnyRole("Farmer", "ProcurementOfficer", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.DELETE, "/produce-listings/**")
-                    .hasAnyRole("Farmer", "ProcurementOfficer", "AgriLinkAdmin")
-                // ── produce-sales (Farmer NO, ExtensionOfficer NO) ────────────
+                    .hasAnyRole("Farmer", "AgriLinkAdmin")
+                // ── produce-sales ─────────────────────────────────────────────
+                // Farmer sees only their own sales (scoped in the controller);
+                // all other authenticated roles may view.
                 .requestMatchers(HttpMethod.GET, "/produce-sales", "/produce-sales/**")
-                    .hasAnyRole("ProcurementOfficer", "SubsidyAdmin",
-                                "ComplianceAnalyst", "AgriLinkAdmin")
+                    .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer",
+                                "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.POST, "/produce-sales")
                     .hasAnyRole("ProcurementOfficer", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.PUT, "/produce-sales/**")

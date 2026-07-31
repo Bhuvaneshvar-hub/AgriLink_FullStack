@@ -75,9 +75,17 @@ public class UserService {
             throw new IllegalStateException("Email already registered");
         }
 
-        // Resolve role
-        UserRole role = userRoleRepository.findById(dto.getRoleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + dto.getRoleId()));
+        // Resolve role by id when provided, otherwise by name (e.g. "Farmer").
+        UserRole role;
+        if (dto.getRoleId() != null) {
+            role = userRoleRepository.findById(dto.getRoleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + dto.getRoleId()));
+        } else if (dto.getRoleName() != null && !dto.getRoleName().isBlank()) {
+            role = userRoleRepository.findByRoleName(dto.getRoleName().trim())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + dto.getRoleName()));
+        } else {
+            throw new IllegalArgumentException("Either roleId or roleName is required");
+        }
 
         if (role.getStatus() == UserRole.Status.I) {
             throw new IllegalStateException("Cannot assign an inactive role");

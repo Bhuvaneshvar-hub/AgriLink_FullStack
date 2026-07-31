@@ -4,6 +4,7 @@ import com.cognizant.agrilink.farmer.dto.LandHoldingDto;
 import com.cognizant.agrilink.farmer.dto.MessageResponse;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.entity.LandHolding;
+import com.cognizant.agrilink.farmer.enums.Status;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import com.cognizant.agrilink.farmer.service.LandHoldingService;
 import java.util.List;
@@ -57,11 +58,30 @@ public class LandHoldingController {
 	// Non-GET methods return only a message.
 	@PostMapping
 	public ResponseEntity<MessageResponse> create(@RequestBody LandHoldingDto dto, Authentication authentication) {
-		if (isFarmer(authentication) && !ownedFarmerIds(authentication).contains(dto.getFarmerId())) {
-			throw new AccessDeniedException("You can only register land holdings under your own farmer profile");
+		if (isFarmer(authentication)) {
+			if (!ownedFarmerIds(authentication).contains(dto.getFarmerId())) {
+				throw new AccessDeniedException("You can only register land holdings under your own farmer profile");
+			}
+			// Farmer-submitted holdings must go through admin approval.
+			dto.setStatus(Status.PE);
 		}
 		landHoldingService.create(dto);
-		return ResponseEntity.ok(new MessageResponse("LandHolding created successfully"));
+		return ResponseEntity.ok(new MessageResponse("LandHolding submitted"
+				+ (isFarmer(authentication) ? " for approval" : " successfully")));
+	}
+
+	// Admin approves a (pending) land holding -> Active.
+	@PutMapping("/{id}/approve")
+	public ResponseEntity<MessageResponse> approve(@PathVariable Integer id) {
+		landHoldingService.setStatus(id, Status.AC);
+		return ResponseEntity.ok(new MessageResponse("LandHolding approved"));
+	}
+
+	// Admin rejects a (pending) land holding -> Disputed.
+	@PutMapping("/{id}/reject")
+	public ResponseEntity<MessageResponse> reject(@PathVariable Integer id) {
+		landHoldingService.setStatus(id, Status.DP);
+		return ResponseEntity.ok(new MessageResponse("LandHolding marked disputed"));
 	}
 
 	@PutMapping("/{id}")
@@ -73,6 +93,8 @@ public class LandHoldingController {
 			if (!owned.contains(existing.getFarmerId()) || !owned.contains(dto.getFarmerId())) {
 				throw new AccessDeniedException("You can only update your own land holdings");
 			}
+			// A farmer cannot change approval status via edit (no self-approval); preserve it.
+			dto.setStatus(existing.getStatus());
 		}
 		landHoldingService.update(id, dto);
 		return ResponseEntity.ok(new MessageResponse("LandHolding updated successfully"));

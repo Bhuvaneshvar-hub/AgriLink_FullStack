@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cognizant.agrilink.produce.client.FarmerClient;
 import com.cognizant.agrilink.produce.dto.ProduceListingDto;
 import com.cognizant.agrilink.produce.entity.ProduceListing;
 import com.cognizant.agrilink.produce.enums.ListingStatus;
+import com.cognizant.agrilink.produce.exception.GlobalExceptionHandler;
 import com.cognizant.agrilink.produce.service.ProduceListingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -30,6 +32,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -38,6 +43,9 @@ class ProduceListingControllerExtendedTest {
 
 	@Mock
 	private ProduceListingService produceListingService;
+
+	@Mock
+	private FarmerClient farmerClient;
 
 	@InjectMocks
 	private ProduceListingController produceListingController;
@@ -49,7 +57,9 @@ class ProduceListingControllerExtendedTest {
 
 	@BeforeEach
 	void setUp() {
-		mockMvc = MockMvcBuilders.standaloneSetup(produceListingController).build();
+		mockMvc = MockMvcBuilders.standaloneSetup(produceListingController)
+				.setControllerAdvice(new GlobalExceptionHandler())
+				.build();
 		produceListing = ProduceListing.builder()
 				.listingId(1)
 				.farmerId(2)
@@ -246,5 +256,130 @@ class ProduceListingControllerExtendedTest {
 		mockMvc.perform(delete("/produce-listings/1"))
 				.andExpect(status().isOk());
 		verify(produceListingService, never()).getAll();
+	}
+
+	// ===================== Ownership enforcement (RBAC) =====================
+
+	private Authentication authWithRole(int userId, String role) {
+		return new UsernamePasswordAuthenticationToken(
+				userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+	}
+
+	@Test
+	void farmerGetAllReturnsOnlyOwnListings() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		when(produceListingService.getByFarmerIds(List.of(2))).thenReturn(List.of(produceListing)); // farmerId 2
+
+		mockMvc.perform(get("/produce-listings").principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].farmerId").value(2));
+		verify(produceListingService).getByFarmerIds(List.of(2));
+		verify(produceListingService, never()).getAll();
+	}
+
+	@Test
+	void farmerCannotViewAnotherFarmersListingById() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(99));
+		when(produceListingService.getById(1)).thenReturn(produceListing); // farmerId 2
+
+		mockMvc.perform(get("/produce-listings/1").principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void farmerCanCreateListingUnderOwnProfile() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		when(produceListingService.create(any(ProduceListingDto.class))).thenReturn(produceListing);
+
+		ProduceListingDto body = ProduceListingDto.builder().farmerId(2).cropId(3).build();
+
+		mockMvc.perform(post("/produce-listings")
+						.principal(authWithRole(10, "Farmer"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isOk());
+		verify(produceListingService).create(any(ProduceListingDto.class));
+	}
+
+	@Test
+	void farmerCannotCreateListingForAnotherFarmer() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+
+		ProduceListingDto body = ProduceListingDto.builder().farmerId(99).cropId(3).build();
+
+		mockMvc.perform(post("/produce-listings")
+						.principal(authWithRole(10, "Farmer"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isForbidden());
+		verify(produceListingService, never()).create(any(ProduceListingDto.class));
+	}
+
+	@Test
+	void farmerCanUpdateOwnListing() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		when(produceListingService.getById(1)).thenReturn(produceListing); // farmerId 2
+
+		ProduceListingDto body = ProduceListingDto.builder().farmerId(2).cropId(3).build();
+
+		mockMvc.perform(put("/produce-listings/1")
+						.principal(authWithRole(10, "Farmer"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isOk());
+		verify(produceListingService).update(eq(1), any(ProduceListingDto.class));
+	}
+
+	@Test
+	void farmerCannotUpdateAnotherFarmersListing() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		produceListing.setFarmerId(99); // listing belongs to someone else
+		when(produceListingService.getById(1)).thenReturn(produceListing);
+
+		ProduceListingDto body = ProduceListingDto.builder().farmerId(99).cropId(3).build();
+
+		mockMvc.perform(put("/produce-listings/1")
+						.principal(authWithRole(10, "Farmer"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isForbidden());
+		verify(produceListingService, never()).update(any(), any());
+	}
+
+	@Test
+	void farmerCannotDeleteAnotherFarmersListing() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		produceListing.setFarmerId(99);
+		when(produceListingService.getById(1)).thenReturn(produceListing);
+
+		mockMvc.perform(delete("/produce-listings/1")
+						.principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isForbidden());
+		verify(produceListingService, never()).delete(any());
+	}
+
+	@Test
+	void farmerCanDeleteOwnListing() throws Exception {
+		when(farmerClient.getOwnedFarmerIds(any())).thenReturn(List.of(2));
+		when(produceListingService.getById(1)).thenReturn(produceListing); // farmerId 2
+
+		mockMvc.perform(delete("/produce-listings/1")
+						.principal(authWithRole(10, "Farmer")))
+				.andExpect(status().isOk());
+		verify(produceListingService).delete(1);
+	}
+
+	@Test
+	void procurementOfficerCanUpdateAnyListingWithoutOwnershipCheck() throws Exception {
+		ProduceListingDto body = ProduceListingDto.builder().farmerId(99).cropId(3).build();
+
+		mockMvc.perform(put("/produce-listings/1")
+						.principal(authWithRole(20, "ProcurementOfficer"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isOk());
+		verify(produceListingService).update(eq(1), any(ProduceListingDto.class));
+		verify(farmerClient, never()).getOwnedFarmerIds(any());
 	}
 }

@@ -2,6 +2,7 @@ package com.cognizant.agrilink.farmer.controller;
 
 import com.cognizant.agrilink.farmer.dto.FarmerProfileDto;
 import com.cognizant.agrilink.farmer.dto.MessageResponse;
+import com.cognizant.agrilink.farmer.dto.SelfRegisterFarmerDto;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import java.util.List;
@@ -60,6 +61,15 @@ public class FarmerProfileController {
 			}
 		}
 		return false;
+	}
+
+	// Public farmer self-registration: creates the IAM login account (Pending) and a
+	// linked Inactive FarmerProfile in one call. No authentication required.
+	@PostMapping("/self-register")
+	public ResponseEntity<MessageResponse> selfRegister(@RequestBody SelfRegisterFarmerDto dto) {
+		farmerProfileService.selfRegister(dto);
+		return ResponseEntity.ok(new MessageResponse(
+				"Registration submitted. Your account is pending approval."));
 	}
 
 	// Non-GET methods return only a message.

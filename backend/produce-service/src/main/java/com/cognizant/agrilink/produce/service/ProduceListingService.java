@@ -21,6 +21,14 @@ public class ProduceListingService {
 		return produceListingRepository.findAll();
 	}
 
+	/** Listings belonging to the given farmer profile id(s). */
+	public List<ProduceListing> getByFarmerIds(List<Integer> farmerIds) {
+		if (farmerIds == null || farmerIds.isEmpty()) {
+			return List.of();
+		}
+		return produceListingRepository.findByFarmerIdIn(farmerIds);
+	}
+
 	public ProduceListing getById(Integer id) {
 		return produceListingRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("ProduceListing not found with id " + id));

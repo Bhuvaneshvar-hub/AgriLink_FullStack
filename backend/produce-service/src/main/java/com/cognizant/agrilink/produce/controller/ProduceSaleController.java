@@ -1,11 +1,16 @@
 package com.cognizant.agrilink.produce.controller;
 
+import com.cognizant.agrilink.produce.client.FarmerClient;
 import com.cognizant.agrilink.produce.dto.MessageResponse;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.service.ProduceSaleService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,21 +24,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/produce-sales")
 public class ProduceSaleController {
 
-	private final ProduceSaleService produceSaleService;
+	private static final String ROLE_FARMER = "ROLE_Farmer";
 
-	public ProduceSaleController(ProduceSaleService produceSaleService) {
+	private final ProduceSaleService produceSaleService;
+	private final FarmerClient farmerClient;
+
+	public ProduceSaleController(ProduceSaleService produceSaleService, FarmerClient farmerClient) {
 		this.produceSaleService = produceSaleService;
+		this.farmerClient = farmerClient;
 	}
 
-	// GET methods return full data
+	// A Farmer only ever sees sales whose listing belongs to their own farmer
+	// profile(s); all other authorized roles view every sale.
 	@GetMapping
-	public ResponseEntity<List<ProduceSale>> getAll() {
+	public ResponseEntity<List<ProduceSale>> getAll(Authentication authentication, HttpServletRequest request) {
+		if (isFarmer(authentication)) {
+			return ResponseEntity.ok(produceSaleService.getByOwnerFarmerIds(ownedFarmerIds(request)));
+		}
 		return ResponseEntity.ok(produceSaleService.getAll());
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<ProduceSale> getById(@PathVariable Integer id) {
-		return ResponseEntity.ok(produceSaleService.getById(id));
+	public ResponseEntity<ProduceSale> getById(@PathVariable Integer id,
+			Authentication authentication, HttpServletRequest request) {
+		ProduceSale sale = produceSaleService.getById(id);
+		if (isFarmer(authentication) && !produceSaleService.isSaleOwnedBy(sale, ownedFarmerIds(request))) {
+			throw new AccessDeniedException("You can only view your own sales");
+		}
+		return ResponseEntity.ok(sale);
 	}
 
 	// Non-GET methods return only a message
@@ -53,5 +71,22 @@ public class ProduceSaleController {
 	public ResponseEntity<MessageResponse> delete(@PathVariable Integer id) {
 		produceSaleService.delete(id);
 		return ResponseEntity.ok(new MessageResponse("ProduceSale deleted successfully"));
+	}
+
+	private boolean isFarmer(Authentication authentication) {
+		if (authentication == null) {
+			return false;
+		}
+		for (GrantedAuthority authority : authentication.getAuthorities()) {
+			if (ROLE_FARMER.equals(authority.getAuthority())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Resolves the farmerId(s) owned by the caller via farmer-service, forwarding the JWT. */
+	private List<Integer> ownedFarmerIds(HttpServletRequest request) {
+		return farmerClient.getOwnedFarmerIds(request.getHeader("Authorization"));
 	}
 }

@@ -175,12 +175,12 @@ class ProduceSaleRepositoryExtendedTest {
 	void updateChangesPersistedFields() {
 		ProduceSale saved = produceSaleRepository.save(buildProduceSale());
 
-		saved.setPaymentStatus(PaymentStatus.FL);
+		saved.setPaymentStatus(PaymentStatus.OV);
 		saved.setTotalAmount(123.4);
 		produceSaleRepository.save(saved);
 
 		ProduceSale found = produceSaleRepository.findById(saved.getSaleId()).orElseThrow();
-		assertThat(found.getPaymentStatus()).isEqualTo(PaymentStatus.FL);
+		assertThat(found.getPaymentStatus()).isEqualTo(PaymentStatus.OV);
 		assertThat(found.getTotalAmount()).isEqualTo(123.4);
 	}
 

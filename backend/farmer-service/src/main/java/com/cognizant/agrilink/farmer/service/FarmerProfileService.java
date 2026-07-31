@@ -1,6 +1,8 @@
 package com.cognizant.agrilink.farmer.service;
 
+import com.cognizant.agrilink.farmer.client.IamRegisterClient;
 import com.cognizant.agrilink.farmer.dto.FarmerProfileDto;
+import com.cognizant.agrilink.farmer.dto.SelfRegisterFarmerDto;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.enums.Status;
 import com.cognizant.agrilink.farmer.repository.FarmerProfileRepository;
@@ -12,9 +14,43 @@ import org.springframework.stereotype.Service;
 public class FarmerProfileService {
 
 	private final FarmerProfileRepository farmerProfileRepository;
+	private final IamRegisterClient iamRegisterClient;
 
-	public FarmerProfileService(FarmerProfileRepository farmerProfileRepository) {
+	public FarmerProfileService(FarmerProfileRepository farmerProfileRepository,
+			IamRegisterClient iamRegisterClient) {
 		this.farmerProfileRepository = farmerProfileRepository;
+		this.iamRegisterClient = iamRegisterClient;
+	}
+
+	/**
+	 * Public farmer self-registration: creates the IAM login account (Pending) via
+	 * iam-service, then creates a linked FarmerProfile in Inactive status. The
+	 * National ID is checked up-front so a duplicate doesn't orphan a login account.
+	 */
+	public FarmerProfile selfRegister(SelfRegisterFarmerDto dto) {
+		if (dto.getNationalIdNumber() != null
+				&& farmerProfileRepository.existsByNationalIdNumber(dto.getNationalIdNumber())) {
+			throw new IllegalStateException(
+					"A farmer profile already exists with national ID " + dto.getNationalIdNumber());
+		}
+
+		Integer userId = iamRegisterClient.registerFarmer(
+				dto.getName(), dto.getEmail(), dto.getPassword(), dto.getPhone(), dto.getRegionId());
+
+		FarmerProfileDto profile = FarmerProfileDto.builder()
+				.userId(userId)
+				.name(dto.getName())
+				.dateOfBirth(dto.getDateOfBirth())
+				.gender(dto.getGender())
+				.nationalIdNumber(dto.getNationalIdNumber())
+				.village(dto.getVillage())
+				.district(dto.getDistrict())
+				.state(dto.getState())
+				.phone(dto.getPhone())
+				.bankAccountNumber(dto.getBankAccountNumber())
+				.status(Status.IN)   // Inactive until the account is approved
+				.build();
+		return create(profile);
 	}
 
 	public List<FarmerProfile> getAll() {

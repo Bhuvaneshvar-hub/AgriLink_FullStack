@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.enums.PaymentStatus;
+import com.cognizant.agrilink.produce.repository.ProduceListingRepository;
 import com.cognizant.agrilink.produce.repository.ProduceSaleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -36,6 +37,9 @@ class ProduceSaleServiceExtendedTest {
 
 	@Mock
 	private ProduceSaleRepository produceSaleRepository;
+
+	@Mock
+	private ProduceListingRepository produceListingRepository;
 
 	@InjectMocks
 	private ProduceSaleService produceSaleService;
@@ -282,7 +286,7 @@ class ProduceSaleServiceExtendedTest {
 
 	@Test
 	void updateChangesPaymentStatus() {
-		dto.setPaymentStatus(PaymentStatus.FL);
+		dto.setPaymentStatus(PaymentStatus.OV);
 		when(produceSaleRepository.findById(1)).thenReturn(Optional.of(produceSale));
 		when(produceSaleRepository.save(any(ProduceSale.class))).thenReturn(produceSale);
 
@@ -290,7 +294,7 @@ class ProduceSaleServiceExtendedTest {
 
 		ArgumentCaptor<ProduceSale> captor = ArgumentCaptor.forClass(ProduceSale.class);
 		verify(produceSaleRepository).save(captor.capture());
-		assertThat(captor.getValue().getPaymentStatus()).isEqualTo(PaymentStatus.FL);
+		assertThat(captor.getValue().getPaymentStatus()).isEqualTo(PaymentStatus.OV);
 	}
 
 	@Test

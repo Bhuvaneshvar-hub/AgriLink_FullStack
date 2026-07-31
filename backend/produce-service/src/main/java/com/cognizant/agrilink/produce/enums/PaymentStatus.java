@@ -5,11 +5,11 @@ package com.cognizant.agrilink.produce.enums;
  * <ul>
  *   <li>{@code PE} - Pending</li>
  *   <li>{@code PD} - Paid</li>
- *   <li>{@code FL} - Failed</li>
+ *   <li>{@code OV} - Overdue</li>
  * </ul>
  */
 public enum PaymentStatus {
     PE,
     PD,
-    FL
+    OV
 }

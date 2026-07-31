@@ -243,6 +243,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="form-group">
                   <label for="reviewStatus">Outcome Status</label>
                   <select id="reviewStatus" formControlName="status">
+                    <option value="" disabled>Select Outcome</option>
                     <option value="AP">Approved (AP)</option>
                     <option value="RE">Rejected (RE)</option>
                   </select>
@@ -616,7 +617,7 @@ export class ApplicationListComponent implements OnInit {
   openReviewModal(app: any): void {
     this.selectedApp.set(app);
     this.reviewForm = this.fb.group({
-      status: ['AP', [Validators.required]],
+      status: ['', [Validators.required]],
       eligibilityScore: [app.eligibilityScore, [Validators.required, Validators.min(0), Validators.max(100)]]
     });
     this.showReviewModal.set(true);

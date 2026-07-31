@@ -137,7 +137,7 @@ class LandHoldingControllerExtendedTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(new LandHoldingDto())))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding created successfully"))
+				.andExpect(jsonPath("$.message").value("LandHolding submitted successfully"))
 				.andExpect(jsonPath("$.surveyNumber").doesNotExist())
 				.andExpect(jsonPath("$.holdingId").doesNotExist());
 	}

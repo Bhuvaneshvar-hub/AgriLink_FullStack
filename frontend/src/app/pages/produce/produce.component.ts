@@ -256,6 +256,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="lGrade">Quality Grade</label>
                     <select id="lGrade" formControlName="qualityGrade">
+                      <option value="" disabled>Select Grade</option>
                       <option value="A">Grade A (Premium)</option>
                       <option value="B">Grade B (Standard)</option>
                       <option value="C">Grade C (Substandard)</option>
@@ -277,6 +278,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-group">
                   <label for="lStatus">Status</label>
                   <select id="lStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AV">AV (Available)</option>
                     <option value="PB">PB (PartiallyBooked)</option>
                     <option value="SO">SO (Sold)</option>
@@ -337,6 +339,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="sStatus">Payment Settlement Status</label>
                     <select id="sStatus" formControlName="paymentStatus">
+                      <option value="" disabled>Select Payment Status</option>
                       <option value="PE">PE (Pending)</option>
                       <option value="PD">PD (Paid)</option>
                       <option value="OV">OV (Overdue)</option>
@@ -552,15 +555,15 @@ export class ProduceComponent implements OnInit {
       cropId: ['', Validators.required],
       harvestDate: ['', Validators.required],
       quantityKg: [50, [Validators.required, Validators.min(0.1)]],
-      qualityGrade: ['A', Validators.required],
+      qualityGrade: ['', Validators.required],
       askingPricePerKg: [1.5, [Validators.required, Validators.min(0.01)]],
-      status: ['AV', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.saleForm = this.fb.group({
       quantitySoldKg: [0, [Validators.required, Validators.min(0.1)]],
       agreedPricePerKg: [0, [Validators.required, Validators.min(0.01)]],
-      paymentStatus: ['PE', Validators.required]
+      paymentStatus: ['', Validators.required]
     });
   }
 
@@ -687,8 +690,8 @@ export class ProduceComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedListing.set(null);
       this.listingForm.reset({
-        status: 'AV',
-        qualityGrade: 'A',
+        status: '',
+        qualityGrade: '',
         quantityKg: 50,
         askingPricePerKg: 1.5,
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : ''
@@ -750,7 +753,7 @@ export class ProduceComponent implements OnInit {
     this.saleForm.reset({
       quantitySoldKg: item.quantityKg,
       agreedPricePerKg: item.askingPricePerKg,
-      paymentStatus: 'PE'
+      paymentStatus: ''
     });
     this.totalCalculatedAmount.set(item.quantityKg * item.askingPricePerKg);
     this.showBuyModal.set(true);

@@ -440,6 +440,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 <div class="form-group">
                   <label for="cStatus">Status</label>
                   <select id="cStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AC">Active</option>
                     <option value="IN">Inactive</option>
                   </select>
@@ -537,6 +538,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="pStatus">Status</label>
                     <select id="pStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="PLANNED">Planned</option>
                       <option value="SOWING">Sowing</option>
                       <option value="GROWING">Growing</option>
@@ -590,6 +592,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="oStage">Growth Stage Flow</label>
                     <select id="oStage" formControlName="stage">
+                      <option value="" disabled>Select Stage</option>
                       <option value="GERMINATION">Germination</option>
                       <option value="VEGETATIVE">Vegetative</option>
                       <option value="FLOWERING">Flowering</option>
@@ -640,6 +643,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="fGender">Gender</label>
                     <select id="fGender" formControlName="gender">
+                      <option value="" disabled>Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -998,7 +1002,7 @@ export class CropsComponent implements OnInit {
       season: ['', Validators.required],
       typicalDurationDays: [90, [Validators.required, Validators.min(1)]],
       expectedYieldPerAcre: [1.0, [Validators.required, Validators.min(0.01)]],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.planForm = this.fb.group({
@@ -1010,7 +1014,7 @@ export class CropsComponent implements OnInit {
       sowingDate: ['', Validators.required],
       expectedHarvestDate: ['', Validators.required],
       areaPlanted: [0.5, [Validators.required, Validators.min(0.01)]],
-      status: ['PLANNED', Validators.required]
+      status: ['', Validators.required]
     });
 
     // Two-way sync between Season and Crop Type on the plan form.
@@ -1036,7 +1040,7 @@ export class CropsComponent implements OnInit {
     this.observationForm = this.fb.group({
       planId: ['', Validators.required],
       observationDate: [new Date().toISOString().split('T')[0], Validators.required],
-      stage: ['GERMINATION', Validators.required],
+      stage: ['', Validators.required],
       pestOrDiseaseFlag: [false],
       remarks: ['', Validators.required]
     });
@@ -1044,7 +1048,7 @@ export class CropsComponent implements OnInit {
     this.profileForm = this.fb.group({
       name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
       dateOfBirth: ['', [Validators.required, notFutureDate]],
-      gender: ['Male', Validators.required],
+      gender: ['', Validators.required],
       nationalIdNumber: ['', Validators.required],
       village: ['', Validators.required],
       district: ['', Validators.required],
@@ -1405,7 +1409,7 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.catalogForm.reset({ status: 'AC', typicalDurationDays: 90, expectedYieldPerAcre: 1.0 });
+      this.catalogForm.reset({ status: '', typicalDurationDays: 90, expectedYieldPerAcre: 1.0 });
     }
     this.showCatalogModal.set(true);
   }
@@ -1471,7 +1475,7 @@ export class CropsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedPlan.set(null);
       this.planForm.reset({
-        status: 'PLANNED',
+        status: '',
         year: new Date().getFullYear(),
         areaPlanted: 0.5,
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
@@ -1534,7 +1538,7 @@ export class CropsComponent implements OnInit {
     this.observationForm.reset({
       planId: plan ? plan.planId : '',
       observationDate: new Date().toISOString().split('T')[0],
-      stage: 'GERMINATION',
+      stage: '',
       pestOrDiseaseFlag: false,
       remarks: ''
     });
@@ -1671,7 +1675,7 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.profileForm.reset({ gender: 'Male' });
+      this.profileForm.reset({ gender: '' });
     }
     this.showProfileModal.set(true);
   }

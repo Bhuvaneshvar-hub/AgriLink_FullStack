@@ -94,6 +94,7 @@ import { INDIAN_STATES } from '../../../utils/indian-states';
           <div class="form-group">
             <label for="gender">Gender</label>
             <select id="gender" formControlName="gender">
+              <option value="" disabled>Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
@@ -257,7 +258,7 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(8)]],
     // Farmer profile fields (a full profile is created on registration, Inactive until approval)
     dateOfBirth: ['', [Validators.required, notFutureDate]],
-    gender: ['Male', [Validators.required]],
+    gender: ['', [Validators.required]],
     nationalIdNumber: ['', [Validators.required]],
     village: ['', [Validators.required]],
     district: ['', [Validators.required]],

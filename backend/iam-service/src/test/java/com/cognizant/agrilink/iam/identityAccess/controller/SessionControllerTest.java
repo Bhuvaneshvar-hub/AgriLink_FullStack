@@ -2,6 +2,7 @@ package com.cognizant.agrilink.iam.identityAccess.controller;
 
 import com.cognizant.agrilink.iam.exception.GlobalExceptionHandler;
 import com.cognizant.agrilink.iam.identityAccess.dto.LoginResponseDto;
+import com.cognizant.agrilink.iam.identityAccess.dto.UserResponseDto;
 import com.cognizant.agrilink.iam.identityAccess.model.UserDetails;
 import com.cognizant.agrilink.iam.identityAccess.model.UserRole;
 import com.cognizant.agrilink.iam.identityAccess.service.UserService;
@@ -114,6 +115,9 @@ class SessionControllerTest {
     // ── register ────────────────────────────────────────────────────────────
     @Test
     void register_valid_returns201() throws Exception {
+        when(userService.register(any(), any(HttpServletRequest.class)))
+                .thenReturn(UserResponseDto.builder().userId(42).build());
+
         mockMvc.perform(post("/agriLink/session/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Ravi\",\"email\":\"ravi@a.com\",\"password\":\"Secret@12\",\"phone\":\"9876543210\",\"regionId\":7}"))

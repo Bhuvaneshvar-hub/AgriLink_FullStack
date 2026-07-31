@@ -86,7 +86,7 @@ class LandHoldingControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(new LandHoldingDto())))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding created successfully"));
+				.andExpect(jsonPath("$.message").value("LandHolding submitted successfully"));
 	}
 
 	@Test

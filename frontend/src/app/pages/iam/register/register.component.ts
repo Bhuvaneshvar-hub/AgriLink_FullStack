@@ -68,12 +68,21 @@ import { ToastService } from '../../../services/toast.service';
 
         <div class="form-group">
           <label for="password">Password (min 8 characters)</label>
-          <input
-            type="password"
-            id="password"
-            formControlName="password"
-            placeholder="••••••••"
-            [class.input-error]="isFieldInvalid('password')" />
+          <div class="password-input-wrap">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              id="password"
+              formControlName="password"
+              placeholder="••••••••"
+              [class.input-error]="isFieldInvalid('password')" />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              (click)="showPassword.set(!showPassword())"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+              <i class="material-icons-round">{{ showPassword() ? 'visibility_off' : 'visibility' }}</i>
+            </button>
+          </div>
           <span class="error-text" [class.visible]="isFieldInvalid('password')">Password must be at least 8 characters</span>
         </div>
 
@@ -132,6 +141,40 @@ import { ToastService } from '../../../services/toast.service';
     .input-error {
       border-color: var(--danger) !important;
     }
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+    }
+    .password-input-wrap input {
+      width: 100%;
+      box-sizing: border-box;
+      padding-right: 2.75rem;
+    }
+    /* Hide native browser reveal/clear icons (Edge/IE) so only our custom toggle shows */
+    .password-input-wrap input::-ms-reveal,
+    .password-input-wrap input::-ms-clear {
+      display: none;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      top: 50%;
+      right: 0.5rem;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem;
+      color: var(--text-muted);
+    }
+    .password-toggle-btn:hover {
+      color: var(--primary-color);
+    }
+    .password-toggle-btn i {
+      font-size: 18px;
+    }
     .error-text {
       display: block;
       min-height: 1rem;
@@ -179,6 +222,7 @@ export class RegisterComponent {
 
   isLoading = signal(false);
   submitted = signal(false);
+  showPassword = signal(false);
   registerForm: FormGroup = this.fb.group({
     name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],

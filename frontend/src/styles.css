@@ -400,6 +400,7 @@ tbody tr:hover {
 .badge-danger { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
 .badge-info { background-color: rgba(6, 182, 212, 0.15); color: #22d3ee; }
 .badge-secondary { background-color: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+.badge-primary { background-color: rgba(99, 102, 241, 0.15); color: #818cf8; }
 
 /* Action overflow-menu items (projected into <app-action-menu>) */
 .menu-item {
@@ -543,4 +544,17 @@ tbody tr:hover {
   font-size: 18px;
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* ---- Reactive-form validation feedback (applies to every form app-wide) ----
+   Angular auto-adds .ng-invalid / .ng-touched / .ng-dirty to form controls.
+   Any invalid field the user has interacted with gets a clear red outline. */
+input.ng-invalid.ng-touched,
+input.ng-invalid.ng-dirty,
+select.ng-invalid.ng-touched,
+select.ng-invalid.ng-dirty,
+textarea.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-dirty {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18) !important;
 }

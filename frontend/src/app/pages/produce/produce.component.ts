@@ -80,7 +80,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (item of listings(); track item.listingId) {
                         <tr>
-                          <td>#{{ item.farmerId }}</td>
+                          <td>{{ getFarmerName(item.farmerId) }}</td>
                           <td>{{ getCropName(item.cropId) }}</td>
                           <td>{{ item.harvestDate | date:'mediumDate' }}</td>
                           <td>{{ item.quantityKg }} Kg</td>
@@ -218,7 +218,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <select id="lFarmer" formControlName="farmerId">
                       <option value="">Select Profile</option>
                       @for (prof of farmerProfiles(); track prof.farmerId) {
-                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                        <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                       }
                     </select>
                   </div>
@@ -572,6 +572,11 @@ export class ProduceComponent implements OnInit {
     return crop ? crop.cropName : `Crop ID: ${cropId}`;
   }
 
+  getFarmerName(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
+  }
+
   private fmtDate(d: any): string {
     if (!d) return '—';
     const date = new Date(d);
@@ -587,7 +592,7 @@ export class ProduceComponent implements OnInit {
     this.detailTitle.set(`Produce Listing #${item.listingId}`);
     this.detailRows.set([
       { label: 'Listing ID', value: item.listingId },
-      { label: 'Farmer ID', value: '#' + item.farmerId },
+      { label: 'Farmer', value: this.getFarmerName(item.farmerId) },
       { label: 'Crop Type', value: this.getCropName(item.cropId) },
       { label: 'Harvest Date', value: this.fmtDate(item.harvestDate) },
       { label: 'Quantity (Kg)', value: item.quantityKg + ' Kg' },

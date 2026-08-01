@@ -2,6 +2,7 @@ package com.cognizant.agrilink.crop.service;
 
 import com.cognizant.agrilink.crop.dto.CropCatalogDto;
 import com.cognizant.agrilink.crop.entity.CropCatalog;
+import com.cognizant.agrilink.crop.enums.Season;
 import com.cognizant.agrilink.crop.enums.Status;
 import com.cognizant.agrilink.crop.repository.CropCatalogRepository;
 import com.cognizant.agrilink.crop.exception.ResourceNotFoundException;
@@ -34,7 +35,7 @@ public class CropCatalogService {
 		CropCatalog cropCatalog = CropCatalog.builder()
 				.cropName(dto.getCropName())
 				.category(dto.getCategory())
-				.season(dto.getSeason())
+				.season(normaliseSeason(dto.getSeason()))
 				.typicalDurationDays(dto.getTypicalDurationDays())
 				.expectedYieldPerAcre(dto.getExpectedYieldPerAcre())
 				.status(dto.getStatus() != null ? dto.getStatus() : Status.AC)
@@ -51,7 +52,7 @@ public class CropCatalogService {
 		}
 		cropCatalog.setCropName(dto.getCropName());
 		cropCatalog.setCategory(dto.getCategory());
-		cropCatalog.setSeason(dto.getSeason());
+		cropCatalog.setSeason(normaliseSeason(dto.getSeason()));
 		cropCatalog.setTypicalDurationDays(dto.getTypicalDurationDays());
 		cropCatalog.setExpectedYieldPerAcre(dto.getExpectedYieldPerAcre());
 		cropCatalog.setStatus(dto.getStatus());
@@ -61,5 +62,14 @@ public class CropCatalogService {
 	public void delete(Integer id) {
 		CropCatalog cropCatalog = getById(id);
 		cropCatalogRepository.delete(cropCatalog);
+	}
+
+	// Validate the incoming season against the known set and return its canonical
+	// label (e.g. "kharif" -> "Kharif") so the catalog is never seeded with a typo.
+	private String normaliseSeason(String season) {
+		return Season.fromLabel(season)
+				.map(Season::getLabel)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Invalid season '" + season + "'. Must be one of: Kharif, Rabi, Zaid, Perennial"));
 	}
 }

@@ -9,8 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.crop.enums.PlanStatus;
+import com.cognizant.agrilink.crop.enums.Status;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
+import com.cognizant.agrilink.crop.entity.CropCatalog;
 import com.cognizant.agrilink.crop.entity.CropPlan;
+import com.cognizant.agrilink.crop.repository.CropCatalogRepository;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -34,8 +37,26 @@ class CropPlanServiceExtendedTest {
 	@Mock
 	private CropPlanRepository cropPlanRepository;
 
+	@Mock
+	private CropCatalogRepository cropCatalogRepository;
+
 	@InjectMocks
 	private CropPlanService cropPlanService;
+
+	// A catalog crop whose season the plan under test is allowed to use. Stubbed
+	// per-test with cropCatalogRepository.findById(...) so the season cross-check
+	// in the service passes.
+	private CropCatalog catalogWithSeason(Integer cropId, String season) {
+		return CropCatalog.builder()
+				.cropId(cropId)
+				.cropName("TestCrop")
+				.category("Cereal")
+				.season(season)
+				.typicalDurationDays(110)
+				.expectedYieldPerAcre(18.5)
+				.status(Status.AC)
+				.build();
+	}
 
 	private CropPlan buildCropPlan() {
 		return CropPlan.builder()
@@ -106,6 +127,7 @@ class CropPlanServiceExtendedTest {
 	@Test
 	void createMapsAllFields() {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, "Rabi")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		cropPlanService.create(buildDto());
@@ -128,6 +150,7 @@ class CropPlanServiceExtendedTest {
 		CropPlan existing = buildCropPlan();
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
 		when(cropPlanRepository.findById(1)).thenReturn(Optional.of(existing));
+		when(cropCatalogRepository.findById(7)).thenReturn(Optional.of(catalogWithSeason(7, "Kharif")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(existing);
 
 		CropPlanDto dto = CropPlanDto.builder()
@@ -198,6 +221,7 @@ class CropPlanServiceExtendedTest {
 	@ValueSource(strings = { "Kharif", "Rabi", "Zaid", "Perennial" })
 	void createWithVariousSeasons(String season) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, season)));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		CropPlanDto dto = buildDto();
@@ -212,6 +236,7 @@ class CropPlanServiceExtendedTest {
 	@ValueSource(ints = { 2020, 2023, 2025, 2026, 2030 })
 	void createWithBoundaryYears(int year) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, "Rabi")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		CropPlanDto dto = buildDto();
@@ -226,6 +251,7 @@ class CropPlanServiceExtendedTest {
 	@ValueSource(doubles = { 0.1, 1.0, 5.5, 250.0, 1000.0 })
 	void createWithBoundaryAreas(double area) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, "Rabi")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		CropPlanDto dto = buildDto();
@@ -240,6 +266,7 @@ class CropPlanServiceExtendedTest {
 	@EnumSource(PlanStatus.class)
 	void createWithVariousStatuses(PlanStatus status) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, "Rabi")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		CropPlanDto dto = buildDto();
@@ -258,6 +285,7 @@ class CropPlanServiceExtendedTest {
 	})
 	void createWithVariousDates(String sowing, String harvest) {
 		ArgumentCaptor<CropPlan> captor = ArgumentCaptor.forClass(CropPlan.class);
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(catalogWithSeason(3, "Rabi")));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(buildCropPlan());
 
 		CropPlanDto dto = buildDto();

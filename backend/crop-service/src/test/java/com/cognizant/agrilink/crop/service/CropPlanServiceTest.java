@@ -8,8 +8,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.crop.enums.PlanStatus;
+import com.cognizant.agrilink.crop.enums.Status;
 import com.cognizant.agrilink.crop.dto.CropPlanDto;
+import com.cognizant.agrilink.crop.entity.CropCatalog;
 import com.cognizant.agrilink.crop.entity.CropPlan;
+import com.cognizant.agrilink.crop.repository.CropCatalogRepository;
 import com.cognizant.agrilink.crop.repository.CropPlanRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -28,11 +31,15 @@ class CropPlanServiceTest {
 	@Mock
 	private CropPlanRepository cropPlanRepository;
 
+	@Mock
+	private CropCatalogRepository cropCatalogRepository;
+
 	@InjectMocks
 	private CropPlanService cropPlanService;
 
 	private CropPlan cropPlan;
 	private CropPlanDto dto;
+	private CropCatalog cropCatalog;
 
 	@BeforeEach
 	void setUp() {
@@ -58,6 +65,15 @@ class CropPlanServiceTest {
 				.expectedHarvestDate(LocalDate.of(2026, 10, 15))
 				.areaPlanted(5.5)
 				.status(PlanStatus.PLANNED)
+				.build();
+		cropCatalog = CropCatalog.builder()
+				.cropId(3)
+				.cropName("Wheat")
+				.category("Cereal")
+				.season("Rabi")
+				.typicalDurationDays(110)
+				.expectedYieldPerAcre(18.5)
+				.status(Status.AC)
 				.build();
 	}
 
@@ -86,6 +102,7 @@ class CropPlanServiceTest {
 
 	@Test
 	void createSavesRecord() {
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(cropCatalog));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(cropPlan);
 
 		cropPlanService.create(dto);
@@ -94,7 +111,35 @@ class CropPlanServiceTest {
 	}
 
 	@Test
+	void createRejectsSeasonMismatchWithCrop() {
+		// Crop #3 is a Rabi crop; scheduling it in a Kharif plan must be rejected.
+		cropCatalog.setSeason("Kharif");
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(cropCatalog));
+
+		assertThatThrownBy(() -> cropPlanService.create(dto))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void createRejectsInvalidSeason() {
+		dto.setSeason("Monsoon");
+
+		assertThatThrownBy(() -> cropPlanService.create(dto))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void createRejectsHarvestNotAfterSowing() {
+		dto.setSowingDate(LocalDate.of(2026, 6, 15));
+		dto.setExpectedHarvestDate(LocalDate.of(2026, 6, 15));
+
+		assertThatThrownBy(() -> cropPlanService.create(dto))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
 	void updateModifiesRecord() {
+		when(cropCatalogRepository.findById(3)).thenReturn(Optional.of(cropCatalog));
 		when(cropPlanRepository.findById(1)).thenReturn(Optional.of(cropPlan));
 		when(cropPlanRepository.save(any(CropPlan.class))).thenReturn(cropPlan);
 

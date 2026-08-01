@@ -1,0 +1,27 @@
+{
+  // The backend is a multi-module Maven project rooted at backend/pom.xml.
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.maven.enabled": true,
+
+  // Lombok is used across every service (@Data, @Builder, @Slf4j, etc.).
+  // Without this, the language server can't see the generated getters/
+  // setters/builders and reports hundreds of phantom "cannot resolve" errors,
+  // even though Maven compiles cleanly.
+  "java.jdt.ls.lombokSupport.enabled": true,
+
+  // Project targets Java 17; build/tests were verified on this JDK 21 install.
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:\\Program Files\\Java\\jdk-21",
+      "default": true
+    }
+  ],
+
+  // Keep the language server from indexing build output / deps.
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/target/**"
+  ]
+}

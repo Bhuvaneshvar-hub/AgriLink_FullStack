@@ -1,3 +1,6 @@
 
 # Backend runtime logs (run-all.ps1)
 backend/logs/
+
+# Local docs/notes, not part of the shipped project
+docs/

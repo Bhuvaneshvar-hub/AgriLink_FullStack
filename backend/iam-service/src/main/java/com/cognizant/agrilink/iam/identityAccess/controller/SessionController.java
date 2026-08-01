@@ -40,11 +40,12 @@ public class SessionController {
 
     // POST /agriLink/session/register  — public (farmer self-registration, starts Pending)
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequestDto dto,
+    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequestDto dto,
                                                          HttpServletRequest request) {
-        userService.register(dto, request);
+        var created = userService.register(dto, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("message", "Registration submitted. Pending approval."));
+                .body(Map.of("message", "Registration submitted. Pending approval.",
+                        "userId", created.getUserId()));
     }
 
     // POST /agriLink/session/logout  — requires valid JWT

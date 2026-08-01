@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
 import { ToastService } from '../../../services/toast.service';
+import { NAME_PATTERN } from '../../../utils/validators';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
@@ -500,7 +501,7 @@ export class UserListComponent implements OnInit {
     this.isEditMode.set(false);
     this.selectedUser.set(null);
     this.userForm = this.fb.group({
-      name: ['', [Validators.required]],
+      name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       regionId: [1, [Validators.required, Validators.min(1)]],

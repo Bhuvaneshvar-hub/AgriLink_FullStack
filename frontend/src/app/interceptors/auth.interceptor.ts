@@ -27,13 +27,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error) => {
-      // This backend returns 403 (not 401) for an expired/invalid JWT, so treat
-      // both as an auth failure and attempt a silent token refresh — but only when
-      // we actually sent a token on a non-public request.
+      // This backend returns 403 (not 401) for an expired/invalid JWT. We only
+      // attempt a silent refresh when the access token is actually EXPIRED. A
+      // 401/403 with a still-valid token is an authorization denial (the role is
+      // not permitted for this endpoint) — surface it as an error to the caller
+      // instead of refreshing or logging the user out.
       const isAuthFailure = error instanceof HttpErrorResponse &&
         (error.status === 401 || error.status === 403);
+      const tokenExpired = authService.isTokenExpired(token);
 
-      if (isAuthFailure && !isPublic && token) {
+      if (isAuthFailure && !isPublic && token && tokenExpired) {
         if (!isRefreshing) {
           isRefreshing = true;
           refreshTokenSubject.next(null);

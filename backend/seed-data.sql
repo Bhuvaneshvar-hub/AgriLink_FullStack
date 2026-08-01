@@ -22,12 +22,18 @@ INSERT INTO user_role (roleId, roleName, description, status) VALUES
 (5, 'ComplianceAnalyst', 'Audits actions and ensures compliance', 'A'),
 (6, 'Farmer', 'Manages own crop plans and subsidy requests', 'A');
 
+-- Shared password for every seeded user below (same convention as DataSeeder.java): Agrilink@123
+-- Users 6-9 are Farmer-role logins for the farmer_profile rows further down (Chitra/Devaraj/Eswari/Ganesan).
 INSERT INTO user_details (userId, regionId, roleId, phone, email, name, passwordHash, status, createdAt) VALUES
-(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$wdBgUJZCPwmKN7A6CvfFN./VY.kZXCCo.uPPiXHO2Jy/lhZcFKzAe', 'A', NOW()),
-(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$7bcoVuN/w2YcGtlGq0m5UeWMeruDk4RIQtmlpL3CE3fancTs2HeQi', 'A', NOW()),
-(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$DvVV340QTMMqpzf1WCC9GOUI9mbznBzU0PhX1web97vT5SBskYJ3i', 'A', NOW()),
-(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$U4ZjFtacSL9YKOokvwc6hOLYI6vsF2mGe0ntYK9Zubey/wPSCEq6.', 'A', NOW()),
-(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$tKhjkE9jZWMZ3COgSHRcP.dYjk073OGXZ7FjbBK3jK1dPclpxbdvO', 'A', NOW());
+(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(6, 1, 6, '9543210876', 'chitra@example.com', 'Chitra Murugan', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(7, 1, 6, '9432108765', 'devaraj@example.com', 'Devaraj Pillai', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(8, 1, 6, '9321087654', 'eswari@example.com', 'Eswari Nadar', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(9, 1, 6, '9210876543', 'ganesan@example.com', 'Ganesan Rao', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW());
 
 -- =====================================================================
 -- 2) agrilink_farmer
@@ -166,16 +172,28 @@ DELETE FROM produce_sale;
 DELETE FROM produce_listing;
 
 INSERT INTO produce_listing (listingId, farmerId, cropId, harvestDate, quantityKg, qualityGrade, askingPricePerKg, status) VALUES
-(1, 1, 1, '2026-01-05', 2500.0, 'A', 25.0, 'SO'),
-(2, 2, 2, '2026-03-10', 1800.0, 'A', 22.0, 'SO'),
-(3, 1, 3, '2026-06-15', 1200.0, 'A', 55.0, 'AV'),
-(4, 2, 1, '2026-07-01', 3000.0, 'B', 20.0, 'AV');
+(1, 1, 1, '2026-01-06', 2500.0, 'A', 25.0, 'SO'),
+(2, 2, 2, '2026-01-18', 1800.0, 'A', 22.0, 'SO'),
+(3, 1, 3, '2026-01-30', 1200.0, 'A', 55.0, 'PB'),
+(4, 2, 1, '2026-02-11', 3000.0, 'B', 20.0, 'AV'),
+(5, 1, 2, '2026-02-23', 900.0, 'A', 30.0, 'AV'),
+(6, 2, 3, '2026-03-07', 1500.0, 'B', 48.0, 'AV'),
+(7, 1, 1, '2026-03-19', 2100.0, 'C', 18.0, 'AV'),
+(8, 2, 2, '2026-03-31', 750.0, 'A', 26.0, 'WD'),
+(9, 1, 3, '2026-04-12', 1350.0, 'B', 52.0, 'AV'),
+(10, 2, 1, '2026-04-24', 2800.0, 'A', 24.0, 'AV'),
+(11, 1, 2, '2026-05-06', 640.0, 'B', 28.0, 'AV'),
+(12, 2, 3, '2026-05-18', 1900.0, 'A', 60.0, 'AV');
 
 INSERT INTO produce_sale (saleId, listingId, buyerId, quantitySoldKg, agreedPricePerKg, totalAmount, saleDate, paymentStatus) VALUES
 (1, 1, 3, 1500.0, 24.5, 36750.0, '2026-01-12', 'PD'),
 (2, 1, 3, 1000.0, 24.0, 24000.0, '2026-01-18', 'PD'),
 (3, 2, 3, 1800.0, 21.8, 39240.0, '2026-03-20', 'PD'),
-(4, 3, 3, 500.0, 54.0, 27000.0, '2026-06-25', 'PE');
+(4, 3, 3, 500.0, 54.0, 27000.0, '2026-06-25', 'PE'),
+(5, 4, 4, 1200.0, 19.5, 23400.0, '2026-07-02', 'PE'),
+(6, 6, 4, 800.0, 47.0, 37600.0, '2026-07-08', 'OV'),
+(7, 7, 3, 2000.0, 17.5, 35000.0, '2026-07-15', 'PD'),
+(8, 10, 4, 1000.0, 23.5, 23500.0, '2026-07-20', 'OV');
 
 -- =====================================================================
 -- 7) agrilink_report

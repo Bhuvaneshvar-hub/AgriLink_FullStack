@@ -243,6 +243,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="form-group">
                   <label for="reviewStatus">Outcome Status</label>
                   <select id="reviewStatus" formControlName="status">
+                    <option value="" disabled>Select Outcome</option>
                     <option value="AP">Approved (AP)</option>
                     <option value="RE">Rejected (RE)</option>
                   </select>
@@ -426,7 +427,12 @@ export class ApplicationListComponent implements OnInit {
   disburseForm!: FormGroup;
 
   ngOnInit(): void {
-    this.loadSchemes();
+    // Farmers have no backend access to the scheme-catalog endpoints (fetchSchemes/fetchSchemeById
+    // are restricted to staff roles) - skip it for them to avoid a 403; getSchemeName() already
+    // falls back to "Scheme #<id>" when the catalog isn't loaded.
+    if (!this.isFarmer()) {
+      this.loadSchemes();
+    }
     this.loadFarmers();
     this.loadApplications();
   }
@@ -616,7 +622,7 @@ export class ApplicationListComponent implements OnInit {
   openReviewModal(app: any): void {
     this.selectedApp.set(app);
     this.reviewForm = this.fb.group({
-      status: ['AP', [Validators.required]],
+      status: ['', [Validators.required]],
       eligibilityScore: [app.eligibilityScore, [Validators.required, Validators.min(0), Validators.max(100)]]
     });
     this.showReviewModal.set(true);

@@ -2,7 +2,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FarmerService } from '../../services/farmer.service';
+import { UserService } from '../../services/user.service';
 import { ToastService } from '../../services/toast.service';
+import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
+import { INDIAN_STATES } from '../../utils/indian-states';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -168,6 +171,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Soil Type</th>
                         <th>Irrigation</th>
                         <th>Ownership</th>
+                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -181,10 +185,26 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>{{ land.irrigationSource }}</td>
                           <td>{{ land.ownershipType }}</td>
                           <td>
+                            <span class="badge" [ngClass]="{
+                              'badge-success': land.status === 'AC',
+                              'badge-warning': land.status === 'PE',
+                              'badge-danger': land.status === 'DP',
+                              'badge-secondary': land.status === 'IN'
+                            }">{{ getHoldingStatusLabel(land.status) }}</span>
+                          </td>
+                          <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewHoldingDetails(land)">
                                 <i class="material-icons-round">visibility</i> View
                               </button>
+                              @if (land.status === 'PE') {
+                                <button class="menu-item" (click)="approveHolding(land)">
+                                  <i class="material-icons-round">check_circle</i> Approve
+                                </button>
+                                <button class="menu-item danger" (click)="rejectHolding(land)">
+                                  <i class="material-icons-round">cancel</i> Reject (Dispute)
+                                </button>
+                              }
                               <button class="menu-item" (click)="openHoldingModal(land)">
                                 <i class="material-icons-round">edit</i> Edit
                               </button>
@@ -226,15 +246,26 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-group">
                   <label for="fName">Full Name</label>
                   <input type="text" id="fName" formControlName="name" />
+                  @if (pInvalid('name')) {
+                    <span class="field-error">
+                      {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
+                    </span>
+                  }
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="fDob">Date of Birth</label>
                     <input type="date" id="fDob" formControlName="dateOfBirth" />
+                    @if (pInvalid('dateOfBirth')) {
+                      <span class="field-error">
+                        {{ profileForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
+                      </span>
+                    }
                   </div>
                   <div class="form-group">
                     <label for="fGender">Gender</label>
                     <select id="fGender" formControlName="gender">
+                      <option value="" disabled>Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -245,46 +276,74 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="fNationalId">National ID / Aadhar Number</label>
                     <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" />
+                    @if (pInvalid('nationalIdNumber')) { <span class="field-error">Enter a valid ID (6–20 letters/digits)</span> }
                   </div>
                   <div class="form-group">
                     <label for="fPhone">Phone Number</label>
-                    <input type="text" id="fPhone" formControlName="phone" />
+                    <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits" />
+                    @if (pInvalid('phone')) { <span class="field-error">Phone must be exactly 10 digits</span> }
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="fVillage">Village</label>
                     <input type="text" id="fVillage" formControlName="village" />
+                    @if (pInvalid('village')) { <span class="field-error">Village is required</span> }
                   </div>
                   <div class="form-group">
                     <label for="fDistrict">District</label>
                     <input type="text" id="fDistrict" formControlName="district" />
+                    @if (pInvalid('district')) { <span class="field-error">District is required</span> }
                   </div>
                   <div class="form-group">
                     <label for="fState">State</label>
-                    <input type="text" id="fState" formControlName="state" />
+                    <select id="fState" formControlName="state">
+                      <option value="">Select State</option>
+                      @for (st of indianStates; track st) {
+                        <option [value]="st">{{ st }}</option>
+                      }
+                    </select>
+                    @if (pInvalid('state')) { <span class="field-error">State is required</span> }
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="fBank">Bank Account Number</label>
-                    <input type="text" id="fBank" formControlName="bankAccountNumber" />
-                  </div>
-                  <div class="form-group">
-                    <label for="fUserId">Linked User ID (optional)</label>
-                    <input type="number" id="fUserId" formControlName="userId" placeholder="Login account ID, if any" />
+                    <input type="text" id="fBank" formControlName="bankAccountNumber" placeholder="6–20 digits" />
+                    @if (pInvalid('bankAccountNumber')) { <span class="field-error">Enter a valid account number (6–20 digits)</span> }
                   </div>
                   <div class="form-group">
                     <label for="fStatus">Status</label>
                     <select id="fStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
                     </select>
                   </div>
                 </div>
+
+                @if (!isEditMode()) {
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="fEmail">Login Email</label>
+                      <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
+                      @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
+                      @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
+                    </div>
+                    <div class="form-group">
+                      <label for="fPassword">Login Password</label>
+                      <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
+                      @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
+                    </div>
+                    <div class="form-group">
+                      <label for="fRegionId">Region ID</label>
+                      <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
+                    </div>
+                  </div>
+                }
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Save Profile</button>
+                <button type="submit" class="btn btn-primary">Save Profile</button>
               </div>
             </form>
           </div>
@@ -311,35 +370,59 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
+                  @if (hInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lSurvey">Survey Number (Unique)</label>
                     <input type="text" id="lSurvey" formControlName="surveyNumber" placeholder="e.g. SVY-4012" />
+                    @if (hInvalid('surveyNumber')) { <span class="field-error">Survey number is required</span> }
                   </div>
                   <div class="form-group">
                     <label for="lArea">Area (in Acres)</label>
                     <input type="number" step="0.01" id="lArea" formControlName="areaAcres" />
+                    @if (hInvalid('areaAcres')) { <span class="field-error">Enter a valid area (&gt; 0)</span> }
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lSoil">Soil Type</label>
-                    <input type="text" id="lSoil" formControlName="soilType" placeholder="e.g. Alluvial, Black, Clay" />
+                    <select id="lSoil" formControlName="soilType">
+                      <option value="">Select</option>
+                      <option value="Clay">Clay</option>
+                      <option value="Sandy">Sandy</option>
+                      <option value="Loam">Loam</option>
+                      <option value="Black">Black</option>
+                    </select>
+                    @if (hInvalid('soilType')) { <span class="field-error">Soil type is required</span> }
                   </div>
                   <div class="form-group">
                     <label for="lIrrigation">Irrigation Source</label>
-                    <input type="text" id="lIrrigation" formControlName="irrigationSource" placeholder="e.g. Well, Canal, Rainfed" />
+                    <select id="lIrrigation" formControlName="irrigationSource">
+                      <option value="">Select</option>
+                      <option value="Rain">Rain</option>
+                      <option value="Canal">Canal</option>
+                      <option value="Borewell">Borewell</option>
+                      <option value="None">None</option>
+                    </select>
+                    @if (hInvalid('irrigationSource')) { <span class="field-error">Irrigation source is required</span> }
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lOwnership">Ownership Type</label>
-                    <input type="text" id="lOwnership" formControlName="ownershipType" placeholder="e.g. Owned, Leased" />
+                    <select id="lOwnership" formControlName="ownershipType">
+                      <option value="">Select</option>
+                      <option value="Owned">Owned</option>
+                      <option value="Leased">Leased</option>
+                      <option value="SharedCropping">Shared Cropping</option>
+                    </select>
+                    @if (hInvalid('ownershipType')) { <span class="field-error">Ownership type is required</span> }
                   </div>
                   <div class="form-group">
                     <label for="lStatus">Status</label>
                     <select id="lStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
                     </select>
@@ -347,7 +430,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="holdingForm.invalid">Register</button>
+                <button type="submit" class="btn btn-primary">Register</button>
               </div>
             </form>
           </div>
@@ -383,6 +466,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
     </div>
   `,
   styles: [`
+    .field-error {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--danger);
+    }
     .farmers-page {
       display: flex;
       flex-direction: column;
@@ -431,6 +520,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
 })
 export class FarmersComponent implements OnInit {
   private farmerService = inject(FarmerService);
+  private userService = inject(UserService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
 
@@ -438,6 +528,9 @@ export class FarmersComponent implements OnInit {
   activeTab = signal<'profiles' | 'holdings'>('profiles');
   isLoading = signal<boolean>(false);
   isEditMode = signal<boolean>(false);
+  submittedProfile = signal<boolean>(false);
+  submittedHolding = signal<boolean>(false);
+  readonly indianStates = INDIAN_STATES;
 
   // Data
   farmerProfiles = signal<any[]>([]);
@@ -478,17 +571,22 @@ export class FarmersComponent implements OnInit {
 
   private initForms() {
     this.profileForm = this.fb.group({
-      name: ['', Validators.required],
-      dateOfBirth: ['', Validators.required],
-      gender: ['Male', Validators.required],
-      nationalIdNumber: ['', Validators.required],
+      name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
+      dateOfBirth: ['', [Validators.required, notFutureDate]],
+      gender: ['', Validators.required],
+      nationalIdNumber: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{6,20}$/)]],
       village: ['', Validators.required],
       district: ['', Validators.required],
       state: ['', Validators.required],
-      phone: ['', Validators.required],
-      bankAccountNumber: ['', Validators.required],
+      phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      bankAccountNumber: ['', [Validators.required, Validators.pattern(/^\d{6,20}$/)]],
       userId: [null],
-      status: ['AC', Validators.required]
+      // Login-account fields — only used when registering a NEW farmer; a login
+      // account (IAM user) is created and linked to this profile via userId.
+      email: [''],
+      password: [''],
+      regionId: [1],
+      status: ['', Validators.required]
     });
 
     this.holdingForm = this.fb.group({
@@ -498,7 +596,7 @@ export class FarmersComponent implements OnInit {
       soilType: ['', Validators.required],
       irrigationSource: ['', Validators.required],
       ownershipType: ['', Validators.required],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
   }
 
@@ -546,6 +644,30 @@ export class FarmersComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     return status === 'AC' ? 'Active' : status === 'IN' ? 'Inactive' : status;
+  }
+
+  getHoldingStatusLabel(status: string): string {
+    switch (status) {
+      case 'AC': return 'Active';
+      case 'PE': return 'Pending';
+      case 'DP': return 'Disputed';
+      case 'IN': return 'Inactive';
+      default: return status;
+    }
+  }
+
+  approveHolding(land: any) {
+    this.farmerService.approveLandHolding(land.holdingId).subscribe({
+      next: (res) => { this.toast.success(res.message || 'Land holding approved'); this.loadAllData(); },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to approve')
+    });
+  }
+
+  rejectHolding(land: any) {
+    this.farmerService.rejectLandHolding(land.holdingId).subscribe({
+      next: (res) => { this.toast.success(res.message || 'Land holding marked disputed'); this.loadAllData(); },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to reject')
+    });
   }
 
   private fmtDate(d: any): string {
@@ -640,9 +762,15 @@ export class FarmersComponent implements OnInit {
 
   // ===== Farmer Profile CRUD =====
   openProfileModal(profile?: any) {
+    this.submittedProfile.set(false);
+    const emailCtrl = this.profileForm.get('email');
+    const pwdCtrl = this.profileForm.get('password');
     if (profile) {
       this.isEditMode.set(true);
       this.selectedItem.set(profile);
+      // Editing an existing profile does not touch the login account.
+      emailCtrl?.clearValidators();
+      pwdCtrl?.clearValidators();
       this.profileForm.patchValue({
         ...profile,
         dateOfBirth: profile.dateOfBirth ? String(profile.dateOfBirth).split('T')[0] : ''
@@ -650,24 +778,55 @@ export class FarmersComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedItem.set(null);
-      this.profileForm.reset({ gender: 'Male', status: 'AC', userId: null });
+      this.profileForm.reset({ gender: '', status: '', userId: null });
+      // Registering a new farmer requires login credentials to create their IAM user.
+      emailCtrl?.setValidators([Validators.required, Validators.pattern(GMAIL_PATTERN)]);
+      pwdCtrl?.setValidators([Validators.required, Validators.minLength(8)]);
     }
+    emailCtrl?.updateValueAndValidity();
+    pwdCtrl?.updateValueAndValidity();
     this.showProfileModal.set(true);
   }
 
-  closeProfileModal() { this.showProfileModal.set(false); }
+  closeProfileModal() { this.showProfileModal.set(false); this.submittedProfile.set(false); }
+
+  // Shows a field's error once the user has interacted with it or tried to submit.
+  pInvalid(field: string): boolean {
+    const c = this.profileForm.get(field);
+    return !!(c && c.invalid && (c.touched || this.submittedProfile()));
+  }
+
+  hInvalid(field: string): boolean {
+    const c = this.holdingForm.get(field);
+    return !!(c && c.invalid && (c.touched || this.submittedHolding()));
+  }
 
   submitProfileForm() {
+    this.submittedProfile.set(true);
+    this.profileForm.markAllAsTouched();
     if (this.profileForm.invalid) return;
-    const body: any = { ...this.profileForm.value };
-    // userId is optional — omit when blank so the backend stores null
-    if (body.userId === '' || body.userId === null || body.userId === undefined) {
-      delete body.userId;
-    }
+    const v: any = { ...this.profileForm.value };
+
+    // The farmer profile itself never carries login credentials — those live on
+    // the IAM user. Build a clean profile payload without email/password.
+    const profilePayload: any = {
+      name: v.name,
+      dateOfBirth: v.dateOfBirth,
+      gender: v.gender,
+      nationalIdNumber: v.nationalIdNumber,
+      village: v.village,
+      district: v.district,
+      state: v.state,
+      phone: v.phone,
+      bankAccountNumber: v.bankAccountNumber,
+      status: v.status
+    };
 
     if (this.isEditMode()) {
       const id = this.selectedItem().farmerId;
-      this.farmerService.updateFarmerProfile(id, body).subscribe({
+      // Preserve the existing linked userId on update.
+      profilePayload.userId = this.selectedItem().userId ?? undefined;
+      this.farmerService.updateFarmerProfile(id, profilePayload).subscribe({
         next: (res) => {
           this.toast.success(res.message || 'Profile updated successfully');
           this.closeProfileModal();
@@ -676,13 +835,30 @@ export class FarmersComponent implements OnInit {
         error: (err) => this.toast.error(err.error?.message || 'Error updating profile')
       });
     } else {
-      this.farmerService.createFarmerProfile(body).subscribe({
-        next: (res) => {
-          this.toast.success(res.message || 'Farmer registered successfully');
-          this.closeProfileModal();
-          this.loadAllData();
+      // Register a login account (IAM user) first, then link the new userId to the profile.
+      const userPayload = {
+        roleName: 'Farmer',
+        name: v.name,
+        email: v.email,
+        password: v.password,
+        phone: v.phone,
+        regionId: v.regionId
+      };
+      this.userService.createUser(userPayload).subscribe({
+        next: (userRes) => {
+          profilePayload.userId = userRes.userId;
+          this.farmerService.createFarmerProfile(profilePayload).subscribe({
+            next: (res) => {
+              this.toast.success(res.message || 'Farmer registered with login account');
+              this.closeProfileModal();
+              this.loadAllData();
+            },
+            error: (err) => this.toast.error(
+              'Login account created, but saving the profile failed: ' +
+              (err.error?.message || 'unknown error'))
+          });
         },
-        error: (err) => this.toast.error(err.error?.message || 'Error registering farmer')
+        error: (err) => this.toast.error(err.error?.message || 'Error creating farmer login account')
       });
     }
   }
@@ -706,6 +882,7 @@ export class FarmersComponent implements OnInit {
 
   // ===== Land Holding CRUD =====
   openHoldingModal(holding?: any) {
+    this.submittedHolding.set(false);
     if (holding) {
       this.isEditMode.set(true);
       this.selectedItem.set(holding);
@@ -716,15 +893,17 @@ export class FarmersComponent implements OnInit {
       this.holdingForm.reset({
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
         areaAcres: 1.0,
-        status: 'AC'
+        status: ''
       });
     }
     this.showHoldingModal.set(true);
   }
 
-  closeHoldingModal() { this.showHoldingModal.set(false); }
+  closeHoldingModal() { this.showHoldingModal.set(false); this.submittedHolding.set(false); }
 
   submitHoldingForm() {
+    this.submittedHolding.set(true);
+    this.holdingForm.markAllAsTouched();
     if (this.holdingForm.invalid) return;
     const body = { ...this.holdingForm.value };
 

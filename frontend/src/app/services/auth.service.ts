@@ -52,6 +52,25 @@ export class AuthService {
     return !!this.token;
   }
 
+  /**
+   * True if the given JWT access token is missing or past its `exp` claim.
+   * Used to decide whether a 401/403 warrants a silent refresh (expired token)
+   * versus an authorization denial (valid token, insufficient role) which must
+   * NOT end the session.
+   */
+  public isTokenExpired(token: string | null = this.token): boolean {
+    if (!token) return true;
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return false;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (!payload || !payload.exp) return false;
+      return payload.exp * 1000 <= Date.now();
+    } catch {
+      return false;
+    }
+  }
+
   public hasRole(roles: string[]): boolean {
     const user = this.currentUserValue;
     if (!user) return false;

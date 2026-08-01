@@ -78,7 +78,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       </tr>
                     </thead>
                     <tbody>
-                      @for (item of listings(); track item.listingId) {
+                      @for (item of paginatedListings(); track item.listingId) {
                         <tr>
                           <td>{{ getFarmerName(item.farmerId) }}</td>
                           <td>{{ getCropName(item.cropId) }}</td>
@@ -91,6 +91,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>
                             <span class="badge" [ngClass]="{
                               'badge-success': item.status === 'AV',
+                              'badge-info': item.status === 'PB',
                               'badge-secondary': item.status === 'WD',
                               'badge-warning': item.status === 'SO'
                             }">
@@ -110,7 +111,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                                   <i class="material-icons-round">delete</i> Withdraw Listing
                                 </button>
                               }
-                              @if (isProcurementOrAdmin() && item.status === 'AV') {
+                              @if (isProcurementOrAdmin() && (item.status === 'AV' || item.status === 'PB')) {
                                 <button class="menu-item" (click)="openBuyModal(item)">
                                   <i class="material-icons-round">shopping_cart</i> Buy
                                 </button>
@@ -122,6 +123,13 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     </tbody>
                   </table>
                 </div>
+                <app-pagination
+                  [currentPage]="listingPage"
+                  [pageSize]="listingPageSize"
+                  [totalElements]="listings().length"
+                  (pageChange)="onListingPageChange($event)"
+                  (pageSizeChange)="onListingPageSizeChange($event)">
+                </app-pagination>
               </div>
             }
           </div>
@@ -157,7 +165,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       </tr>
                     </thead>
                     <tbody>
-                      @for (sale of sales(); track sale.saleId) {
+                      @for (sale of paginatedSales(); track sale.saleId) {
                         <tr>
                           <td>{{ sale.saleId }}</td>
                           <td>#{{ sale.listingId }} ({{ getCropNameForListing(sale.listingId) }})</td>
@@ -170,7 +178,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                             <span class="badge" [ngClass]="{
                               'badge-success': sale.paymentStatus === 'PD',
                               'badge-warning': sale.paymentStatus === 'PE',
-                              'badge-danger': sale.paymentStatus === 'FL'
+                              'badge-danger': sale.paymentStatus === 'OV'
                             }">
                               {{ getPaymentStatusLabel(sale.paymentStatus) }}
                             </span>
@@ -192,6 +200,13 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     </tbody>
                   </table>
                 </div>
+                <app-pagination
+                  [currentPage]="salePage"
+                  [pageSize]="salePageSize"
+                  [totalElements]="sales().length"
+                  (pageChange)="onSalePageChange($event)"
+                  (pageSizeChange)="onSalePageSizeChange($event)">
+                </app-pagination>
               </div>
             }
           </div>
@@ -241,6 +256,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="lGrade">Quality Grade</label>
                     <select id="lGrade" formControlName="qualityGrade">
+                      <option value="" disabled>Select Grade</option>
                       <option value="A">Grade A (Premium)</option>
                       <option value="B">Grade B (Standard)</option>
                       <option value="C">Grade C (Substandard)</option>
@@ -262,7 +278,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-group">
                   <label for="lStatus">Status</label>
                   <select id="lStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AV">AV (Available)</option>
+                    <option value="PB">PB (PartiallyBooked)</option>
                     <option value="SO">SO (Sold)</option>
                     <option value="WD">WD (Withdrawn)</option>
                   </select>
@@ -321,9 +339,10 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="sStatus">Payment Settlement Status</label>
                     <select id="sStatus" formControlName="paymentStatus">
+                      <option value="" disabled>Select Payment Status</option>
                       <option value="PE">PE (Pending)</option>
                       <option value="PD">PD (Paid)</option>
-                      <option value="FL">FL (Failed)</option>
+                      <option value="OV">OV (Overdue)</option>
                     </select>
                   </div>
                 </div>
@@ -473,6 +492,10 @@ export class ProduceComponent implements OnInit {
   cropCatalogs = signal<any[]>([]);
   farmerProfiles = signal<any[]>([]);
 
+  // Pagination state
+  listingPage = 0;   listingPageSize = 5;
+  salePage = 0;      salePageSize = 5;
+
   // Selection
   selectedListing = signal<any | null>(null);
   selectedSale = signal<any | null>(null);
@@ -512,21 +535,35 @@ export class ProduceComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
+  // ================= PAGINATION =================
+  private page(list: any[], pageIndex: number, size: number): any[] {
+    const start = pageIndex * size;
+    return (list || []).slice(start, start + size);
+  }
+
+  paginatedListings(): any[] { return this.page(this.listings(), this.listingPage, this.listingPageSize); }
+  onListingPageChange(p: number) { this.listingPage = p; }
+  onListingPageSizeChange(s: number) { this.listingPageSize = s; this.listingPage = 0; }
+
+  paginatedSales(): any[] { return this.page(this.sales(), this.salePage, this.salePageSize); }
+  onSalePageChange(p: number) { this.salePage = p; }
+  onSalePageSizeChange(s: number) { this.salePageSize = s; this.salePage = 0; }
+
   private initForms() {
     this.listingForm = this.fb.group({
       farmerId: ['', Validators.required],
       cropId: ['', Validators.required],
       harvestDate: ['', Validators.required],
       quantityKg: [50, [Validators.required, Validators.min(0.1)]],
-      qualityGrade: ['A', Validators.required],
+      qualityGrade: ['', Validators.required],
       askingPricePerKg: [1.5, [Validators.required, Validators.min(0.01)]],
-      status: ['AV', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.saleForm = this.fb.group({
       quantitySoldKg: [0, [Validators.required, Validators.min(0.1)]],
       agreedPricePerKg: [0, [Validators.required, Validators.min(0.01)]],
-      paymentStatus: ['PE', Validators.required]
+      paymentStatus: ['', Validators.required]
     });
   }
 
@@ -548,6 +585,7 @@ export class ProduceComponent implements OnInit {
         this.produceService.getAllProduceListings().subscribe({
           next: (list) => {
             this.listings.set(list);
+            this.listingPage = 0;
           }
         });
 
@@ -555,6 +593,7 @@ export class ProduceComponent implements OnInit {
         this.produceService.getAllProduceSales().subscribe({
           next: (sls) => {
             this.sales.set(sls);
+            this.salePage = 0;
             this.isLoading.set(false);
           },
           error: () => this.isLoading.set(false)
@@ -627,6 +666,7 @@ export class ProduceComponent implements OnInit {
   getListingStatusLabel(status: string): string {
     switch (status) {
       case 'AV': return 'Available';
+      case 'PB': return 'PartiallyBooked';
       case 'SO': return 'Sold';
       case 'WD': return 'Withdrawn';
       default: return status;
@@ -637,7 +677,7 @@ export class ProduceComponent implements OnInit {
     switch (status) {
       case 'PE': return 'Pending';
       case 'PD': return 'Paid';
-      case 'FL': return 'Failed';
+      case 'OV': return 'Overdue';
       default: return status;
     }
   }
@@ -655,8 +695,8 @@ export class ProduceComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedListing.set(null);
       this.listingForm.reset({
-        status: 'AV',
-        qualityGrade: 'A',
+        status: '',
+        qualityGrade: '',
         quantityKg: 50,
         askingPricePerKg: 1.5,
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : ''
@@ -718,7 +758,7 @@ export class ProduceComponent implements OnInit {
     this.saleForm.reset({
       quantitySoldKg: item.quantityKg,
       agreedPricePerKg: item.askingPricePerKg,
-      paymentStatus: 'PE'
+      paymentStatus: ''
     });
     this.totalCalculatedAmount.set(item.quantityKg * item.askingPricePerKg);
     this.showBuyModal.set(true);

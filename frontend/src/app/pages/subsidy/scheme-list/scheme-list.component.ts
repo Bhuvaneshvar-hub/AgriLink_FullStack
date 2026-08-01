@@ -212,6 +212,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="form-group">
                   <label for="formStatus">Status</label>
                   <select id="formStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AC">Active (AC)</option>
                     <option value="IN">Inactive (IN)</option>
                   </select>
@@ -438,7 +439,7 @@ export class SchemeListComponent implements OnInit {
       fundingSource: ['', [Validators.required]],
       startDate: ['', [Validators.required]],
       endDate: ['', [Validators.required]],
-      status: ['AC', [Validators.required]]
+      status: ['', [Validators.required]]
     });
     this.showFormModal.set(true);
   }

@@ -247,6 +247,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="catStatus">Status</label>
                     <select id="catStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active</option>
                       <option value="IN">Inactive</option>
                     </select>
@@ -495,7 +496,7 @@ export class InputsComponent implements OnInit {
       pricePerUnit: [1.0, [Validators.required, Validators.min(0.01)]],
       subsidisedPrice: [0.5, [Validators.required, Validators.min(0.01)]],
       availableStock: [100, [Validators.required, Validators.min(0)]],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.requestForm = this.fb.group({
@@ -606,7 +607,7 @@ export class InputsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
       this.catalogForm.reset({
-        status: 'AC',
+        status: '',
         pricePerUnit: 1.0,
         subsidisedPrice: 0.5,
         availableStock: 100

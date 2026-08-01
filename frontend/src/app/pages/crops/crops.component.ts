@@ -11,6 +11,8 @@ import { ConfirmationModalComponent } from '../../components/confirmation-modal/
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
 import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/seasons';
+import { notFutureDate, NAME_PATTERN } from '../../utils/validators';
+import { INDIAN_STATES } from '../../utils/indian-states';
 
 @Component({
   selector: 'app-crops',
@@ -462,6 +464,7 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                 <div class="form-group">
                   <label for="cStatus">Status</label>
                   <select id="cStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AC">Active</option>
                     <option value="IN">Inactive</option>
                   </select>
@@ -578,6 +581,7 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                   <div class="form-group">
                     <label for="pStatus">Status</label>
                     <select id="pStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="PLANNED">Planned</option>
                       <option value="SOWING">Sowing</option>
                       <option value="GROWING">Growing</option>
@@ -643,6 +647,7 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                   <div class="form-group">
                     <label for="oStage">Growth Stage Flow</label>
                     <select id="oStage" formControlName="stage">
+                      <option value="" disabled>Select Stage</option>
                       <option value="GERMINATION">Germination</option>
                       <option value="VEGETATIVE">Vegetative</option>
                       <option value="FLOWERING">Flowering</option>
@@ -700,6 +705,7 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                   <div class="form-group">
                     <label for="fGender">Gender</label>
                     <select id="fGender" formControlName="gender">
+                      <option value="" disabled>Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -727,7 +733,12 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                   </div>
                   <div class="form-group">
                     <label for="fState">State</label>
-                    <input type="text" id="fState" formControlName="state" />
+                    <select id="fState" formControlName="state">
+                      <option value="">Select State</option>
+                      @for (st of indianStates; track st) {
+                        <option [value]="st">{{ st }}</option>
+                      }
+                    </select>
                   </div>
                 </div>
                 <div class="form-group">
@@ -777,16 +788,33 @@ import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/sea
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lSoil">Soil Type</label>
-                    <input type="text" id="lSoil" formControlName="soilType" placeholder="e.g. Alluvial, Black, Clay" />
+                    <select id="lSoil" formControlName="soilType">
+                      <option value="">Select</option>
+                      <option value="Clay">Clay</option>
+                      <option value="Sandy">Sandy</option>
+                      <option value="Loam">Loam</option>
+                      <option value="Black">Black</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="lIrrigation">Irrigation Source</label>
-                    <input type="text" id="lIrrigation" formControlName="irrigationSource" placeholder="e.g. Well, Canal, Rainfed" />
+                    <select id="lIrrigation" formControlName="irrigationSource">
+                      <option value="">Select</option>
+                      <option value="Rain">Rain</option>
+                      <option value="Canal">Canal</option>
+                      <option value="Borewell">Borewell</option>
+                      <option value="None">None</option>
+                    </select>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="lOwnership">Ownership Type</label>
-                  <input type="text" id="lOwnership" formControlName="ownershipType" placeholder="e.g. Owned, Leased" />
+                  <select id="lOwnership" formControlName="ownershipType">
+                    <option value="">Select</option>
+                    <option value="Owned">Owned</option>
+                    <option value="Leased">Leased</option>
+                    <option value="SharedCropping">Shared Cropping</option>
+                  </select>
                 </div>
               </div>
               <div class="modal-footer">
@@ -1134,6 +1162,7 @@ export class CropsComponent implements OnInit {
   // States
   activeTab = signal<'catalog' | 'plans' | 'observations' | 'profiles'>('catalog');
   isLoading = signal<boolean>(false);
+  readonly indianStates = INDIAN_STATES;
   isEditMode = signal<boolean>(false);
 
   // Data signals (kept sorted most-recent-first)
@@ -1216,7 +1245,7 @@ export class CropsComponent implements OnInit {
       season: ['', Validators.required],
       typicalDurationDays: [90, [Validators.required, Validators.min(1)]],
       expectedYieldPerAcre: [1.0, [Validators.required, Validators.min(0.01)]],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.planForm = this.fb.group({
@@ -1228,7 +1257,7 @@ export class CropsComponent implements OnInit {
       sowingDate: ['', Validators.required],
       expectedHarvestDate: ['', Validators.required],
       areaPlanted: [0.5, [Validators.required, Validators.min(0.01)]],
-      status: ['PLANNED', Validators.required]
+      status: ['', Validators.required]
     });
 
     // Two-way sync between Season and Crop Type on the plan form.
@@ -1273,7 +1302,7 @@ export class CropsComponent implements OnInit {
       farmerId: ['', Validators.required],
       planId: ['', Validators.required],
       observationDate: [new Date().toISOString().split('T')[0], Validators.required],
-      stage: ['GERMINATION', Validators.required],
+      stage: ['', Validators.required],
       pestOrDiseaseFlag: [false],
       remarks: ['', Validators.required]
     });
@@ -1285,15 +1314,15 @@ export class CropsComponent implements OnInit {
     });
 
     this.profileForm = this.fb.group({
-      name: ['', Validators.required],
-      dateOfBirth: ['', Validators.required],
-      gender: ['Male', Validators.required],
+      name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
+      dateOfBirth: ['', [Validators.required, notFutureDate]],
+      gender: ['', Validators.required],
       nationalIdNumber: ['', Validators.required],
       village: ['', Validators.required],
       district: ['', Validators.required],
       state: ['', Validators.required],
-      phone: ['', Validators.required],
-      bankAccountNumber: ['', Validators.required]
+      phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      bankAccountNumber: ['', [Validators.required, Validators.pattern(/^\d{6,20}$/)]]
     });
 
     this.holdingForm = this.fb.group({
@@ -1817,7 +1846,7 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.catalogForm.reset({ status: 'AC', typicalDurationDays: 90, expectedYieldPerAcre: 1.0 });
+      this.catalogForm.reset({ status: '', typicalDurationDays: 90, expectedYieldPerAcre: 1.0 });
     }
     this.showCatalogModal.set(true);
   }
@@ -1885,7 +1914,7 @@ export class CropsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedPlan.set(null);
       this.planForm.reset({
-        status: 'PLANNED',
+        status: '',
         year: new Date().getFullYear(),
         areaPlanted: 0.5,
         cropId: '',
@@ -1963,7 +1992,7 @@ export class CropsComponent implements OnInit {
       farmerId: plan ? plan.farmerId : '',
       planId: plan ? plan.planId : '',
       observationDate: new Date().toISOString().split('T')[0],
-      stage: 'GERMINATION',
+      stage: '',
       pestOrDiseaseFlag: false,
       remarks: ''
     });
@@ -2101,7 +2130,7 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.profileForm.reset({ gender: 'Male' });
+      this.profileForm.reset({ gender: '' });
     }
     this.showProfileModal.set(true);
   }

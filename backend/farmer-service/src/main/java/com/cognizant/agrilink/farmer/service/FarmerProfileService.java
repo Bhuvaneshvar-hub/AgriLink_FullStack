@@ -121,4 +121,14 @@ public class FarmerProfileService {
 		FarmerProfile farmerProfile = getById(id);
 		farmerProfileRepository.delete(farmerProfile);
 	}
+
+	/**
+	 * Sets a farmer profile's status — backs the officer/admin verify (Verified),
+	 * activate (Active) and deactivate (Inactive) actions.
+	 */
+	public FarmerProfile setStatus(Integer id, Status status) {
+		FarmerProfile farmerProfile = getById(id);
+		farmerProfile.setStatus(status);
+		return farmerProfileRepository.save(farmerProfile);
+	}
 }

@@ -9,6 +9,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,7 +47,10 @@ public class LandHolding {
 	@Column(name = "ownershipType")
 	private String ownershipType;
 
+	// Stored as VARCHAR (not a native MySQL ENUM) so new Status values can be added
+	// without an ALTER — a native enum column would reject values added after creation.
 	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.VARCHAR)
 	@Column(name = "status")
 	private Status status;
 }

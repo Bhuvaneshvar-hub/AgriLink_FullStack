@@ -2,6 +2,7 @@ package com.cognizant.agrilink.notification.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import java.time.LocalDate;
 import java.util.stream.Stream;
@@ -17,12 +18,12 @@ class NotificationEntityTest {
 
 	private static Stream<Arguments> records() {
 		return Stream.of(
-				Arguments.of(1, 11, "Sowing window opens", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 1, 1)),
-				Arguments.of(2, 22, "Subsidy approved", "Subsidy", NotificationStatus.RD, LocalDate.of(2025, 12, 31)),
-				Arguments.of(3, 33, "Seed order placed", "InputProcurement", NotificationStatus.UN, LocalDate.of(2024, 2, 29)),
-				Arguments.of(4, 44, "Produce listed", "ProduceSale", NotificationStatus.UN, LocalDate.of(2030, 6, 15)),
-				Arguments.of(5, 55, "Compliance due", "Compliance", NotificationStatus.RD, LocalDate.of(2000, 2, 29)),
-				Arguments.of(6, 66, "Weather warning", "WeatherAlert", NotificationStatus.UN, LocalDate.of(2099, 7, 4)));
+				Arguments.of(1, 11, "Sowing window opens", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 1, 1)),
+				Arguments.of(2, 22, "Subsidy approved", NotificationCategory.Subsidy, NotificationStatus.RD, LocalDate.of(2025, 12, 31)),
+				Arguments.of(3, 33, "Seed order placed", NotificationCategory.InputProcurement, NotificationStatus.UN, LocalDate.of(2024, 2, 29)),
+				Arguments.of(4, 44, "Produce listed", NotificationCategory.ProduceSale, NotificationStatus.UN, LocalDate.of(2030, 6, 15)),
+				Arguments.of(5, 55, "Compliance due", NotificationCategory.Compliance, NotificationStatus.RD, LocalDate.of(2000, 2, 29)),
+				Arguments.of(6, 66, "Weather warning", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2099, 7, 4)));
 	}
 
 	@Test
@@ -35,13 +36,13 @@ class NotificationEntityTest {
 
 	@Test
 	void allArgsConstructorSetsAllFields() {
-		Notification notification = new Notification(1, 11, "msg", "CropAdvisory", NotificationStatus.UN,
+		Notification notification = new Notification(1, 11, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN,
 				LocalDate.of(2026, 6, 15));
 
 		assertThat(notification.getNotificationId()).isEqualTo(1);
 		assertThat(notification.getUserId()).isEqualTo(11);
 		assertThat(notification.getMessage()).isEqualTo("msg");
-		assertThat(notification.getCategory()).isEqualTo("CropAdvisory");
+		assertThat(notification.getCategory()).isEqualTo(NotificationCategory.CropAdvisory);
 		assertThat(notification.getStatus()).isEqualTo(NotificationStatus.UN);
 		assertThat(notification.getCreatedDate()).isEqualTo(LocalDate.of(2026, 6, 15));
 	}
@@ -52,7 +53,7 @@ class NotificationEntityTest {
 				.notificationId(9)
 				.userId(99)
 				.message("Built")
-				.category("Subsidy")
+				.category(NotificationCategory.Subsidy)
 				.status(NotificationStatus.RD)
 				.createdDate(LocalDate.of(2027, 3, 10))
 				.build();
@@ -60,15 +61,15 @@ class NotificationEntityTest {
 		assertThat(notification.getNotificationId()).isEqualTo(9);
 		assertThat(notification.getUserId()).isEqualTo(99);
 		assertThat(notification.getMessage()).isEqualTo("Built");
-		assertThat(notification.getCategory()).isEqualTo("Subsidy");
+		assertThat(notification.getCategory()).isEqualTo(NotificationCategory.Subsidy);
 		assertThat(notification.getStatus()).isEqualTo(NotificationStatus.RD);
 		assertThat(notification.getCreatedDate()).isEqualTo(LocalDate.of(2027, 3, 10));
 	}
 
 	@Test
 	void equalsAndHashCodeMatchForSameValues() {
-		Notification a = new Notification(1, 11, "msg", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
-		Notification b = new Notification(1, 11, "msg", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification a = new Notification(1, 11, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification b = new Notification(1, 11, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
 
 		assertThat(a).isEqualTo(b);
 		assertThat(a.hashCode()).isEqualTo(b.hashCode());
@@ -76,15 +77,15 @@ class NotificationEntityTest {
 
 	@Test
 	void equalsReturnsFalseForDifferentValues() {
-		Notification a = new Notification(1, 11, "msg", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
-		Notification b = new Notification(2, 22, "other", "Subsidy", NotificationStatus.RD, LocalDate.of(2025, 1, 1));
+		Notification a = new Notification(1, 11, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification b = new Notification(2, 22, "other", NotificationCategory.Subsidy, NotificationStatus.RD, LocalDate.of(2025, 1, 1));
 
 		assertThat(a).isNotEqualTo(b);
 	}
 
 	@Test
 	void toStringContainsFieldValues() {
-		Notification notification = new Notification(1, 11, "Sowing", "CropAdvisory", NotificationStatus.UN,
+		Notification notification = new Notification(1, 11, "Sowing", NotificationCategory.CropAdvisory, NotificationStatus.UN,
 				LocalDate.of(2026, 6, 15));
 
 		String result = notification.toString();
@@ -94,7 +95,7 @@ class NotificationEntityTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void settersAndGettersWorkForAllFields(Integer id, Integer userId, String message, String category,
+	void settersAndGettersWorkForAllFields(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, LocalDate createdDate) {
 		Notification notification = new Notification();
 
@@ -115,7 +116,7 @@ class NotificationEntityTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void builderMatchesAllArgsConstructor(Integer id, Integer userId, String message, String category,
+	void builderMatchesAllArgsConstructor(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, LocalDate createdDate) {
 		Notification built = Notification.builder()
 				.notificationId(id)
@@ -132,9 +133,8 @@ class NotificationEntityTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"CropAdvisory", "Subsidy", "InputProcurement", "ProduceSale", "Compliance",
-			"WeatherAlert", "MarketPrice", "PestWarning"})
-	void categorySetterAcceptsVariousValues(String category) {
+	@EnumSource(NotificationCategory.class)
+	void categorySetterAcceptsVariousValues(NotificationCategory category) {
 		Notification notification = new Notification();
 
 		notification.setCategory(category);

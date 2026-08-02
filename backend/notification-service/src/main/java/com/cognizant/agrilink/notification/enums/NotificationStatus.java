@@ -7,11 +7,14 @@ package com.cognizant.agrilink.notification.enums;
  * <ul>
  *   <li>{@code UN} - Unread</li>
  *   <li>{@code RD} - Read</li>
+ *   <li>{@code DI} - Dismissed (hidden by the recipient; retained for audit)</li>
  * </ul>
  */
 public enum NotificationStatus {
     /** Unread. */
     UN,
     /** Read. */
-    RD
+    RD,
+    /** Dismissed. */
+    DI
 }

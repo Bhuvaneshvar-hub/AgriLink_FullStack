@@ -1,5 +1,6 @@
 package com.cognizant.agrilink.notification.dto;
 
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
@@ -16,7 +17,7 @@ public class NotificationDto {
 	private Integer notificationId;
 	private Integer userId;
 	private String message;
-	private String category;
+	private NotificationCategory category;
 	private NotificationStatus status;
 	private LocalDate createdDate;
 }

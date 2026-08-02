@@ -2,7 +2,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FarmerService } from '../../services/farmer.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { notFutureDate, NAME_PATTERN } from '../../utils/validators';
+import { INDIAN_STATES } from '../../utils/indian-states';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -18,9 +21,15 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
           <h1>My Land Holdings</h1>
           <p class="text-secondary">Register your land holdings. New entries are sent to an administrator for approval.</p>
         </div>
-        <button class="btn btn-primary" (click)="openModal()" [disabled]="!myProfile()">
-          <i class="material-icons-round">add_circle</i><span>Register Land</span>
-        </button>
+        @if (!isLoading() && !myProfile()) {
+          <button class="btn btn-primary" (click)="openProfileModal()">
+            <i class="material-icons-round">person_add</i><span>Complete My Profile</span>
+          </button>
+        } @else {
+          <button class="btn btn-primary" (click)="openModal()" [disabled]="!myProfile()">
+            <i class="material-icons-round">add_circle</i><span>Register Land</span>
+          </button>
+        }
       </div>
 
       @if (isLoading()) {
@@ -29,7 +38,10 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
         <div class="empty-state card">
           <i class="material-icons-round">person_off</i>
           <h3>No Farmer Profile</h3>
-          <p>Your farmer profile isn't set up yet. Please contact an officer to complete your registration.</p>
+          <p>Your farmer profile isn't set up yet. Complete it below to start registering your land holdings.</p>
+          <button class="btn btn-primary mt-2" (click)="openProfileModal()">
+            <i class="material-icons-round">person_add</i><span>Complete My Profile</span>
+          </button>
         </div>
       } @else if (holdings().length === 0) {
         <div class="empty-state card">
@@ -146,6 +158,83 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
         </div>
       }
 
+      @if (showProfileModal()) {
+        <div class="modal-overlay" (click)="closeProfileModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Complete Your Farmer Profile</h3>
+              <button class="close-btn" (click)="closeProfileModal()"><i class="material-icons-round">close</i></button>
+            </div>
+            <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="pName">Full Name</label>
+                  <input type="text" id="pName" formControlName="name" />
+                  <span class="error-text" [class.visible]="pInvalid('name')">Name must be letters only (2–50 characters)</span>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="pDob">Date of Birth</label>
+                    <input type="date" id="pDob" formControlName="dateOfBirth" />
+                    <span class="error-text" [class.visible]="pInvalid('dateOfBirth')">A valid past date is required</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="pGender">Gender</label>
+                    <select id="pGender" formControlName="gender">
+                      <option value="" disabled>Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <span class="error-text" [class.visible]="pInvalid('gender')">Gender is required</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="pNid">National ID / Aadhar Number</label>
+                    <input type="text" id="pNid" formControlName="nationalIdNumber" placeholder="6–20 letters/digits" />
+                    <span class="error-text" [class.visible]="pInvalid('nationalIdNumber')">Enter a valid ID (6–20 letters/digits)</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="pPhone">Phone Number</label>
+                    <input type="text" id="pPhone" formControlName="phone" placeholder="10 digits" />
+                    <span class="error-text" [class.visible]="pInvalid('phone')">Phone must be exactly 10 digits</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="pVillage">Village</label>
+                    <input type="text" id="pVillage" formControlName="village" />
+                    <span class="error-text" [class.visible]="pInvalid('village')">Village is required</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="pDistrict">District</label>
+                    <input type="text" id="pDistrict" formControlName="district" />
+                    <span class="error-text" [class.visible]="pInvalid('district')">District is required</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="pState">State</label>
+                    <select id="pState" formControlName="state">
+                      <option value="">Select State</option>
+                      @for (st of indianStates; track st) { <option [value]="st">{{ st }}</option> }
+                    </select>
+                    <span class="error-text" [class.visible]="pInvalid('state')">State is required</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="pBank">Bank Account Number</label>
+                  <input type="text" id="pBank" formControlName="bankAccountNumber" placeholder="6–20 digits" />
+                  <span class="error-text" [class.visible]="pInvalid('bankAccountNumber')">Enter a valid account number (6–20 digits)</span>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
       @if (showDeleteConfirm()) {
         <app-confirmation-modal title="Withdraw Land Holding"
           [message]="'Withdraw survey number ' + selected()?.surveyNumber + '?'"
@@ -162,21 +251,27 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
 })
 export class MyLandHoldingsComponent implements OnInit {
   private farmerService = inject(FarmerService);
+  private authService = inject(AuthService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
 
+  readonly indianStates = INDIAN_STATES;
+
   isLoading = signal(false);
   submitted = signal(false);
+  submittedProfile = signal(false);
   myProfile = signal<any | null>(null);
   holdings = signal<any[]>([]);
   selected = signal<any | null>(null);
   showModal = signal(false);
+  showProfileModal = signal(false);
   showDeleteConfirm = signal(false);
 
   page = 0;
   pageSize = 10;
 
   form!: FormGroup;
+  profileForm!: FormGroup;
 
   ngOnInit() {
     this.form = this.fb.group({
@@ -185,6 +280,17 @@ export class MyLandHoldingsComponent implements OnInit {
       soilType: ['', Validators.required],
       irrigationSource: ['', Validators.required],
       ownershipType: ['', Validators.required]
+    });
+    this.profileForm = this.fb.group({
+      name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
+      dateOfBirth: ['', [Validators.required, notFutureDate]],
+      gender: ['', Validators.required],
+      nationalIdNumber: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{6,20}$/)]],
+      village: ['', Validators.required],
+      district: ['', Validators.required],
+      state: ['', Validators.required],
+      phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      bankAccountNumber: ['', [Validators.required, Validators.pattern(/^\d{6,20}$/)]]
     });
     this.load();
   }
@@ -226,6 +332,47 @@ export class MyLandHoldingsComponent implements OnInit {
     this.showModal.set(true);
   }
   closeModal() { this.showModal.set(false); }
+
+  // ── Self-service farmer profile setup ─────────────────────────────────
+  pInvalid(field: string): boolean {
+    const c = this.profileForm.get(field);
+    return !!(c && c.invalid && (c.touched || this.submittedProfile()));
+  }
+
+  openProfileModal() {
+    this.submittedProfile.set(false);
+    const session = this.authService.currentUserValue;
+    // Pre-fill the name/phone we already know from the login session.
+    this.profileForm.reset({
+      name: session?.name || '',
+      dateOfBirth: '',
+      gender: '',
+      nationalIdNumber: '',
+      village: '',
+      district: '',
+      state: '',
+      phone: '',
+      bankAccountNumber: ''
+    });
+    this.showProfileModal.set(true);
+  }
+
+  closeProfileModal() { this.showProfileModal.set(false); this.submittedProfile.set(false); }
+
+  submitProfile() {
+    this.submittedProfile.set(true);
+    this.profileForm.markAllAsTouched();
+    if (this.profileForm.invalid) return;
+    // The backend forces userId to the authenticated farmer, so we only send profile fields.
+    this.farmerService.createFarmerProfile({ ...this.profileForm.value, status: 'AC' }).subscribe({
+      next: (res) => {
+        this.toast.success(res.message || 'Profile created. You can now register your land.');
+        this.closeProfileModal();
+        this.load();
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to create your farmer profile')
+    });
+  }
 
   submit() {
     this.submitted.set(true);

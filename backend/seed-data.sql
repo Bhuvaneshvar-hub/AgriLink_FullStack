@@ -22,12 +22,18 @@ INSERT INTO user_role (roleId, roleName, description, status) VALUES
 (5, 'ComplianceAnalyst', 'Audits actions and ensures compliance', 'A'),
 (6, 'Farmer', 'Manages own crop plans and subsidy requests', 'A');
 
+-- Shared password for every seeded user below (same convention as DataSeeder.java): Agrilink@123
+-- Users 6-9 are Farmer-role logins for the farmer_profile rows further down (Chitra/Devaraj/Eswari/Ganesan).
 INSERT INTO user_details (userId, regionId, roleId, phone, email, name, passwordHash, status, createdAt) VALUES
-(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$wdBgUJZCPwmKN7A6CvfFN./VY.kZXCCo.uPPiXHO2Jy/lhZcFKzAe', 'A', NOW()),
-(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$7bcoVuN/w2YcGtlGq0m5UeWMeruDk4RIQtmlpL3CE3fancTs2HeQi', 'A', NOW()),
-(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$DvVV340QTMMqpzf1WCC9GOUI9mbznBzU0PhX1web97vT5SBskYJ3i', 'A', NOW()),
-(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$U4ZjFtacSL9YKOokvwc6hOLYI6vsF2mGe0ntYK9Zubey/wPSCEq6.', 'A', NOW()),
-(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$tKhjkE9jZWMZ3COgSHRcP.dYjk073OGXZ7FjbBK3jK1dPclpxbdvO', 'A', NOW());
+(1, 1, 1, '0000000000', 'admin@agrilink.com', 'System Administrator', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(2, 1, 1, '9876543210', 'asha@example.com', 'Asha Devi', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(3, 1, 1, '8765432109', 'babu@example.com', 'Babu Lal', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(4, 2, 3, '7654321098', 'chandra@example.com', 'Chandra Kumar', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(5, 1, 2, '6543210987', 'divya@example.com', 'Divya Raj', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(6, 1, 6, '9543210876', 'chitra@example.com', 'Chitra Murugan', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(7, 1, 6, '9432108765', 'devaraj@example.com', 'Devaraj Pillai', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(8, 1, 6, '9321087654', 'eswari@example.com', 'Eswari Nadar', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW()),
+(9, 1, 6, '9210876543', 'ganesan@example.com', 'Ganesan Rao', '$2a$10$rzlJ5oKFnj1fMDZJGMAm2emZbr5dcND8Hc63faXvEoXwGpzci4I8e', 'A', NOW());
 
 -- =====================================================================
 -- 2) agrilink_farmer

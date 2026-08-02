@@ -234,7 +234,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="card mb-3" style="background-color: var(--bg-dark); padding: 1rem;">
                   <h4 style="font-size: 0.95rem;">Application Details</h4>
                   <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-                    Farmer: <strong>Farmer #{{ selectedApp()?.farmerId }}</strong><br/>
+                    Farmer: <strong>{{ getFarmerName(selectedApp()?.farmerId) }}</strong><br/>
                     Scheme: <strong>{{ getSchemeName(selectedApp()?.schemeId) }}</strong><br/>
                     Eligibility Score: <strong>{{ selectedApp()?.eligibilityScore }}%</strong>
                   </p>
@@ -277,7 +277,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="card mb-3" style="background-color: var(--bg-dark); padding: 1rem;">
                   <h4 style="font-size: 0.95rem;">Application Details</h4>
                   <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-                    Farmer: <strong>Farmer #{{ selectedApp()?.farmerId }}</strong><br/>
+                    Farmer: <strong>{{ getFarmerName(selectedApp()?.farmerId) }}</strong><br/>
                     Scheme: <strong>{{ getSchemeName(selectedApp()?.schemeId) }}</strong>
                   </p>
                 </div>
@@ -427,7 +427,12 @@ export class ApplicationListComponent implements OnInit {
   disburseForm!: FormGroup;
 
   ngOnInit(): void {
-    this.loadSchemes();
+    // Farmers have no backend access to the scheme-catalog endpoints (fetchSchemes/fetchSchemeById
+    // are restricted to staff roles) - skip it for them to avoid a 403; getSchemeName() already
+    // falls back to "Scheme #<id>" when the catalog isn't loaded.
+    if (!this.isFarmer()) {
+      this.loadSchemes();
+    }
     this.loadFarmers();
     this.loadApplications();
   }
@@ -530,7 +535,7 @@ export class ApplicationListComponent implements OnInit {
 
   getFarmerName(farmerId: number): string {
     const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
-    return prof && prof.name ? prof.name : `Farmer #${farmerId}`;
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 
   getStatusLabel(status: string): string {

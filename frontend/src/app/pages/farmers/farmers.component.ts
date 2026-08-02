@@ -207,7 +207,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (land of paginatedHoldings(); track land.holdingId) {
                         <tr>
-                          <td>{{ getFarmerNameOnly(land.farmerId) }}</td>
+                          <td>{{ getFarmerName(land.farmerId) }}</td>
                           <td>{{ land.surveyNumber }}</td>
                           <td>{{ land.areaAcres }}</td>
                           <td>{{ land.soilType }}</td>
@@ -484,7 +484,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <select id="lFarmer" formControlName="farmerId">
                     <option value="">Select Profile</option>
                     @for (prof of farmerProfiles(); track prof.farmerId) {
-                      <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                      <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
                   @if (hInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
@@ -878,7 +878,7 @@ export class FarmersComponent implements OnInit {
   // Helpers
   getFarmerName(farmerId: number): string {
     const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
-    return prof ? `${prof.name} (#${farmerId})` : `Farmer #${farmerId}`;
+    return prof ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 
   // Name without the id, for table cells where ids are hidden.

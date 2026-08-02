@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.notification.dto.NotificationDto;
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import com.cognizant.agrilink.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,14 +41,14 @@ class NotificationServiceTest {
 				.notificationId(1)
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
 		dto = NotificationDto.builder()
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();

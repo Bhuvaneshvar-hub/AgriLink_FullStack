@@ -33,16 +33,17 @@ import { ToastService } from '../../services/toast.service';
               <option value="">All Notifications</option>
               <option value="UN">Unread Alerts</option>
               <option value="RD">Read Alerts</option>
+              <option value="DI">Dismissed Alerts</option>
             </select>
           </div>
           <div class="form-group">
             <label for="categoryFilter">Category</label>
-            <input 
-              type="text" 
-              id="categoryFilter" 
-              [(ngModel)]="categoryFilter" 
-              (ngModelChange)="applyFilters()" 
-              placeholder="e.g. Scheme, Input..." />
+            <select id="categoryFilter" [(ngModel)]="categoryFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Categories</option>
+              @for (cat of categories; track cat.value) {
+                <option [value]="cat.value">{{ cat.label }}</option>
+              }
+            </select>
           </div>
         </div>
       </div>
@@ -61,15 +62,15 @@ import { ToastService } from '../../services/toast.service';
       } @else {
         <div class="notifications-list">
           @for (alert of filteredNotifications(); track alert.notificationId) {
-            <div class="notification-item" [class.unread]="alert.status === 'UN'">
-              <div class="notification-icon" [ngClass]="alert.category?.toLowerCase() || 'general'">
+            <div class="notification-item" [class.unread]="alert.status === 'UN'" [class.dismissed]="alert.status === 'DI'">
+              <div class="notification-icon" [ngClass]="iconTheme(alert.category)">
                 <i class="material-icons-round">
                   {{ getIconForCategory(alert.category) }}
                 </i>
               </div>
               <div class="notification-body">
                 <div class="notification-header">
-                  <span class="category-badge">{{ alert.category }}</span>
+                  <span class="category-badge">{{ categoryLabel(alert.category) }}</span>
                   <span class="date">{{ alert.createdDate | date:'mediumDate' }}</span>
                 </div>
                 <p class="message">{{ alert.message }}</p>
@@ -81,10 +82,16 @@ import { ToastService } from '../../services/toast.service';
                         <i class="material-icons-round">done</i>
                         <span>Mark as Read</span>
                       </button>
-                    } @else {
+                    } @else if (alert.status === 'RD') {
                       <button class="action-link-btn" (click)="markAsUnread(alert)">
                         <i class="material-icons-round">mark_email_unread</i>
                         <span>Mark as Unread</span>
+                      </button>
+                    }
+                    @if (alert.status !== 'DI') {
+                      <button class="action-link-btn danger" (click)="dismiss(alert)">
+                        <i class="material-icons-round">notifications_off</i>
+                        <span>Dismiss</span>
                       </button>
                     }
                   </div>
@@ -114,7 +121,11 @@ import { ToastService } from '../../services/toast.service';
                 </div>
                 <div class="form-group">
                   <label for="bCategory">Alert Category</label>
-                  <input type="text" id="bCategory" formControlName="category" placeholder="e.g. Subsidy, Input, Crop, General" />
+                  <select id="bCategory" formControlName="category">
+                    @for (cat of categories; track cat.value) {
+                      <option [value]="cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
                 </div>
                 <div class="form-group">
                   <label for="bMessage">Message Content</label>
@@ -157,6 +168,9 @@ import { ToastService } from '../../services/toast.service';
     .notification-item.unread {
       border-left: 4px solid var(--primary-color);
       background-color: rgba(22, 163, 74, 0.02);
+    }
+    .notification-item.dismissed {
+      opacity: 0.6;
     }
     .notification-icon {
       width: 48px;
@@ -283,6 +297,15 @@ export class NotificationsComponent implements OnInit {
   statusFilter = '';
   categoryFilter = '';
 
+  // Fixed notification categories (mirror the backend NotificationCategory enum / design section 4.8).
+  readonly categories = [
+    { value: 'CropAdvisory', label: 'Crop Advisory' },
+    { value: 'Subsidy', label: 'Subsidy' },
+    { value: 'InputProcurement', label: 'Input Procurement' },
+    { value: 'ProduceSale', label: 'Produce Sale' },
+    { value: 'Compliance', label: 'Compliance' }
+  ];
+
   // Modals
   showBroadcastModal = signal<boolean>(false);
 
@@ -301,9 +324,23 @@ export class NotificationsComponent implements OnInit {
   private initForm() {
     this.broadcastForm = this.fb.group({
       userId: [1, [Validators.required, Validators.min(1)]],
-      category: ['General', Validators.required],
+      category: ['CropAdvisory', Validators.required],
       message: ['', Validators.required]
     });
+  }
+
+  categoryLabel(category: string): string {
+    return this.categories.find(c => c.value === category)?.label || category || 'General';
+  }
+
+  // Maps a category to a color theme class on the icon bubble.
+  iconTheme(category: string): string {
+    switch (category) {
+      case 'Subsidy': return 'subsidy';
+      case 'InputProcurement': return 'input';
+      case 'CropAdvisory': return 'crop';
+      default: return 'general';
+    }
   }
 
   private loadNotifications() {
@@ -329,9 +366,9 @@ export class NotificationsComponent implements OnInit {
       list = list.filter(n => n.status === this.statusFilter);
     }
 
-    // Filter by category
+    // Filter by category (exact match against the fixed category set)
     if (this.categoryFilter) {
-      list = list.filter(n => n.category && n.category.toLowerCase().includes(this.categoryFilter.toLowerCase()));
+      list = list.filter(n => n.category === this.categoryFilter);
     }
 
     // Sort descending by id
@@ -341,29 +378,34 @@ export class NotificationsComponent implements OnInit {
   }
 
   getIconForCategory(category: string): string {
-    const cat = (category || '').toLowerCase();
-    if (cat.includes('subsidy') || cat.includes('scheme')) return 'monetization_on';
-    if (cat.includes('input') || cat.includes('supply')) return 'shopping_bag';
-    if (cat.includes('crop') || cat.includes('plan')) return 'eco';
-    return 'info';
+    switch (category) {
+      case 'Subsidy': return 'monetization_on';
+      case 'InputProcurement': return 'shopping_bag';
+      case 'CropAdvisory': return 'eco';
+      case 'ProduceSale': return 'storefront';
+      case 'Compliance': return 'verified_user';
+      default: return 'info';
+    }
   }
 
   markAsRead(alert: any) {
-    this.updateStatus(alert, 'RD', 'Notification marked as read');
+    this.notificationService.markAsRead(alert.notificationId).subscribe({
+      next: () => { this.toast.success('Notification marked as read'); this.loadNotifications(); },
+      error: () => this.toast.error('Failed to update status')
+    });
   }
 
   markAsUnread(alert: any) {
-    this.updateStatus(alert, 'UN', 'Notification marked as unread');
+    this.notificationService.markAsUnread(alert.notificationId).subscribe({
+      next: () => { this.toast.success('Notification marked as unread'); this.loadNotifications(); },
+      error: () => this.toast.error('Failed to update status')
+    });
   }
 
-  private updateStatus(alert: any, status: 'RD' | 'UN', successMsg: string) {
-    const body = { ...alert, status };
-    this.notificationService.updateNotification(alert.notificationId, body).subscribe({
-      next: () => {
-        this.toast.success(successMsg);
-        this.loadNotifications();
-      },
-      error: () => this.toast.error('Failed to update status')
+  dismiss(alert: any) {
+    this.notificationService.dismiss(alert.notificationId).subscribe({
+      next: () => { this.toast.success('Notification dismissed'); this.loadNotifications(); },
+      error: () => this.toast.error('Failed to dismiss notification')
     });
   }
 
@@ -371,7 +413,7 @@ export class NotificationsComponent implements OnInit {
   openBroadcastModal() {
     this.broadcastForm.reset({
       userId: 1,
-      category: 'General',
+      category: 'CropAdvisory',
       message: ''
     });
     this.showBroadcastModal.set(true);

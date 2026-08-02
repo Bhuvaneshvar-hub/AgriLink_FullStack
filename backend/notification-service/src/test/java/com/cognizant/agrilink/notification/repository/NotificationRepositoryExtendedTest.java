@@ -3,6 +3,7 @@ package com.cognizant.agrilink.notification.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import java.time.LocalDate;
 import java.util.List;
@@ -29,7 +30,7 @@ class NotificationRepositoryExtendedTest {
 		return Notification.builder()
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
@@ -37,14 +38,14 @@ class NotificationRepositoryExtendedTest {
 
 	private static Stream<Arguments> notificationFields() {
 		return Stream.of(
-				Arguments.of("Sowing window opens next week", "CropAdvisory", NotificationStatus.UN),
-				Arguments.of("Your subsidy is approved", "Subsidy", NotificationStatus.RD),
-				Arguments.of("Seed order confirmed", "InputProcurement", NotificationStatus.UN),
-				Arguments.of("Produce listed for sale", "ProduceSale", NotificationStatus.UN),
-				Arguments.of("Compliance document due", "Compliance", NotificationStatus.RD),
-				Arguments.of("Pesticide advisory issued", "CropAdvisory", NotificationStatus.UN),
-				Arguments.of("Fertilizer subsidy released", "Subsidy", NotificationStatus.UN),
-				Arguments.of("Tractor rental confirmed", "InputProcurement", NotificationStatus.RD));
+				Arguments.of("Sowing window opens next week", NotificationCategory.CropAdvisory, NotificationStatus.UN),
+				Arguments.of("Your subsidy is approved", NotificationCategory.Subsidy, NotificationStatus.RD),
+				Arguments.of("Seed order confirmed", NotificationCategory.InputProcurement, NotificationStatus.UN),
+				Arguments.of("Produce listed for sale", NotificationCategory.ProduceSale, NotificationStatus.UN),
+				Arguments.of("Compliance document due", NotificationCategory.Compliance, NotificationStatus.RD),
+				Arguments.of("Pesticide advisory issued", NotificationCategory.CropAdvisory, NotificationStatus.UN),
+				Arguments.of("Fertilizer subsidy released", NotificationCategory.Subsidy, NotificationStatus.UN),
+				Arguments.of("Tractor rental confirmed", NotificationCategory.InputProcurement, NotificationStatus.RD));
 	}
 
 	private static Stream<Arguments> dateArguments() {
@@ -71,7 +72,7 @@ class NotificationRepositoryExtendedTest {
 		Notification found = notificationRepository.findById(saved.getNotificationId()).orElseThrow();
 
 		assertThat(found.getMessage()).isEqualTo("Sowing reminder");
-		assertThat(found.getCategory()).isEqualTo("CropAdvisory");
+		assertThat(found.getCategory()).isEqualTo(NotificationCategory.CropAdvisory);
 		assertThat(found.getStatus()).isEqualTo(NotificationStatus.UN);
 		assertThat(found.getUserId()).isEqualTo(1);
 		assertThat(found.getCreatedDate()).isEqualTo(LocalDate.of(2026, 6, 15));
@@ -171,10 +172,84 @@ class NotificationRepositoryExtendedTest {
 		assertThat(found.getMessage()).isEqualTo("Updated reminder");
 	}
 
+	// ── Derived query methods ─────────────────────────────────────────────
+
+	@Test
+	void findByUserIdReturnsOnlyMatchingRecipient() {
+		Notification mine = buildNotification();
+		mine.setUserId(11);
+		Notification other = buildNotification();
+		other.setUserId(22);
+		notificationRepository.save(mine);
+		notificationRepository.save(other);
+
+		List<Notification> found = notificationRepository.findByUserId(11);
+
+		assertThat(found).hasSize(1);
+		assertThat(found.get(0).getUserId()).isEqualTo(11);
+	}
+
+	@Test
+	void findByUserIdReturnsEmptyWhenNoneForUser() {
+		Notification other = buildNotification();
+		other.setUserId(22);
+		notificationRepository.save(other);
+
+		assertThat(notificationRepository.findByUserId(11)).isEmpty();
+	}
+
+	@Test
+	void findByUserIdAndStatusFiltersByBoth() {
+		Notification unread = buildNotification();
+		unread.setUserId(11);
+		unread.setStatus(NotificationStatus.UN);
+		Notification read = buildNotification();
+		read.setUserId(11);
+		read.setStatus(NotificationStatus.RD);
+		Notification otherUser = buildNotification();
+		otherUser.setUserId(22);
+		otherUser.setStatus(NotificationStatus.UN);
+		notificationRepository.save(unread);
+		notificationRepository.save(read);
+		notificationRepository.save(otherUser);
+
+		List<Notification> found = notificationRepository.findByUserIdAndStatus(11, NotificationStatus.UN);
+
+		assertThat(found).hasSize(1);
+		assertThat(found.get(0).getUserId()).isEqualTo(11);
+		assertThat(found.get(0).getStatus()).isEqualTo(NotificationStatus.UN);
+	}
+
+	@Test
+	void countByUserIdAndStatusCountsMatching() {
+		Notification unreadA = buildNotification();
+		unreadA.setUserId(11);
+		unreadA.setStatus(NotificationStatus.UN);
+		Notification unreadB = buildNotification();
+		unreadB.setUserId(11);
+		unreadB.setStatus(NotificationStatus.UN);
+		Notification read = buildNotification();
+		read.setUserId(11);
+		read.setStatus(NotificationStatus.RD);
+		Notification otherUser = buildNotification();
+		otherUser.setUserId(22);
+		otherUser.setStatus(NotificationStatus.UN);
+		notificationRepository.save(unreadA);
+		notificationRepository.save(unreadB);
+		notificationRepository.save(read);
+		notificationRepository.save(otherUser);
+
+		assertThat(notificationRepository.countByUserIdAndStatus(11, NotificationStatus.UN)).isEqualTo(2L);
+	}
+
+	@Test
+	void countByUserIdAndStatusReturnsZeroWhenNoneMatch() {
+		assertThat(notificationRepository.countByUserIdAndStatus(11, NotificationStatus.UN)).isZero();
+	}
+
 	@ParameterizedTest
-	@ValueSource(strings = {"CropAdvisory", "Subsidy", "InputProcurement", "ProduceSale", "Compliance",
-			"WeatherAlert", "MarketPrice", "PestWarning"})
-	void savePersistsVariousCategories(String category) {
+	@EnumSource(NotificationCategory.class)
+	void savePersistsVariousCategories(NotificationCategory category) {
 		Notification notification = buildNotification();
 		notification.setCategory(category);
 
@@ -271,7 +346,7 @@ class NotificationRepositoryExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("notificationFields")
-	void savePersistsFullFieldCombinations(String message, String category, NotificationStatus status) {
+	void savePersistsFullFieldCombinations(String message, NotificationCategory category, NotificationStatus status) {
 		Notification notification = Notification.builder()
 				.userId(7)
 				.message(message)
@@ -295,9 +370,9 @@ class NotificationRepositoryExtendedTest {
 			"3, InputProcurement, UN",
 			"4, ProduceSale, UN",
 			"5, Compliance, RD",
-			"6, WeatherAlert, UN"
+			"6, CropAdvisory, UN"
 	})
-	void savePersistsCsvCombinations(Integer userId, String category, NotificationStatus status) {
+	void savePersistsCsvCombinations(Integer userId, NotificationCategory category, NotificationStatus status) {
 		Notification notification = buildNotification();
 		notification.setUserId(userId);
 		notification.setCategory(category);

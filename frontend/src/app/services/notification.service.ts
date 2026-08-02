@@ -27,4 +27,27 @@ export class NotificationService {
   deleteNotification(id: number): Observable<any> {
     return this.http.delete<any>(`/agrilink/notification/notifications/${id}`);
   }
+
+  // The authenticated user's own inbox.
+  getMyNotifications(): Observable<any[]> {
+    return this.http.get<any[]>('/agrilink/notification/notifications/me');
+  }
+
+  // Unread badge count for the authenticated user.
+  getUnreadCount(): Observable<{ unread: number }> {
+    return this.http.get<{ unread: number }>('/agrilink/notification/notifications/unread-count');
+  }
+
+  // Recipient inbox actions.
+  markAsRead(id: number): Observable<any> {
+    return this.http.put<any>(`/agrilink/notification/notifications/${id}/read`, {});
+  }
+
+  markAsUnread(id: number): Observable<any> {
+    return this.http.put<any>(`/agrilink/notification/notifications/${id}/unread`, {});
+  }
+
+  dismiss(id: number): Observable<any> {
+    return this.http.put<any>(`/agrilink/notification/notifications/${id}/dismiss`, {});
+  }
 }

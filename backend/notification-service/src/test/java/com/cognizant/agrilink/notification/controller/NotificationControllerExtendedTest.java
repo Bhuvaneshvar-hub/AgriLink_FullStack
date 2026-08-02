@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.cognizant.agrilink.notification.dto.NotificationDto;
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import com.cognizant.agrilink.notification.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
@@ -52,7 +54,7 @@ class NotificationControllerExtendedTest {
 		mockMvc = MockMvcBuilders.standaloneSetup(notificationController).build();
 	}
 
-	private Notification build(Integer id, Integer userId, String message, String category, NotificationStatus status,
+	private Notification build(Integer id, Integer userId, String message, NotificationCategory category, NotificationStatus status,
 			LocalDate createdDate) {
 		return Notification.builder()
 				.notificationId(id)
@@ -66,12 +68,12 @@ class NotificationControllerExtendedTest {
 
 	private static Stream<Arguments> records() {
 		return Stream.of(
-				Arguments.of(1, 11, "Sowing window opens", "CropAdvisory", NotificationStatus.UN, "2026-01-01"),
-				Arguments.of(2, 22, "Subsidy approved", "Subsidy", NotificationStatus.RD, "2025-12-31"),
-				Arguments.of(3, 33, "Seed order placed", "InputProcurement", NotificationStatus.UN, "2024-02-29"),
-				Arguments.of(4, 44, "Produce listed", "ProduceSale", NotificationStatus.UN, "2030-06-15"),
-				Arguments.of(5, 55, "Compliance due", "Compliance", NotificationStatus.RD, "2000-02-29"),
-				Arguments.of(6, 66, "Weather warning", "WeatherAlert", NotificationStatus.UN, "2099-07-04"));
+				Arguments.of(1, 11, "Sowing window opens", NotificationCategory.CropAdvisory, NotificationStatus.UN, "2026-01-01"),
+				Arguments.of(2, 22, "Subsidy approved", NotificationCategory.Subsidy, NotificationStatus.RD, "2025-12-31"),
+				Arguments.of(3, 33, "Seed order placed", NotificationCategory.InputProcurement, NotificationStatus.UN, "2024-02-29"),
+				Arguments.of(4, 44, "Produce listed", NotificationCategory.ProduceSale, NotificationStatus.UN, "2030-06-15"),
+				Arguments.of(5, 55, "Compliance due", NotificationCategory.Compliance, NotificationStatus.RD, "2000-02-29"),
+				Arguments.of(6, 66, "Weather warning", NotificationCategory.CropAdvisory, NotificationStatus.UN, "2099-07-04"));
 	}
 
 	@Test
@@ -87,7 +89,7 @@ class NotificationControllerExtendedTest {
 
 	@Test
 	void getAllReturnsFullDataForSingleRecord() throws Exception {
-		Notification n = build(1, 11, "Sowing reminder", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification n = build(1, 11, "Sowing reminder", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
 		when(notificationService.getAll()).thenReturn(List.of(n));
 
 		mockMvc.perform(get("/notifications"))
@@ -106,7 +108,7 @@ class NotificationControllerExtendedTest {
 	void getAllReturnsExpectedListSize(int size) throws Exception {
 		List<Notification> list = new ArrayList<>();
 		for (int i = 0; i < size; i++) {
-			list.add(build(i + 1, i, "msg" + i, "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15)));
+			list.add(build(i + 1, i, "msg" + i, NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15)));
 		}
 		when(notificationService.getAll()).thenReturn(list);
 
@@ -118,7 +120,7 @@ class NotificationControllerExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void getByIdReturnsFullData(Integer id, Integer userId, String message, String category, NotificationStatus status,
+	void getByIdReturnsFullData(Integer id, Integer userId, String message, NotificationCategory category, NotificationStatus status,
 			String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
 		when(notificationService.getById(id)).thenReturn(n);
@@ -128,7 +130,7 @@ class NotificationControllerExtendedTest {
 				.andExpect(jsonPath("$.notificationId").value(id))
 				.andExpect(jsonPath("$.userId").value(userId))
 				.andExpect(jsonPath("$.message").value(message))
-				.andExpect(jsonPath("$.category").value(category))
+				.andExpect(jsonPath("$.category").value(category.name()))
 				.andExpect(jsonPath("$.status").value(status.name()))
 				.andExpect(jsonPath("$.createdDate").value(createdDate));
 		verify(notificationService).getById(id);
@@ -136,7 +138,7 @@ class NotificationControllerExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void getAllReturnsFullDataParameterized(Integer id, Integer userId, String message, String category,
+	void getAllReturnsFullDataParameterized(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
 		when(notificationService.getAll()).thenReturn(List.of(n));
@@ -146,7 +148,7 @@ class NotificationControllerExtendedTest {
 				.andExpect(jsonPath("$[0].notificationId").value(id))
 				.andExpect(jsonPath("$[0].userId").value(userId))
 				.andExpect(jsonPath("$[0].message").value(message))
-				.andExpect(jsonPath("$[0].category").value(category))
+				.andExpect(jsonPath("$[0].category").value(category.name()))
 				.andExpect(jsonPath("$[0].status").value(status.name()))
 				.andExpect(jsonPath("$[0].createdDate").value(createdDate));
 		verify(notificationService).getAll();
@@ -155,7 +157,7 @@ class NotificationControllerExtendedTest {
 	@ParameterizedTest
 	@ValueSource(ints = {1, 2, 100, 5000, 999999, 2147483647})
 	void getByIdQueriesServiceWithGivenId(int id) throws Exception {
-		Notification n = build(id, 1, "msg", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification n = build(id, 1, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
 		when(notificationService.getById(id)).thenReturn(n);
 
 		mockMvc.perform(get("/notifications/" + id))
@@ -166,7 +168,7 @@ class NotificationControllerExtendedTest {
 
 	@Test
 	void createReturnsMessageOnly() throws Exception {
-		Notification n = build(1, 1, "msg", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 6, 15));
+		Notification n = build(1, 1, "msg", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(n);
 
 		mockMvc.perform(post("/notifications")
@@ -184,7 +186,7 @@ class NotificationControllerExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void createReturnsMessageOnlyForVariousBodies(Integer id, Integer userId, String message, String category,
+	void createReturnsMessageOnlyForVariousBodies(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(n);
@@ -207,9 +209,8 @@ class NotificationControllerExtendedTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"CropAdvisory", "Subsidy", "InputProcurement", "ProduceSale", "Compliance",
-			"WeatherAlert", "MarketPrice", "PestWarning"})
-	void createReturnsMessageOnlyForVariousCategories(String category) throws Exception {
+	@EnumSource(NotificationCategory.class)
+	void createReturnsMessageOnlyForVariousCategories(NotificationCategory category) throws Exception {
 		Notification n = build(1, 1, "msg", category, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(n);
 		NotificationDto dto = NotificationDto.builder().category(category).build();
@@ -225,7 +226,7 @@ class NotificationControllerExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void updateReturnsMessageOnly(Integer id, Integer userId, String message, String category, NotificationStatus status,
+	void updateReturnsMessageOnly(Integer id, Integer userId, String message, NotificationCategory category, NotificationStatus status,
 			String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
 		when(notificationService.update(eq(id), any(NotificationDto.class))).thenReturn(n);
@@ -250,7 +251,7 @@ class NotificationControllerExtendedTest {
 	@ParameterizedTest
 	@ValueSource(ints = {1, 2, 100, 5000, 999999, 2147483647})
 	void updateQueriesServiceWithGivenId(int id) throws Exception {
-		Notification n = build(id, 1, "msg", "CropAdvisory", NotificationStatus.RD, LocalDate.of(2026, 6, 15));
+		Notification n = build(id, 1, "msg", NotificationCategory.CropAdvisory, NotificationStatus.RD, LocalDate.of(2026, 6, 15));
 		when(notificationService.update(eq(id), any(NotificationDto.class))).thenReturn(n);
 
 		mockMvc.perform(put("/notifications/" + id)
@@ -269,9 +270,9 @@ class NotificationControllerExtendedTest {
 			"3, InputProcurement, UN",
 			"4, ProduceSale, UN",
 			"5, Compliance, RD",
-			"6, WeatherAlert, UN"
+			"6, CropAdvisory, UN"
 	})
-	void updateReturnsMessageOnlyForCsvBodies(Integer id, String category, NotificationStatus status) throws Exception {
+	void updateReturnsMessageOnlyForCsvBodies(Integer id, NotificationCategory category, NotificationStatus status) throws Exception {
 		Notification n = build(id, 1, "msg", category, status, LocalDate.of(2026, 6, 15));
 		when(notificationService.update(eq(id), any(NotificationDto.class))).thenReturn(n);
 		NotificationDto dto = NotificationDto.builder().category(category).status(status).build();
@@ -311,7 +312,7 @@ class NotificationControllerExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("records")
-	void createInvokesServiceForVariousRecords(Integer id, Integer userId, String message, String category,
+	void createInvokesServiceForVariousRecords(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(n);

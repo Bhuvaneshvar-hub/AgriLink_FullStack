@@ -15,6 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.cognizant.agrilink.farmer.dto.LandHoldingDto;
 import com.cognizant.agrilink.farmer.entity.LandHolding;
 import com.cognizant.agrilink.farmer.enums.Status;
+import com.cognizant.agrilink.farmer.notification.NotificationClient;
+import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import com.cognizant.agrilink.farmer.service.LandHoldingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -36,6 +38,12 @@ class LandHoldingControllerExtendedTest {
 
 	@Mock
 	private LandHoldingService landHoldingService;
+
+	@Mock
+	private FarmerProfileService farmerProfileService;
+
+	@Mock
+	private NotificationClient notificationClient;
 
 	@InjectMocks
 	private LandHoldingController landHoldingController;

@@ -33,8 +33,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/notifications", "/notifications/**")
                         .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
                                 "ComplianceAnalyst", "AgriLinkAdmin")
+                        // system/workflow-generated targeted alerts — any authenticated role
+                        // (emitted by backend services on domain events). Must precede the
+                        // restricted broadcast POST rule.
+                        .requestMatchers(HttpMethod.POST, "/notifications/system")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
+                                "ComplianceAnalyst", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.POST, "/notifications")
                         .hasAnyRole("ExtensionOfficer", "AgriLinkAdmin")
+                        // recipient inbox actions — any role may read/dismiss their own
+                        // (ownership is enforced in the controller). Must precede the generic PUT rule.
+                        .requestMatchers(HttpMethod.PUT, "/notifications/*/read", "/notifications/*/unread",
+                                "/notifications/*/dismiss")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin",
+                                "ComplianceAnalyst", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.PUT, "/notifications/**")
                         .hasAnyRole("ExtensionOfficer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.DELETE, "/notifications/**")

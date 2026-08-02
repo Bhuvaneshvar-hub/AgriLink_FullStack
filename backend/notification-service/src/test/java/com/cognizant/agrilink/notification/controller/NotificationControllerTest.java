@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.cognizant.agrilink.notification.dto.NotificationDto;
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import com.cognizant.agrilink.notification.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,7 +49,7 @@ class NotificationControllerTest {
 				.notificationId(1)
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
@@ -81,6 +82,17 @@ class NotificationControllerTest {
 						.content(objectMapper.writeValueAsString(new NotificationDto())))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.message").value("Notification created successfully"));
+	}
+
+	@Test
+	void createSystemReturnsMessageOnly() throws Exception {
+		when(notificationService.create(any(NotificationDto.class))).thenReturn(notification);
+
+		mockMvc.perform(post("/notifications/system")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new NotificationDto())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("Notification created"));
 	}
 
 	@Test

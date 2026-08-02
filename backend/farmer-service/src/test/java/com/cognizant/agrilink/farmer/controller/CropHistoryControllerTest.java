@@ -1,10 +1,7 @@
 package com.cognizant.agrilink.farmer.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,13 +10,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cognizant.agrilink.farmer.dto.LandHoldingDto;
+import com.cognizant.agrilink.farmer.dto.CropHistoryDto;
+import com.cognizant.agrilink.farmer.entity.CropHistory;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
-import com.cognizant.agrilink.farmer.entity.LandHolding;
-import com.cognizant.agrilink.farmer.enums.Status;
-import com.cognizant.agrilink.farmer.notification.NotificationClient;
+import com.cognizant.agrilink.farmer.service.CropHistoryService;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
-import com.cognizant.agrilink.farmer.service.LandHoldingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,112 +28,83 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
-class LandHoldingControllerTest {
+class CropHistoryControllerTest {
 
 	@Mock
-	private LandHoldingService landHoldingService;
+	private CropHistoryService cropHistoryService;
 
 	@Mock
 	private FarmerProfileService farmerProfileService;
 
-	@Mock
-	private NotificationClient notificationClient;
-
 	@InjectMocks
-	private LandHoldingController landHoldingController;
+	private CropHistoryController cropHistoryController;
 
 	private MockMvc mockMvc;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	private LandHolding landHolding;
+	private CropHistory cropHistory;
 
 	@BeforeEach
 	void setUp() {
-		mockMvc = MockMvcBuilders.standaloneSetup(landHoldingController).build();
-		landHolding = LandHolding.builder()
+		mockMvc = MockMvcBuilders.standaloneSetup(cropHistoryController).build();
+		cropHistory = CropHistory.builder()
+				.historyId(1)
 				.holdingId(1)
 				.farmerId(1)
-				.surveyNumber("SY-101/2A")
-				.areaAcres(5.5)
-				.soilType("Black")
-				.irrigationSource("Borewell")
-				.ownershipType("Owned")
-				.status(Status.AC)
+				.cropName("Paddy")
+				.season("Kharif")
+				.cropYear(2024)
+				.areaAcres(4.2)
+				.yieldQuintals(92.5)
+				.remarks("Good monsoon")
 				.build();
 	}
 
 	@Test
 	void getAllReturnsData() throws Exception {
-		when(landHoldingService.getAll()).thenReturn(List.of(landHolding));
+		when(cropHistoryService.getAll()).thenReturn(List.of(cropHistory));
 
-		mockMvc.perform(get("/land-holdings"))
+		mockMvc.perform(get("/crop-histories"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].surveyNumber").value("SY-101/2A"));
+				.andExpect(jsonPath("$[0].cropName").value("Paddy"));
 	}
 
 	@Test
 	void getByIdReturnsData() throws Exception {
-		when(landHoldingService.getById(1)).thenReturn(landHolding);
+		when(cropHistoryService.getById(1)).thenReturn(cropHistory);
 
-		mockMvc.perform(get("/land-holdings/1"))
+		mockMvc.perform(get("/crop-histories/1"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.soilType").value("Black"));
+				.andExpect(jsonPath("$.season").value("Kharif"));
 	}
 
 	@Test
 	void createReturnsMessageOnly() throws Exception {
-		when(landHoldingService.create(any(LandHoldingDto.class))).thenReturn(landHolding);
+		when(cropHistoryService.create(any(CropHistoryDto.class))).thenReturn(cropHistory);
 
-		mockMvc.perform(post("/land-holdings")
+		mockMvc.perform(post("/crop-histories")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(new LandHoldingDto())))
+						.content(objectMapper.writeValueAsString(new CropHistoryDto())))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding submitted successfully"));
+				.andExpect(jsonPath("$.message").value("CropHistory recorded successfully"));
 	}
 
 	@Test
 	void updateReturnsMessageOnly() throws Exception {
-		when(landHoldingService.update(eq(1), any(LandHoldingDto.class))).thenReturn(landHolding);
+		when(cropHistoryService.update(eq(1), any(CropHistoryDto.class))).thenReturn(cropHistory);
 
-		mockMvc.perform(put("/land-holdings/1")
+		mockMvc.perform(put("/crop-histories/1")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(new LandHoldingDto())))
+						.content(objectMapper.writeValueAsString(new CropHistoryDto())))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding updated successfully"));
+				.andExpect(jsonPath("$.message").value("CropHistory updated successfully"));
 	}
 
 	@Test
 	void deleteReturnsMessageOnly() throws Exception {
-		mockMvc.perform(delete("/land-holdings/1"))
+		mockMvc.perform(delete("/crop-histories/1"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding deleted successfully"));
-	}
-
-	@Test
-	void approveNotifiesOwner() throws Exception {
-		when(landHoldingService.setStatus(1, Status.AC)).thenReturn(landHolding);
-		when(farmerProfileService.getById(1))
-				.thenReturn(FarmerProfile.builder().farmerId(1).userId(42).build());
-
-		mockMvc.perform(put("/land-holdings/1/approve"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding approved"));
-
-		// The owning farmer (userId 42) is alerted; admins see it too (unscoped list).
-		verify(notificationClient).notify(eq(42), anyString(), eq("Compliance"), isNull());
-	}
-
-	@Test
-	void rejectNotifiesOwner() throws Exception {
-		when(landHoldingService.setStatus(1, Status.DP)).thenReturn(landHolding);
-		when(farmerProfileService.getById(1))
-				.thenReturn(FarmerProfile.builder().farmerId(1).userId(42).build());
-
-		mockMvc.perform(put("/land-holdings/1/reject"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("LandHolding marked disputed"));
-
-		verify(notificationClient).notify(eq(42), anyString(), eq("Compliance"), isNull());
+				.andExpect(jsonPath("$.message").value("CropHistory deleted successfully"));
 	}
 
 	// ── Ownership enforcement ─────────────────────────────────────────────
@@ -160,41 +126,41 @@ class LandHoldingControllerTest {
 	}
 
 	@Test
-	void farmerCannotViewAnotherFarmersHolding() {
-		// holding belongs to farmerId 1; caller (userId 2) owns only farmerId 99
-		when(landHoldingService.getById(1)).thenReturn(landHolding);
+	void farmerCannotViewAnotherFarmersHistory() {
+		// record belongs to farmerId 1; caller (userId 2) owns only farmerId 99
+		when(cropHistoryService.getById(1)).thenReturn(cropHistory);
 		when(farmerProfileService.getByUserId(2))
 				.thenReturn(List.of(FarmerProfile.builder().farmerId(99).userId(2).build()));
 
 		Throwable thrown = org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
-				mockMvc.perform(get("/land-holdings/1").principal(farmer(2))));
+				mockMvc.perform(get("/crop-histories/1").principal(farmer(2))));
 		assertAccessDenied(thrown);
 	}
 
 	@Test
-	void farmerCanViewOwnHolding() throws Exception {
-		// holding belongs to farmerId 1; caller (userId 2) owns farmerId 1
-		when(landHoldingService.getById(1)).thenReturn(landHolding);
+	void farmerCanViewOwnHistory() throws Exception {
+		// record belongs to farmerId 1; caller (userId 2) owns farmerId 1
+		when(cropHistoryService.getById(1)).thenReturn(cropHistory);
 		when(farmerProfileService.getByUserId(2))
 				.thenReturn(List.of(FarmerProfile.builder().farmerId(1).userId(2).build()));
 
-		mockMvc.perform(get("/land-holdings/1").principal(farmer(2)))
+		mockMvc.perform(get("/crop-histories/1").principal(farmer(2)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.soilType").value("Black"));
+				.andExpect(jsonPath("$.cropName").value("Paddy"));
 	}
 
 	@Test
-	void farmerCannotCreateHoldingForAnotherFarmer() {
-		// caller (userId 2) owns only farmerId 99 but posts a holding for farmerId 1
+	void farmerCannotCreateHistoryForAnotherFarmer() {
+		// caller (userId 2) owns only farmerId 99 but posts a record for farmerId 1
 		when(farmerProfileService.getByUserId(2))
 				.thenReturn(List.of(FarmerProfile.builder().farmerId(99).userId(2).build()));
 
 		Throwable thrown = org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
-				mockMvc.perform(post("/land-holdings")
+				mockMvc.perform(post("/crop-histories")
 						.principal(farmer(2))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(
-								LandHoldingDto.builder().farmerId(1).build()))));
+								CropHistoryDto.builder().farmerId(1).build()))));
 		assertAccessDenied(thrown);
 	}
 }

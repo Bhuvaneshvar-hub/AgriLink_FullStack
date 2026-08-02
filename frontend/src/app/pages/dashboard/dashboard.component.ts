@@ -21,19 +21,6 @@ import { ProduceService } from '../../services/produce.service';
 
       <!-- Hero Row -->
       <div class="hero-grid">
-        <div class="hero-card hero-profile">
-          <div class="hero-card-top">
-            <span class="hero-chip">Account</span>
-            <i class="material-icons-round">account_circle</i>
-          </div>
-          <div class="hero-name">{{ currentUser?.name }}</div>
-          <div class="hero-sub">{{ currentUser?.email }}</div>
-          <div class="hero-footer">
-            <span class="hero-footer-label">Role</span>
-            <span class="hero-footer-value">{{ currentUser?.roleName }}</span>
-          </div>
-        </div>
-
         @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
           <a routerLink="/pending-users" class="hero-card hero-amber">
             <div class="hero-card-top">
@@ -100,6 +87,34 @@ import { ProduceService } from '../../services/produce.service';
           </a>
         }
       </div>
+
+      <!-- Status Overview (role-specific bar-graph breakdowns) -->
+      @if (isLoadingRoleStats()) {
+        <div class="chart-grid mb-3">
+          <div class="card chart-card"><p class="text-secondary">Loading status overview...</p></div>
+        </div>
+      } @else if (chartCards().length > 0) {
+        <div class="chart-grid mb-3">
+          @for (chart of chartCards(); track chart.title) {
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><i class="material-icons-round chart-card-icon">{{ chart.icon }}</i>{{ chart.title }}</h3>
+              </div>
+              <div class="bar-chart mt-3">
+                @for (bar of chart.bars; track bar.label) {
+                  <div class="bar-row">
+                    <span class="bar-label">{{ bar.label }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="bar.percent" [style.background-color]="bar.color"></div>
+                    </div>
+                    <span class="bar-count">{{ bar.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
 
       <!-- Mini Activity Row (audit-log based; only roles with audit read access) -->
       @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
@@ -361,9 +376,6 @@ import { ProduceService } from '../../services/produce.service';
     a.hero-card:hover {
       transform: translateY(-3px);
     }
-    .hero-profile {
-      background: linear-gradient(135deg, var(--sidebar-bg) 0%, var(--primary-color) 100%);
-    }
     .hero-amber {
       background: linear-gradient(135deg, #b45309 0%, var(--warning) 100%);
     }
@@ -419,6 +431,54 @@ import { ProduceService } from '../../services/produce.service';
     }
     .hero-footer-value {
       font-weight: 700;
+    }
+
+    /* Status overview bar charts */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-card-icon {
+      font-size: 18px;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+      color: var(--primary-color);
+    }
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 32px;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .bar-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .bar-track {
+      height: 10px;
+      background-color: var(--bg-dark);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width var(--transition-normal);
+      min-width: 3px;
+    }
+    .bar-count {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: right;
+      font-family: var(--font-title);
     }
 
     /* Mini activity row */
@@ -690,8 +750,40 @@ export class DashboardComponent implements OnInit {
   myProduceListingsCount = signal(0);
   mySubsidyStats = signal<{ total: number; pending: number }>({ total: 0, pending: 0 });
 
+  // Status-breakdown bar charts (role-specific)
+  chartCards = signal<{ title: string; icon: string; bars: { label: string; count: number; percent: number; color: string }[] }[]>([]);
+
   private pendingUsersList: any[] = [];
   private pendingApplicationsList: any[] = [];
+  private cropPlansRaw: any[] = [];
+  private subsidyAppsRaw: any[] = [];
+  private produceListingsRaw: any[] = [];
+  private produceSalesRaw: any[] = [];
+
+  private readonly CROP_STATUS_META: Record<string, { label: string; color: string }> = {
+    PLANNED: { label: 'Planned', color: 'var(--secondary-color)' },
+    SOWING: { label: 'Sowing', color: 'var(--info)' },
+    GROWING: { label: 'Growing', color: 'var(--primary-color)' },
+    HARVESTED: { label: 'Harvested', color: 'var(--success)' },
+    FAILED: { label: 'Failed', color: 'var(--danger)' }
+  };
+  private readonly SUBSIDY_STATUS_META: Record<string, { label: string; color: string }> = {
+    PE: { label: 'Pending', color: 'var(--warning)' },
+    AP: { label: 'Approved', color: 'var(--success)' },
+    RE: { label: 'Rejected', color: 'var(--danger)' },
+    DB: { label: 'Disbursed', color: 'var(--secondary-color)' }
+  };
+  private readonly PRODUCE_STATUS_META: Record<string, { label: string; color: string }> = {
+    AV: { label: 'Available', color: 'var(--success)' },
+    PB: { label: 'Pending Bid', color: 'var(--warning)' },
+    WD: { label: 'Withdrawn', color: 'var(--text-muted)' },
+    SO: { label: 'Sold', color: 'var(--secondary-color)' }
+  };
+  private readonly PAYMENT_STATUS_META: Record<string, { label: string; color: string }> = {
+    PD: { label: 'Paid', color: 'var(--success)' },
+    PE: { label: 'Pending', color: 'var(--warning)' },
+    OV: { label: 'Overdue', color: 'var(--danger)' }
+  };
 
   get currentUser() {
     return this.authService.currentUserValue;
@@ -723,6 +815,7 @@ export class DashboardComponent implements OnInit {
             this.pendingApplicationsList = pending;
             this.totalDisbursedAmount.set(data.reduce((sum, a) => sum + (a.disbursedAmount || 0), 0));
             this.rejectedApplicationsCount.set(data.filter(a => a.status === 'RE').length);
+            this.subsidyAppsRaw = data;
           },
           error: () => {},
           complete: () => resolve()
@@ -786,17 +879,33 @@ export class DashboardComponent implements OnInit {
       }));
     }
 
+    if (this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+      roleStatsCalls.push(new Promise((resolve) => {
+        this.cropService.getAllCropPlans().subscribe({
+          next: (data) => this.cropPlansRaw = data,
+          error: () => {},
+          complete: () => resolve()
+        });
+      }));
+    }
+
     if (this.authService.hasRole(['ProcurementOfficer'])) {
       roleStatsCalls.push(new Promise((resolve) => {
         this.produceService.getAllProduceListings().subscribe({
-          next: (data) => this.availableListingsCount.set(data.filter(l => l.status === 'AV').length),
+          next: (data) => {
+            this.availableListingsCount.set(data.filter(l => l.status === 'AV').length);
+            this.produceListingsRaw = data;
+          },
           error: () => {},
           complete: () => resolve()
         });
       }));
       roleStatsCalls.push(new Promise((resolve) => {
         this.produceService.getAllProduceSales().subscribe({
-          next: (data) => this.pendingPaymentsCount.set(data.filter(s => s.paymentStatus === 'PE').length),
+          next: (data) => {
+            this.pendingPaymentsCount.set(data.filter(s => s.paymentStatus === 'PE').length);
+            this.produceSalesRaw = data;
+          },
           error: () => {},
           complete: () => resolve()
         });
@@ -829,6 +938,7 @@ export class DashboardComponent implements OnInit {
                   total: mine.length,
                   growing: mine.filter(p => p.status === 'GROWING').length
                 });
+                this.cropPlansRaw = mine;
               },
               error: () => {},
               complete: () => resolve()
@@ -839,25 +949,69 @@ export class DashboardComponent implements OnInit {
               },
               error: () => {}
             });
+            this.subsidyService.getApplicationsByFarmer(farmerId).subscribe({
+              next: (data) => {
+                this.mySubsidyStats.set({
+                  total: data.length,
+                  pending: data.filter(a => a.status === 'PE').length
+                });
+                this.subsidyAppsRaw = data;
+              },
+              error: () => {}
+            });
           },
           error: () => resolve()
         });
       }));
-      roleStatsCalls.push(new Promise((resolve) => {
-        this.subsidyService.getAllApplications().subscribe({
-          next: (data) => {
-            this.mySubsidyStats.set({
-              total: data.length,
-              pending: data.filter(a => a.status === 'PE').length
-            });
-          },
-          error: () => {},
-          complete: () => resolve()
-        });
-      }));
     }
 
-    Promise.all(roleStatsCalls).then(() => this.isLoadingRoleStats.set(false));
+    Promise.all(roleStatsCalls).then(() => {
+      this.isLoadingRoleStats.set(false);
+      this.buildChartCards();
+    });
+  }
+
+  private buildBars(
+    data: any[],
+    statusField: string,
+    meta: Record<string, { label: string; color: string }>
+  ): { label: string; count: number; percent: number; color: string }[] {
+    const counts = new Map<string, number>();
+    for (const item of data) {
+      const key = item[statusField];
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const max = Math.max(1, ...counts.values());
+    return Object.keys(meta).map(key => {
+      const count = counts.get(key) || 0;
+      return { label: meta[key].label, count, percent: Math.round((count / max) * 100), color: meta[key].color };
+    });
+  }
+
+  private buildChartCards(): void {
+    const cards: { title: string; icon: string; bars: { label: string; count: number; percent: number; color: string }[] }[] = [];
+
+    if (this.authService.hasRole(['Farmer'])) {
+      cards.push({ title: 'My Crop Plans', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'My Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['ExtensionOfficer'])) {
+      cards.push({ title: 'Crop Plans (All Farmers)', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['ProcurementOfficer'])) {
+      cards.push({ title: 'Produce Listings', icon: 'storefront', bars: this.buildBars(this.produceListingsRaw, 'status', this.PRODUCE_STATUS_META) });
+      cards.push({ title: 'Sale Payment Status', icon: 'payments', bars: this.buildBars(this.produceSalesRaw, 'paymentStatus', this.PAYMENT_STATUS_META) });
+    }
+    if (this.authService.hasRole(['SubsidyAdmin', 'ComplianceAnalyst'])) {
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['AgriLinkAdmin'])) {
+      cards.push({ title: 'Crop Plans', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+
+    this.chartCards.set(cards);
   }
 
   private buildModuleActivityStats(logs: any[]): void {

@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 public class IamRegisterClient {
 
 	private static final String IAM_REGISTER_URL = "http://iam-service/agriLink/session/register";
+	private static final String IAM_REGISTER_ROLLBACK_URL = "http://iam-service/agriLink/session/register/{id}";
 
 	private final RestTemplate restTemplate;
 
@@ -58,6 +59,21 @@ public class IamRegisterClient {
 			String msg = e.getResponseBodyAsString();
 			log.warn("iam-service register failed ({}): {}", e.getStatusCode(), msg);
 			throw new IllegalStateException(extractMessage(msg));
+		}
+	}
+
+	/**
+	 * Best-effort rollback of the IAM account created by {@link #registerFarmer}, used
+	 * when the local FarmerProfile save fails afterwards so the login account doesn't
+	 * linger with no linked profile. Never throws — a failure here is only logged, so
+	 * the caller's original error is what reaches the user.
+	 */
+	public void deleteRegistration(Integer userId) {
+		try {
+			restTemplate.delete(IAM_REGISTER_ROLLBACK_URL, userId);
+		} catch (Exception e) {
+			log.warn("Failed to roll back orphaned iam-service registration for userId={}: {}",
+					userId, e.getMessage());
 		}
 	}
 

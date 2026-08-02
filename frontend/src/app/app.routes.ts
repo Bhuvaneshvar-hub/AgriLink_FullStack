@@ -32,6 +32,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent)
+      },
+      {
         path: 'users',
         loadComponent: () => import('./pages/iam/user-list/user-list.component').then(m => m.UserListComponent),
         canActivate: [roleGuard],

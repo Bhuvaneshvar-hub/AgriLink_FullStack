@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FarmerService } from '../../services/farmer.service';
 import { UserService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
@@ -31,6 +32,10 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         <button class="tab-btn" [class.active]="activeTab() === 'holdings'" (click)="setTab('holdings')">
           <i class="material-icons-round">terrain</i>
           <span>Land Holdings</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'history'" (click)="setTab('history')">
+          <i class="material-icons-round">history</i>
+          <span>Crop History</span>
         </button>
       </div>
 
@@ -85,6 +90,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Village</th>
                         <th>District</th>
                         <th>Phone</th>
+                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -99,10 +105,33 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <td>{{ prof.district }}, {{ prof.state }}</td>
                           <td>{{ prof.phone }}</td>
                           <td>
+                            <span class="badge" [ngClass]="{
+                              'badge-primary': prof.status === 'VE',
+                              'badge-success': prof.status === 'AC',
+                              'badge-secondary': prof.status === 'IN'
+                            }">{{ getStatusLabel(prof.status) }}</span>
+                          </td>
+                          <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewProfileDetails(prof)">
                                 <i class="material-icons-round">visibility</i> View
                               </button>
+                              @if (canVerify()) {
+                                @if (prof.status !== 'VE') {
+                                  <button class="menu-item" (click)="verifyProfile(prof)">
+                                    <i class="material-icons-round">verified_user</i> Verify
+                                  </button>
+                                }
+                                @if (prof.status === 'IN') {
+                                  <button class="menu-item" (click)="activateProfile(prof)">
+                                    <i class="material-icons-round">toggle_on</i> Activate
+                                  </button>
+                                } @else {
+                                  <button class="menu-item" (click)="deactivateProfile(prof)">
+                                    <i class="material-icons-round">toggle_off</i> Deactivate
+                                  </button>
+                                }
+                              }
                               <button class="menu-item" (click)="openProfileModal(prof)">
                                 <i class="material-icons-round">edit</i> Edit
                               </button>
@@ -229,6 +258,93 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
             }
           </div>
         }
+
+        <!-- ============ CROP HISTORY TAB ============ -->
+        @if (activeTab() === 'history') {
+          <div class="tab-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h3>Crop History Records</h3>
+              <button class="btn btn-primary" (click)="openHistoryModal()">
+                <i class="material-icons-round">add</i>
+                <span>Record </span>
+              </button>
+            </div>
+
+            <div class="card filters-card">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="chSearch">Search</label>
+                  <div class="search-field">
+                    <input type="text" id="chSearch" [(ngModel)]="historySearch"
+                      (ngModelChange)="applyHistoryFilters()"
+                      placeholder="Crop name, season or year..." />
+                    <i class="material-icons-round search-icon">search</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            @if (filteredHistories().length === 0) {
+              <div class="empty-state card">
+                <i class="material-icons-round">grass</i>
+                <h3>No Crop History Recorded</h3>
+                <p>Use "Record" to log a past cropping season for a land holding.</p>
+              </div>
+            } @else {
+              <div class="table-container">
+                <div class="table-responsive">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Farmer</th>
+                        <th>Survey No.</th>
+                        <th>Crop</th>
+                        <th>Season</th>
+                        <th>Year</th>
+                        <th>Area (Acres)</th>
+                        <th>Yield (Qtl)</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (rec of paginatedHistories(); track rec.historyId) {
+                        <tr>
+                          <td>{{ getFarmerNameOnly(rec.farmerId) }}</td>
+                          <td>{{ getSurveyNumber(rec.holdingId) }}</td>
+                          <td><strong>{{ rec.cropName }}</strong></td>
+                          <td>{{ rec.season }}</td>
+                          <td>{{ rec.cropYear }}</td>
+                          <td>{{ rec.areaAcres }}</td>
+                          <td>{{ rec.yieldQuintals }}</td>
+                          <td>
+                            <app-action-menu>
+                              <button class="menu-item" (click)="viewHistoryDetails(rec)">
+                                <i class="material-icons-round">visibility</i> View
+                              </button>
+                              <button class="menu-item" (click)="openHistoryModal(rec)">
+                                <i class="material-icons-round">edit</i> Edit
+                              </button>
+                              <button class="menu-item danger" (click)="confirmDeleteHistory(rec)">
+                                <i class="material-icons-round">delete</i> Delete
+                              </button>
+                            </app-action-menu>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <app-pagination
+                  [currentPage]="historyPage"
+                  [pageSize]="historyPageSize"
+                  [totalElements]="filteredHistories().length"
+                  (pageChange)="onHistoryPageChange($event)"
+                  (pageSizeChange)="onHistoryPageSizeChange($event)">
+                </app-pagination>
+              </div>
+            }
+          </div>
+        }
       }
 
       <!-- ============ FARMER PROFILE MODAL ============ -->
@@ -318,6 +434,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="" disabled>Select Status</option>
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
+                      <option value="VE">Verified (VE)</option>
                     </select>
                   </div>
                 </div>
@@ -437,6 +554,88 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         </div>
       }
 
+      <!-- ============ CROP HISTORY MODAL ============ -->
+      @if (showHistoryModal()) {
+        <div class="modal-overlay" (click)="closeHistoryModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ isEditMode() ? 'Edit Crop History Record' : 'Record Crop History' }}</h3>
+              <button class="close-btn" (click)="closeHistoryModal()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <form [formGroup]="historyForm" (ngSubmit)="submitHistoryForm()">
+              <div class="modal-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="chFarmer">Farmer Profile</label>
+                    <select id="chFarmer" formControlName="farmerId" (change)="onHistoryFarmerChange()">
+                      <option value="">Select Profile</option>
+                      @for (prof of farmerProfiles(); track prof.farmerId) {
+                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                      }
+                    </select>
+                    @if (chInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
+                  </div>
+                  <div class="form-group">
+                    <label for="chHolding">Land Holding</label>
+                    <select id="chHolding" formControlName="holdingId">
+                      <option value="">Select Holding</option>
+                      @for (land of holdingsForSelectedFarmer(); track land.holdingId) {
+                        <option [value]="land.holdingId">{{ land.surveyNumber }} ({{ land.areaAcres }} ac)</option>
+                      }
+                    </select>
+                    @if (chInvalid('holdingId')) { <span class="field-error">Select a land holding</span> }
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="chCrop">Crop Name</label>
+                    <input type="text" id="chCrop" formControlName="cropName" placeholder="e.g. Paddy" />
+                    @if (chInvalid('cropName')) { <span class="field-error">Crop name is required</span> }
+                  </div>
+                  <div class="form-group">
+                    <label for="chSeason">Season</label>
+                    <select id="chSeason" formControlName="season">
+                      <option value="">Select</option>
+                      <option value="Kharif">Kharif</option>
+                      <option value="Rabi">Rabi</option>
+                      <option value="Zaid">Zaid</option>
+                      <option value="Perennial">Perennial</option>
+                    </select>
+                    @if (chInvalid('season')) { <span class="field-error">Season is required</span> }
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="chYear">Year</label>
+                    <input type="number" id="chYear" formControlName="cropYear" placeholder="e.g. 2025" />
+                    @if (chInvalid('cropYear')) { <span class="field-error">Enter a valid year</span> }
+                  </div>
+                  <div class="form-group">
+                    <label for="chArea">Area Planted (Acres)</label>
+                    <input type="number" step="0.01" id="chArea" formControlName="areaAcres" />
+                    @if (chInvalid('areaAcres')) { <span class="field-error">Enter a valid area (&gt; 0)</span> }
+                  </div>
+                  <div class="form-group">
+                    <label for="chYield">Yield (Quintals)</label>
+                    <input type="number" step="0.01" id="chYield" formControlName="yieldQuintals" />
+                    @if (chInvalid('yieldQuintals')) { <span class="field-error">Enter a valid yield (&ge; 0)</span> }
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="chRemarks">Remarks</label>
+                  <textarea id="chRemarks" formControlName="remarks" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Record</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
       <!-- ============ DELETE CONFIRMATIONS ============ -->
       @if (showDeleteProfileConfirm()) {
         <app-confirmation-modal
@@ -453,6 +652,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           [message]="'Are you sure you want to delete land holding ' + selectedItem()?.surveyNumber + '?'"
           (confirm)="executeDeleteHolding()"
           (cancel)="showDeleteHoldingConfirm.set(false)">
+        </app-confirmation-modal>
+      }
+
+      @if (showDeleteHistoryConfirm()) {
+        <app-confirmation-modal
+          title="Delete Crop History Record"
+          [message]="'Are you sure you want to delete the ' + selectedItem()?.cropName + ' (' + selectedItem()?.cropYear + ') record?'"
+          (confirm)="executeDeleteHistory()"
+          (cancel)="showDeleteHistoryConfirm.set(false)">
         </app-confirmation-modal>
       }
 
@@ -521,11 +729,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
 export class FarmersComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private userService = inject(UserService);
+  private authService = inject(AuthService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
 
   // States
-  activeTab = signal<'profiles' | 'holdings'>('profiles');
+  activeTab = signal<'profiles' | 'holdings' | 'history'>('profiles');
   isLoading = signal<boolean>(false);
   isEditMode = signal<boolean>(false);
   submittedProfile = signal<boolean>(false);
@@ -535,8 +744,10 @@ export class FarmersComponent implements OnInit {
   // Data
   farmerProfiles = signal<any[]>([]);
   landHoldings = signal<any[]>([]);
+  cropHistories = signal<any[]>([]);
   filteredProfiles = signal<any[]>([]);
   filteredHoldings = signal<any[]>([]);
+  filteredHistories = signal<any[]>([]);
 
   // Selected entity for edit/delete
   selectedItem = signal<any | null>(null);
@@ -544,8 +755,11 @@ export class FarmersComponent implements OnInit {
   // Modal states
   showProfileModal = signal<boolean>(false);
   showHoldingModal = signal<boolean>(false);
+  showHistoryModal = signal<boolean>(false);
   showDeleteProfileConfirm = signal<boolean>(false);
   showDeleteHoldingConfirm = signal<boolean>(false);
+  showDeleteHistoryConfirm = signal<boolean>(false);
+  submittedHistory = signal<boolean>(false);
 
   // Detail (view) modal
   showDetailModal = signal<boolean>(false);
@@ -555,14 +769,18 @@ export class FarmersComponent implements OnInit {
   // Search + pagination
   profileSearch = '';
   holdingSearch = '';
+  historySearch = '';
   profilePage = 0;
   profilePageSize = 10;
   holdingPage = 0;
   holdingPageSize = 10;
+  historyPage = 0;
+  historyPageSize = 10;
 
   // Forms
   profileForm!: FormGroup;
   holdingForm!: FormGroup;
+  historyForm!: FormGroup;
 
   ngOnInit() {
     this.initForms();
@@ -598,6 +816,17 @@ export class FarmersComponent implements OnInit {
       ownershipType: ['', Validators.required],
       status: ['', Validators.required]
     });
+
+    this.historyForm = this.fb.group({
+      farmerId: ['', Validators.required],
+      holdingId: ['', Validators.required],
+      cropName: ['', Validators.required],
+      season: ['', Validators.required],
+      cropYear: [new Date().getFullYear(), [Validators.required, Validators.min(1900), Validators.max(2100)]],
+      areaAcres: [1.0, [Validators.required, Validators.min(0.01)]],
+      yieldQuintals: [0, [Validators.required, Validators.min(0)]],
+      remarks: ['']
+    });
   }
 
   private loadAllData() {
@@ -611,7 +840,18 @@ export class FarmersComponent implements OnInit {
           next: (holdings) => {
             this.landHoldings.set(holdings || []);
             this.applyHoldingFilters();
-            this.isLoading.set(false);
+
+            this.farmerService.getAllCropHistories().subscribe({
+              next: (histories) => {
+                this.cropHistories.set(histories || []);
+                this.applyHistoryFilters();
+                this.isLoading.set(false);
+              },
+              error: () => {
+                this.toast.error('Failed to load crop history.');
+                this.isLoading.set(false);
+              }
+            });
           },
           error: () => {
             this.toast.error('Failed to load land holdings.');
@@ -626,8 +866,13 @@ export class FarmersComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'profiles' | 'holdings') {
+  setTab(tab: 'profiles' | 'holdings' | 'history') {
     this.activeTab.set(tab);
+  }
+
+  // Only Extension Officers and Admins may verify / (de)activate farmer profiles.
+  canVerify(): boolean {
+    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer']);
   }
 
   // Helpers
@@ -643,7 +888,12 @@ export class FarmersComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    return status === 'AC' ? 'Active' : status === 'IN' ? 'Inactive' : status;
+    switch (status) {
+      case 'AC': return 'Active';
+      case 'IN': return 'Inactive';
+      case 'VE': return 'Verified';
+      default: return status;
+    }
   }
 
   getHoldingStatusLabel(status: string): string {
@@ -668,6 +918,46 @@ export class FarmersComponent implements OnInit {
       next: (res) => { this.toast.success(res.message || 'Land holding marked disputed'); this.loadAllData(); },
       error: (err) => this.toast.error(err.error?.message || 'Failed to reject')
     });
+  }
+
+  // ===== Farmer profile lifecycle (Officer/Admin) =====
+  verifyProfile(prof: any) {
+    this.farmerService.verifyFarmerProfile(prof.farmerId).subscribe({
+      next: (res) => { this.toast.success(res.message || 'Farmer profile verified'); this.loadAllData(); },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to verify profile')
+    });
+  }
+
+  activateProfile(prof: any) {
+    this.farmerService.activateFarmerProfile(prof.farmerId).subscribe({
+      next: (res) => { this.toast.success(res.message || 'Farmer profile activated'); this.loadAllData(); },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to activate profile')
+    });
+  }
+
+  deactivateProfile(prof: any) {
+    this.farmerService.deactivateFarmerProfile(prof.farmerId).subscribe({
+      next: (res) => { this.toast.success(res.message || 'Farmer profile deactivated'); this.loadAllData(); },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to deactivate profile')
+    });
+  }
+
+  // ===== Crop history helpers =====
+  getSurveyNumber(holdingId: number): string {
+    const land = this.landHoldings().find(h => h.holdingId == holdingId);
+    return land ? land.surveyNumber : `Holding #${holdingId}`;
+  }
+
+  // Land holdings belonging to the farmer currently selected in the crop-history form.
+  holdingsForSelectedFarmer(): any[] {
+    const farmerId = this.historyForm?.get('farmerId')?.value;
+    if (!farmerId) return [];
+    return this.landHoldings().filter(h => h.farmerId == farmerId);
+  }
+
+  onHistoryFarmerChange() {
+    // Reset the holding selection when the farmer changes so it can't point at another farmer's land.
+    this.historyForm.patchValue({ holdingId: '' });
   }
 
   private fmtDate(d: any): string {
@@ -703,6 +993,22 @@ export class FarmersComponent implements OnInit {
       { label: 'Irrigation', value: land.irrigationSource },
       { label: 'Ownership', value: land.ownershipType },
       { label: 'Status', value: this.getStatusLabel(land.status) }
+    ]);
+    this.showDetailModal.set(true);
+  }
+
+  viewHistoryDetails(rec: any) {
+    this.detailTitle.set(`Crop History #${rec.historyId}`);
+    this.detailRows.set([
+      { label: 'Record ID', value: '#' + rec.historyId },
+      { label: 'Farmer', value: this.getFarmerName(rec.farmerId) },
+      { label: 'Land Holding', value: this.getSurveyNumber(rec.holdingId) },
+      { label: 'Crop', value: rec.cropName },
+      { label: 'Season', value: rec.season },
+      { label: 'Year', value: rec.cropYear },
+      { label: 'Area Planted (Acres)', value: rec.areaAcres },
+      { label: 'Yield (Quintals)', value: rec.yieldQuintals },
+      { label: 'Remarks', value: rec.remarks || '—' }
     ]);
     this.showDetailModal.set(true);
   }
@@ -759,6 +1065,31 @@ export class FarmersComponent implements OnInit {
 
   onHoldingPageChange(page: number) { this.holdingPage = page; }
   onHoldingPageSizeChange(size: number) { this.holdingPageSize = size; this.holdingPage = 0; }
+
+  applyHistoryFilters() {
+    const q = this.historySearch.trim().toLowerCase();
+    let list = this.cropHistories();
+    if (q) {
+      list = list.filter(h =>
+        (h.cropName || '').toLowerCase().includes(q) ||
+        (h.season || '').toLowerCase().includes(q) ||
+        String(h.cropYear || '').includes(q)
+      );
+    }
+    // Most recent seasons first, then newest record.
+    list = [...list].sort((a, b) =>
+      (b.cropYear || 0) - (a.cropYear || 0) || (b.historyId || 0) - (a.historyId || 0));
+    this.filteredHistories.set(list);
+    this.historyPage = 0;
+  }
+
+  paginatedHistories(): any[] {
+    const start = this.historyPage * this.historyPageSize;
+    return this.filteredHistories().slice(start, start + this.historyPageSize);
+  }
+
+  onHistoryPageChange(page: number) { this.historyPage = page; }
+  onHistoryPageSizeChange(size: number) { this.historyPageSize = size; this.historyPage = 0; }
 
   // ===== Farmer Profile CRUD =====
   openProfileModal(profile?: any) {
@@ -943,6 +1274,82 @@ export class FarmersComponent implements OnInit {
         this.loadAllData();
       },
       error: (err) => this.toast.error(err.error?.message || 'Could not delete land holding')
+    });
+  }
+
+  // ===== Crop History CRUD =====
+  chInvalid(field: string): boolean {
+    const c = this.historyForm.get(field);
+    return !!(c && c.invalid && (c.touched || this.submittedHistory()));
+  }
+
+  openHistoryModal(record?: any) {
+    this.submittedHistory.set(false);
+    if (record) {
+      this.isEditMode.set(true);
+      this.selectedItem.set(record);
+      this.historyForm.patchValue(record);
+    } else {
+      this.isEditMode.set(false);
+      this.selectedItem.set(null);
+      this.historyForm.reset({
+        farmerId: '',
+        holdingId: '',
+        cropName: '',
+        season: '',
+        cropYear: new Date().getFullYear(),
+        areaAcres: 1.0,
+        yieldQuintals: 0,
+        remarks: ''
+      });
+    }
+    this.showHistoryModal.set(true);
+  }
+
+  closeHistoryModal() { this.showHistoryModal.set(false); this.submittedHistory.set(false); }
+
+  submitHistoryForm() {
+    this.submittedHistory.set(true);
+    this.historyForm.markAllAsTouched();
+    if (this.historyForm.invalid) return;
+    const body = { ...this.historyForm.value };
+
+    if (this.isEditMode()) {
+      const id = this.selectedItem().historyId;
+      this.farmerService.updateCropHistory(id, body).subscribe({
+        next: (res) => {
+          this.toast.success(res.message || 'Crop history updated');
+          this.closeHistoryModal();
+          this.loadAllData();
+        },
+        error: (err) => this.toast.error(err.error?.message || 'Error updating crop history')
+      });
+    } else {
+      this.farmerService.createCropHistory(body).subscribe({
+        next: (res) => {
+          this.toast.success(res.message || 'Crop history recorded');
+          this.closeHistoryModal();
+          this.loadAllData();
+        },
+        error: (err) => this.toast.error(err.error?.message || 'Error recording crop history')
+      });
+    }
+  }
+
+  confirmDeleteHistory(record: any) {
+    this.selectedItem.set(record);
+    this.showDeleteHistoryConfirm.set(true);
+  }
+
+  executeDeleteHistory() {
+    const id = this.selectedItem().historyId;
+    this.farmerService.deleteCropHistory(id).subscribe({
+      next: (res) => {
+        this.toast.success(res.message || 'Crop history deleted');
+        this.showDeleteHistoryConfirm.set(false);
+        this.loadAllData();
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Could not delete crop history')
     });
   }
 }

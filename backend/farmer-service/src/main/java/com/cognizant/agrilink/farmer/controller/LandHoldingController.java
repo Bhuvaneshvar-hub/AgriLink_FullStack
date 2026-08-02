@@ -2,12 +2,13 @@ package com.cognizant.agrilink.farmer.controller;
 
 import com.cognizant.agrilink.farmer.dto.LandHoldingDto;
 import com.cognizant.agrilink.farmer.dto.MessageResponse;
-import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.entity.LandHolding;
 import com.cognizant.agrilink.farmer.enums.Status;
+import com.cognizant.agrilink.farmer.notification.NotificationClient;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import com.cognizant.agrilink.farmer.service.LandHoldingService;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -20,20 +21,26 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @RestController
 @RequestMapping("/land-holdings")
 public class LandHoldingController {
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String NOTIF_CATEGORY = "Compliance";
 
 	private final LandHoldingService landHoldingService;
 	private final FarmerProfileService farmerProfileService;
+	private final NotificationClient notificationClient;
 
 	public LandHoldingController(LandHoldingService landHoldingService,
-			FarmerProfileService farmerProfileService) {
+			FarmerProfileService farmerProfileService,
+			NotificationClient notificationClient) {
 		this.landHoldingService = landHoldingService;
 		this.farmerProfileService = farmerProfileService;
+		this.notificationClient = notificationClient;
 	}
 
 	// GET methods return full data.
@@ -65,7 +72,13 @@ public class LandHoldingController {
 			// Farmer-submitted holdings must go through admin approval.
 			dto.setStatus(Status.PE);
 		}
-		landHoldingService.create(dto);
+		LandHolding saved = landHoldingService.create(dto);
+		// Alert the owning farmer (and, since officers/admins see all notifications,
+		// the approvers) that a new holding is awaiting approval.
+		if (saved.getStatus() == Status.PE) {
+			notifyOwner(saved.getFarmerId(),
+					"Land holding " + saved.getSurveyNumber() + " submitted and is awaiting approval.");
+		}
 		return ResponseEntity.ok(new MessageResponse("LandHolding submitted"
 				+ (isFarmer(authentication) ? " for approval" : " successfully")));
 	}
@@ -73,14 +86,18 @@ public class LandHoldingController {
 	// Admin approves a (pending) land holding -> Active.
 	@PutMapping("/{id}/approve")
 	public ResponseEntity<MessageResponse> approve(@PathVariable Integer id) {
-		landHoldingService.setStatus(id, Status.AC);
+		LandHolding holding = landHoldingService.setStatus(id, Status.AC);
+		notifyOwner(holding.getFarmerId(),
+				"Your land holding " + holding.getSurveyNumber() + " has been approved.");
 		return ResponseEntity.ok(new MessageResponse("LandHolding approved"));
 	}
 
 	// Admin rejects a (pending) land holding -> Disputed.
 	@PutMapping("/{id}/reject")
 	public ResponseEntity<MessageResponse> reject(@PathVariable Integer id) {
-		landHoldingService.setStatus(id, Status.DP);
+		LandHolding holding = landHoldingService.setStatus(id, Status.DP);
+		notifyOwner(holding.getFarmerId(),
+				"Your land holding " + holding.getSurveyNumber() + " was reviewed and marked disputed.");
 		return ResponseEntity.ok(new MessageResponse("LandHolding marked disputed"));
 	}
 
@@ -128,7 +145,27 @@ public class LandHoldingController {
 	private List<Integer> ownedFarmerIds(Authentication authentication) {
 		Integer userId = (Integer) authentication.getPrincipal();
 		return farmerProfileService.getByUserId(userId).stream()
-				.map(FarmerProfile::getFarmerId)
+				.map(profile -> profile.getFarmerId())
 				.toList();
+	}
+
+	/**
+	 * Emits a workflow alert to the farmer who owns {@code farmerId}. Best-effort:
+	 * never lets a notification failure break the land-holding operation.
+	 */
+	private void notifyOwner(Integer farmerId, String message) {
+		try {
+			Integer ownerUserId = farmerProfileService.getById(farmerId).getUserId();
+			notificationClient.notify(ownerUserId, message, NOTIF_CATEGORY, currentBearerToken());
+		} catch (Exception e) {
+			// Owner profile missing or notification unavailable — ignore.
+		}
+	}
+
+	/** Reads the caller's Authorization header on the request thread (for JWT forwarding). */
+	private String currentBearerToken() {
+		ServletRequestAttributes attributes =
+				(ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		return attributes != null ? attributes.getRequest().getHeader(HttpHeaders.AUTHORIZATION) : null;
 	}
 }

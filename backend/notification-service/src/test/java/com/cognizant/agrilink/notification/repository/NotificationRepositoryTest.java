@@ -3,6 +3,7 @@ package com.cognizant.agrilink.notification.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class NotificationRepositoryTest {
 		return Notification.builder()
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
@@ -32,7 +33,7 @@ class NotificationRepositoryTest {
 		Notification found = notificationRepository.findById(saved.getNotificationId()).orElseThrow();
 
 		assertThat(found.getMessage()).isEqualTo("Sowing reminder");
-		assertThat(found.getCategory()).isEqualTo("CropAdvisory");
+		assertThat(found.getCategory()).isEqualTo(NotificationCategory.CropAdvisory);
 	}
 
 	@Test

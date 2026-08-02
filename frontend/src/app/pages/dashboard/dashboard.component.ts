@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
+import { FarmerService } from '../../services/farmer.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -50,6 +51,17 @@ import { SubsidyService } from '../../services/subsidy.service';
             </div>
             <div class="hero-value">{{ isLoadingStats() ? '...' : pendingApplicationsCount() }}</div>
             <div class="hero-sub">Pending Subsidy Applications</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['AgriLinkAdmin'])) {
+          <a routerLink="/farmers" class="hero-card hero-amber">
+            <div class="hero-card-top">
+              <span class="hero-chip">Needs Review</span>
+              <i class="material-icons-round">terrain</i>
+            </div>
+            <div class="hero-value">{{ isLoadingStats() ? '...' : pendingLandCount() }}</div>
+            <div class="hero-sub">Pending Land Approvals</div>
           </a>
         }
 
@@ -498,12 +510,14 @@ export class DashboardComponent implements OnInit {
   public authService = inject(AuthService);
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
+  private farmerService = inject(FarmerService);
 
   isLoadingStats = signal(true);
   isLoadingActivity = signal(true);
 
   pendingUsersCount = signal(0);
   pendingApplicationsCount = signal(0);
+  pendingLandCount = signal(0);
   activeUsersCount = signal(0);
   recentActivity = signal<any[]>([]);
   moduleActivityStats = signal<{ module: string; totalCount: number; days: { label: string; count: number; percent: number }[] }[]>([]);
@@ -511,6 +525,7 @@ export class DashboardComponent implements OnInit {
 
   private pendingUsersList: any[] = [];
   private pendingApplicationsList: any[] = [];
+  private pendingLandList: any[] = [];
 
   get currentUser() {
     return this.authService.currentUserValue;
@@ -550,6 +565,19 @@ export class DashboardComponent implements OnInit {
       statCalls.push(new Promise((resolve) => {
         this.userService.getAllUsers().subscribe({
           next: (data) => this.activeUsersCount.set(data.filter(u => u.status === 'A').length),
+          error: () => {},
+          complete: () => resolve()
+        });
+      }));
+
+      // Land holdings a farmer submitted (status PE) await admin approval on the Farmers page.
+      statCalls.push(new Promise((resolve) => {
+        this.farmerService.getAllLandHoldings().subscribe({
+          next: (data) => {
+            const pending = (data || []).filter(h => h.status === 'PE');
+            this.pendingLandCount.set(pending.length);
+            this.pendingLandList = pending;
+          },
           error: () => {},
           complete: () => resolve()
         });
@@ -646,6 +674,17 @@ export class DashboardComponent implements OnInit {
       });
     }
 
-    this.actionNeededItems.set(items.slice(0, 5));
+    for (const land of this.pendingLandList.slice(0, 3)) {
+      items.push({
+        key: `land-${land.holdingId}`,
+        title: `Land holding ${land.surveyNumber} pending approval`,
+        subtitle: 'Review on the Farmer & Land Registration page',
+        icon: 'terrain',
+        color: 'var(--warning)',
+        link: '/farmers'
+      });
+    }
+
+    this.actionNeededItems.set(items.slice(0, 8));
   }
 }

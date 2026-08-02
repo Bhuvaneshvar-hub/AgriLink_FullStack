@@ -35,6 +35,10 @@ public class SecurityConfig {
                         .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer", "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.POST, "/farmer-profiles")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
+                        // verify/activate/deactivate a farmer profile — Officer/Admin only (must precede the generic PUT rule)
+                        .requestMatchers(HttpMethod.PUT, "/farmer-profiles/*/verify",
+                                "/farmer-profiles/*/activate", "/farmer-profiles/*/deactivate")
+                        .hasAnyRole("ExtensionOfficer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.PUT, "/farmer-profiles/**")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.DELETE, "/farmer-profiles/**")
@@ -51,6 +55,15 @@ public class SecurityConfig {
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.DELETE, "/land-holdings/**")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
+                        // crop-histories (Procurement Officer has NO access; officers may record field history)
+                        .requestMatchers(HttpMethod.GET, "/crop-histories", "/crop-histories/**")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
+                        .requestMatchers(HttpMethod.POST, "/crop-histories")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "AgriLinkAdmin")
+                        .requestMatchers(HttpMethod.PUT, "/crop-histories/**")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "AgriLinkAdmin")
+                        .requestMatchers(HttpMethod.DELETE, "/crop-histories/**")
+                        .hasAnyRole("Farmer", "ExtensionOfficer", "AgriLinkAdmin")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

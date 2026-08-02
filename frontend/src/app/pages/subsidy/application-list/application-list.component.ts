@@ -234,7 +234,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="card mb-3" style="background-color: var(--bg-dark); padding: 1rem;">
                   <h4 style="font-size: 0.95rem;">Application Details</h4>
                   <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-                    Farmer: <strong>Farmer #{{ selectedApp()?.farmerId }}</strong><br/>
+                    Farmer: <strong>{{ getFarmerName(selectedApp()?.farmerId) }}</strong><br/>
                     Scheme: <strong>{{ getSchemeName(selectedApp()?.schemeId) }}</strong><br/>
                     Eligibility Score: <strong>{{ selectedApp()?.eligibilityScore }}%</strong>
                   </p>
@@ -243,6 +243,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="form-group">
                   <label for="reviewStatus">Outcome Status</label>
                   <select id="reviewStatus" formControlName="status">
+                    <option value="" disabled>Select Outcome</option>
                     <option value="AP">Approved (AP)</option>
                     <option value="RE">Rejected (RE)</option>
                   </select>
@@ -276,7 +277,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <div class="card mb-3" style="background-color: var(--bg-dark); padding: 1rem;">
                   <h4 style="font-size: 0.95rem;">Application Details</h4>
                   <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-                    Farmer: <strong>Farmer #{{ selectedApp()?.farmerId }}</strong><br/>
+                    Farmer: <strong>{{ getFarmerName(selectedApp()?.farmerId) }}</strong><br/>
                     Scheme: <strong>{{ getSchemeName(selectedApp()?.schemeId) }}</strong>
                   </p>
                 </div>
@@ -534,7 +535,7 @@ export class ApplicationListComponent implements OnInit {
 
   getFarmerName(farmerId: number): string {
     const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
-    return prof && prof.name ? prof.name : `Farmer #${farmerId}`;
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 
   getStatusLabel(status: string): string {
@@ -621,7 +622,7 @@ export class ApplicationListComponent implements OnInit {
   openReviewModal(app: any): void {
     this.selectedApp.set(app);
     this.reviewForm = this.fb.group({
-      status: ['AP', [Validators.required]],
+      status: ['', [Validators.required]],
       eligibilityScore: [app.eligibilityScore, [Validators.required, Validators.min(0), Validators.max(100)]]
     });
     this.showReviewModal.set(true);

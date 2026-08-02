@@ -178,7 +178,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (land of paginatedHoldings(); track land.holdingId) {
                         <tr>
-                          <td>{{ getFarmerNameOnly(land.farmerId) }}</td>
+                          <td>{{ getFarmerName(land.farmerId) }}</td>
                           <td>{{ land.surveyNumber }}</td>
                           <td>{{ land.areaAcres }}</td>
                           <td>{{ land.soilType }}</td>
@@ -265,6 +265,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="fGender">Gender</label>
                     <select id="fGender" formControlName="gender">
+                      <option value="" disabled>Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -314,6 +315,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="fStatus">Status</label>
                     <select id="fStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
                     </select>
@@ -365,7 +367,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <select id="lFarmer" formControlName="farmerId">
                     <option value="">Select Profile</option>
                     @for (prof of farmerProfiles(); track prof.farmerId) {
-                      <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                      <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
                   @if (hInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
@@ -420,6 +422,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="lStatus">Status</label>
                     <select id="lStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
                     </select>
@@ -570,7 +573,7 @@ export class FarmersComponent implements OnInit {
     this.profileForm = this.fb.group({
       name: ['', [Validators.required, Validators.pattern(NAME_PATTERN)]],
       dateOfBirth: ['', [Validators.required, notFutureDate]],
-      gender: ['Male', Validators.required],
+      gender: ['', Validators.required],
       nationalIdNumber: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{6,20}$/)]],
       village: ['', Validators.required],
       district: ['', Validators.required],
@@ -583,7 +586,7 @@ export class FarmersComponent implements OnInit {
       email: [''],
       password: [''],
       regionId: [1],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.holdingForm = this.fb.group({
@@ -593,7 +596,7 @@ export class FarmersComponent implements OnInit {
       soilType: ['', Validators.required],
       irrigationSource: ['', Validators.required],
       ownershipType: ['', Validators.required],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
   }
 
@@ -630,7 +633,7 @@ export class FarmersComponent implements OnInit {
   // Helpers
   getFarmerName(farmerId: number): string {
     const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
-    return prof ? `${prof.name} (#${farmerId})` : `Farmer #${farmerId}`;
+    return prof ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 
   // Name without the id, for table cells where ids are hidden.
@@ -775,7 +778,7 @@ export class FarmersComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedItem.set(null);
-      this.profileForm.reset({ gender: 'Male', status: 'AC', userId: null });
+      this.profileForm.reset({ gender: '', status: '', userId: null });
       // Registering a new farmer requires login credentials to create their IAM user.
       emailCtrl?.setValidators([Validators.required, Validators.pattern(GMAIL_PATTERN)]);
       pwdCtrl?.setValidators([Validators.required, Validators.minLength(8)]);
@@ -890,7 +893,7 @@ export class FarmersComponent implements OnInit {
       this.holdingForm.reset({
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
         areaAcres: 1.0,
-        status: 'AC'
+        status: ''
       });
     }
     this.showHoldingModal.set(true);

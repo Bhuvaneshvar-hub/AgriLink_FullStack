@@ -80,7 +80,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (item of paginatedListings(); track item.listingId) {
                         <tr>
-                          <td>#{{ item.farmerId }}</td>
+                          <td>{{ getFarmerName(item.farmerId) }}</td>
                           <td>{{ getCropName(item.cropId) }}</td>
                           <td>{{ item.harvestDate | date:'mediumDate' }}</td>
                           <td>{{ item.quantityKg }} Kg</td>
@@ -233,7 +233,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <select id="lFarmer" formControlName="farmerId">
                       <option value="">Select Profile</option>
                       @for (prof of farmerProfiles(); track prof.farmerId) {
-                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                        <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                       }
                     </select>
                   </div>
@@ -256,6 +256,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="lGrade">Quality Grade</label>
                     <select id="lGrade" formControlName="qualityGrade">
+                      <option value="" disabled>Select Grade</option>
                       <option value="A">Grade A (Premium)</option>
                       <option value="B">Grade B (Standard)</option>
                       <option value="C">Grade C (Substandard)</option>
@@ -277,6 +278,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 <div class="form-group">
                   <label for="lStatus">Status</label>
                   <select id="lStatus" formControlName="status">
+                    <option value="" disabled>Select Status</option>
                     <option value="AV">AV (Available)</option>
                     <option value="PB">PB (PartiallyBooked)</option>
                     <option value="SO">SO (Sold)</option>
@@ -337,6 +339,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="sStatus">Payment Settlement Status</label>
                     <select id="sStatus" formControlName="paymentStatus">
+                      <option value="" disabled>Select Payment Status</option>
                       <option value="PE">PE (Pending)</option>
                       <option value="PD">PD (Paid)</option>
                       <option value="OV">OV (Overdue)</option>
@@ -552,15 +555,15 @@ export class ProduceComponent implements OnInit {
       cropId: ['', Validators.required],
       harvestDate: ['', Validators.required],
       quantityKg: [50, [Validators.required, Validators.min(0.1)]],
-      qualityGrade: ['A', Validators.required],
+      qualityGrade: ['', Validators.required],
       askingPricePerKg: [1.5, [Validators.required, Validators.min(0.01)]],
-      status: ['AV', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.saleForm = this.fb.group({
       quantitySoldKg: [0, [Validators.required, Validators.min(0.1)]],
       agreedPricePerKg: [0, [Validators.required, Validators.min(0.01)]],
-      paymentStatus: ['PE', Validators.required]
+      paymentStatus: ['', Validators.required]
     });
   }
 
@@ -608,6 +611,11 @@ export class ProduceComponent implements OnInit {
     return crop ? crop.cropName : `Crop ID: ${cropId}`;
   }
 
+  getFarmerName(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
+  }
+
   private fmtDate(d: any): string {
     if (!d) return '—';
     const date = new Date(d);
@@ -623,7 +631,7 @@ export class ProduceComponent implements OnInit {
     this.detailTitle.set(`Produce Listing #${item.listingId}`);
     this.detailRows.set([
       { label: 'Listing ID', value: item.listingId },
-      { label: 'Farmer ID', value: '#' + item.farmerId },
+      { label: 'Farmer', value: this.getFarmerName(item.farmerId) },
       { label: 'Crop Type', value: this.getCropName(item.cropId) },
       { label: 'Harvest Date', value: this.fmtDate(item.harvestDate) },
       { label: 'Quantity (Kg)', value: item.quantityKg + ' Kg' },
@@ -687,8 +695,8 @@ export class ProduceComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedListing.set(null);
       this.listingForm.reset({
-        status: 'AV',
-        qualityGrade: 'A',
+        status: '',
+        qualityGrade: '',
         quantityKg: 50,
         askingPricePerKg: 1.5,
         farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : ''
@@ -750,7 +758,7 @@ export class ProduceComponent implements OnInit {
     this.saleForm.reset({
       quantitySoldKg: item.quantityKg,
       agreedPricePerKg: item.askingPricePerKg,
-      paymentStatus: 'PE'
+      paymentStatus: ''
     });
     this.totalCalculatedAmount.set(item.quantityKg * item.askingPricePerKg);
     this.showBuyModal.set(true);

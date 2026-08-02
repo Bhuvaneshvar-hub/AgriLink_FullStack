@@ -247,6 +247,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-group">
                     <label for="catStatus">Status</label>
                     <select id="catStatus" formControlName="status">
+                      <option value="" disabled>Select Status</option>
                       <option value="AC">Active</option>
                       <option value="IN">Inactive</option>
                     </select>
@@ -281,7 +282,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <select id="reqFarmer" formControlName="farmerId">
                     <option value="">Select Profile</option>
                     @for (prof of farmerProfiles(); track prof.farmerId) {
-                      <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                      <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
                 </div>
@@ -495,7 +496,7 @@ export class InputsComponent implements OnInit {
       pricePerUnit: [1.0, [Validators.required, Validators.min(0.01)]],
       subsidisedPrice: [0.5, [Validators.required, Validators.min(0.01)]],
       availableStock: [100, [Validators.required, Validators.min(0)]],
-      status: ['AC', Validators.required]
+      status: ['', Validators.required]
     });
 
     this.requestForm = this.fb.group({
@@ -576,11 +577,16 @@ export class InputsComponent implements OnInit {
     this.showDetailModal.set(true);
   }
 
+  getFarmerName(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
+  }
+
   viewRequestDetails(req: any) {
     this.detailTitle.set(`Input Request #${req.requestId}`);
     this.detailRows.set([
       { label: 'Req ID', value: req.requestId },
-      { label: 'Farmer ID', value: '#' + req.farmerId },
+      { label: 'Farmer', value: this.getFarmerName(req.farmerId) },
       { label: 'Input Item', value: this.getInputName(req.inputId) },
       { label: 'Qty Requested', value: req.quantityRequested },
       { label: 'Total Price', value: this.fmtMoney(req.actualPrice) },
@@ -601,7 +607,7 @@ export class InputsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
       this.catalogForm.reset({
-        status: 'AC',
+        status: '',
         pricePerUnit: 1.0,
         subsidisedPrice: 0.5,
         availableStock: 100

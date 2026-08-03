@@ -548,7 +548,7 @@ export class MainLayoutComponent implements OnInit {
 
   goToProfile() {
     this.closeProfileMenu();
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/profile']);
   }
 
   get userInitials(): string {

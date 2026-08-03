@@ -85,19 +85,24 @@ public class LandHoldingController {
 
 	// Admin approves a (pending) land holding -> Active.
 	@PutMapping("/{id}/approve")
-	public ResponseEntity<MessageResponse> approve(@PathVariable Integer id) {
+	public ResponseEntity<MessageResponse> approve(@PathVariable Integer id, Authentication authentication) {
 		LandHolding holding = landHoldingService.setStatus(id, Status.AC);
 		notifyOwner(holding.getFarmerId(),
 				"Your land holding " + holding.getSurveyNumber() + " has been approved.");
+		// Confirmation for the acting officer/admin so the action shows in their own alerts.
+		notifyActor(authentication,
+				"You approved land holding " + holding.getSurveyNumber() + ".");
 		return ResponseEntity.ok(new MessageResponse("LandHolding approved"));
 	}
 
 	// Admin rejects a (pending) land holding -> Disputed.
 	@PutMapping("/{id}/reject")
-	public ResponseEntity<MessageResponse> reject(@PathVariable Integer id) {
+	public ResponseEntity<MessageResponse> reject(@PathVariable Integer id, Authentication authentication) {
 		LandHolding holding = landHoldingService.setStatus(id, Status.DP);
 		notifyOwner(holding.getFarmerId(),
 				"Your land holding " + holding.getSurveyNumber() + " was reviewed and marked disputed.");
+		notifyActor(authentication,
+				"You rejected land holding " + holding.getSurveyNumber() + " (marked disputed).");
 		return ResponseEntity.ok(new MessageResponse("LandHolding marked disputed"));
 	}
 
@@ -159,6 +164,21 @@ public class LandHoldingController {
 			notificationClient.notify(ownerUserId, message, NOTIF_CATEGORY, currentBearerToken());
 		} catch (Exception e) {
 			// Owner profile missing or notification unavailable — ignore.
+		}
+	}
+
+	/**
+	 * Emits a confirmation alert to the acting officer/admin (the JWT principal),
+	 * so an approval/rejection always surfaces in the approver's own alerts even
+	 * when the owning farmer has no linked login account. Best-effort.
+	 */
+	private void notifyActor(Authentication authentication, String message) {
+		try {
+			if (authentication != null && authentication.getPrincipal() instanceof Integer actorUserId) {
+				notificationClient.notify(actorUserId, message, NOTIF_CATEGORY, currentBearerToken());
+			}
+		} catch (Exception e) {
+			// Best-effort — never break the approval operation.
 		}
 	}
 

@@ -5,6 +5,8 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
 import { FarmerService } from '../../services/farmer.service';
+import { ProduceService } from '../../services/produce.service';
+import { CropService } from '../../services/crop.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -73,7 +75,7 @@ import { FarmerService } from '../../services/farmer.service';
             </div>
             <div class="hero-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</div>
             <div class="hero-sub">Active Subsidy Schemes</div>
-          </a>
+          </div>
         }
 
         @if (authService.hasRole(['ComplianceAnalyst'])) {
@@ -665,6 +667,8 @@ export class DashboardComponent implements OnInit {
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
   private farmerService = inject(FarmerService);
+  private produceService = inject(ProduceService);
+  private cropService = inject(CropService);
 
   isLoadingStats = signal(true);
   isLoadingActivity = signal(true);

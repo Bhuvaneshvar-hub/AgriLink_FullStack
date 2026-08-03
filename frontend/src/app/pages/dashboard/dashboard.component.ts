@@ -5,6 +5,8 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
 import { FarmerService } from '../../services/farmer.service';
+import { CropService } from '../../services/crop.service';
+import { ProduceService } from '../../services/produce.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -53,7 +55,7 @@ import { FarmerService } from '../../services/farmer.service';
         }
 
         @if (!authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
-          <div class="hero-card hero-blue">
+          <a routerLink="/schemes" class="hero-card hero-blue">
             <div class="hero-card-top">
               <span class="hero-chip">Live</span>
               <i class="material-icons-round">inventory_2</i>
@@ -725,6 +727,8 @@ export class DashboardComponent implements OnInit {
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
   private farmerService = inject(FarmerService);
+  private cropService = inject(CropService);
+  private produceService = inject(ProduceService);
 
   isLoadingStats = signal(true);
   isLoadingActivity = signal(true);
@@ -763,6 +767,7 @@ export class DashboardComponent implements OnInit {
 
   private pendingUsersList: any[] = [];
   private pendingApplicationsList: any[] = [];
+  private pendingLandList: any[] = [];
   private cropPlansRaw: any[] = [];
   private subsidyAppsRaw: any[] = [];
   private produceListingsRaw: any[] = [];

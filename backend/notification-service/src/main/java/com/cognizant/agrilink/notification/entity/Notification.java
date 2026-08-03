@@ -1,8 +1,10 @@
 package com.cognizant.agrilink.notification.entity;
 
+import com.cognizant.agrilink.notification.converter.NotificationCategoryConverter;
 import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -35,7 +37,7 @@ public class Notification {
 	@Column(name = "message")
 	private String message;
 
-	@Enumerated(EnumType.STRING)
+	@Convert(converter = NotificationCategoryConverter.class)
 	@Column(name = "category")
 	private NotificationCategory category;
 

@@ -61,4 +61,31 @@ public class FarmerClient {
 			return Collections.emptyList();
 		}
 	}
+
+	/**
+	 * Resolves the login userId that owns {@code farmerId} (via farmer-service's
+	 * {@code GET /farmer-profiles/{id}}), so a produce event can be delivered to
+	 * the selling farmer. Best-effort: returns {@code null} on any failure so the
+	 * caller can skip the notification without breaking the business operation.
+	 */
+	public Integer getUserIdByFarmerId(Integer farmerId, String bearerToken) {
+		if (farmerId == null) {
+			return null;
+		}
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			if (bearerToken != null && !bearerToken.isBlank()) {
+				headers.set(HttpHeaders.AUTHORIZATION, bearerToken);
+			}
+			FarmerProfileRef profile = restTemplate.exchange(
+					FARMER_PROFILES_URL + "/" + farmerId,
+					org.springframework.http.HttpMethod.GET,
+					new HttpEntity<>(headers),
+					FarmerProfileRef.class).getBody();
+			return profile != null ? profile.getUserId() : null;
+		} catch (Exception e) {
+			log.warn("Failed to resolve userId for farmerId {} from farmer-service: {}", farmerId, e.getMessage());
+			return null;
+		}
+	}
 }

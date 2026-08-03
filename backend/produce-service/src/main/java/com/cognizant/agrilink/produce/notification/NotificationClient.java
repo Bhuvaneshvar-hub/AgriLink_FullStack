@@ -1,4 +1,4 @@
-package com.cognizant.agrilink.farmer.notification;
+package com.cognizant.agrilink.produce.notification;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Emits targeted, workflow-generated alerts to notification-service on domain
- * events (e.g. a land holding being submitted / approved / rejected).
+ * Emits targeted, workflow-generated alerts to notification-service on produce
+ * domain events (e.g. a sale / buyer booking being recorded against a listing).
  *
  * <p>Fire-and-forget ({@code @Async}) and fully fault-tolerant: a failure to
  * reach notification-service is logged but NEVER propagated to the business
@@ -34,11 +34,6 @@ public class NotificationClient {
         this.restTemplate = restTemplate;
     }
 
-    /**
-     * @param bearerToken the caller's {@code Authorization} header, captured on the
-     *                    request thread before this async call (the request-scoped
-     *                    context is not available on the async worker thread).
-     */
     @Async
     public void notify(Integer userId, String message, String category, String bearerToken) {
         if (userId == null) {

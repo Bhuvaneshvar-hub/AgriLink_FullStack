@@ -14,6 +14,7 @@ import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.enums.PaymentStatus;
 import com.cognizant.agrilink.produce.client.FarmerClient;
+import com.cognizant.agrilink.produce.notification.NotificationClient;
 import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -36,6 +37,9 @@ class ProduceSaleControllerTest {
 
 	@Mock
 	private FarmerClient farmerClient;
+
+	@Mock
+	private NotificationClient notificationClient;
 
 	@InjectMocks
 	private ProduceSaleController produceSaleController;

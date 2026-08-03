@@ -56,6 +56,17 @@ public class ProduceSaleService {
 				.orElseThrow(() -> new ResourceNotFoundException("ProduceSale not found with id " + id));
 	}
 
+	/** farmerId that owns the given listing, or {@code null} if the listing is missing.
+	 *  Used to route a sale/booking notification to the selling farmer. */
+	public Integer getListingOwnerFarmerId(Integer listingId) {
+		if (listingId == null) {
+			return null;
+		}
+		return produceListingRepository.findById(listingId)
+				.map(ProduceListing::getFarmerId)
+				.orElse(null);
+	}
+
 	public ProduceSale create(ProduceSaleDto dto) {
 		ProduceSale produceSale = ProduceSale.builder()
 				.listingId(dto.getListingId())

@@ -9,11 +9,12 @@ import { INDIAN_STATES } from '../../utils/indian-states';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
+import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
 
 @Component({
   selector: 'app-my-land-holdings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
   template: `
     <div class="land-page">
       <div class="page-header d-flex justify-content-between align-items-center mb-3">
@@ -77,11 +78,15 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
                     </td>
                     <td>
                       <app-action-menu>
-                        @if (land.status === 'PE' || land.status === 'DP') {
-                          <button class="menu-item danger" (click)="confirmDelete(land)">
-                            <i class="material-icons-round">delete</i> Withdraw
-                          </button>
-                        }
+                        <button class="menu-item" (click)="viewDetails(land)">
+                          <i class="material-icons-round">visibility</i> View
+                        </button>
+                        <button class="menu-item" (click)="openModal(land)">
+                          <i class="material-icons-round">edit</i> Edit
+                        </button>
+                        <button class="menu-item danger" (click)="confirmDelete(land)">
+                          <i class="material-icons-round">delete</i> Delete
+                        </button>
                       </app-action-menu>
                     </td>
                   </tr>
@@ -98,7 +103,7 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
         <div class="modal-overlay" (click)="closeModal()">
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3>Register Land Holding</h3>
+              <h3>{{ isEditMode() ? 'Edit Land Holding' : 'Register Land Holding' }}</h3>
               <button class="close-btn" (click)="closeModal()"><i class="material-icons-round">close</i></button>
             </div>
             <form [formGroup]="form" (ngSubmit)="submit()">
@@ -151,7 +156,7 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Submit for Approval</button>
+                <button type="submit" class="btn btn-primary" [disabled]="form.invalid">{{ isEditMode() ? 'Save Changes' : 'Submit for Approval' }}</button>
               </div>
             </form>
           </div>
@@ -235,10 +240,18 @@ import { ActionMenuComponent } from '../../components/action-menu/action-menu.co
         </div>
       }
 
+      @if (showDetailModal()) {
+        <app-detail-modal
+          [title]="detailTitle()"
+          [rows]="detailRows()"
+          (close)="showDetailModal.set(false)">
+        </app-detail-modal>
+      }
+
       @if (showDeleteConfirm()) {
-        <app-confirmation-modal title="Withdraw Land Holding"
-          [message]="'Withdraw survey number ' + selected()?.surveyNumber + '?'"
-          confirmText="Withdraw" (confirm)="executeDelete()" (cancel)="showDeleteConfirm.set(false)">
+        <app-confirmation-modal title="Delete Land Holding"
+          [message]="'Delete survey number ' + selected()?.surveyNumber + '?'"
+          confirmText="Delete" (confirm)="executeDelete()" (cancel)="showDeleteConfirm.set(false)">
         </app-confirmation-modal>
       }
     </div>
@@ -266,6 +279,10 @@ export class MyLandHoldingsComponent implements OnInit {
   showModal = signal(false);
   showProfileModal = signal(false);
   showDeleteConfirm = signal(false);
+  showDetailModal = signal(false);
+  detailTitle = signal<string>('');
+  detailRows = signal<DetailRow[]>([]);
+  isEditMode = signal(false);
 
   page = 0;
   pageSize = 10;
@@ -326,12 +343,26 @@ export class MyLandHoldingsComponent implements OnInit {
     switch (s) { case 'AC': return 'Active'; case 'PE': return 'Pending'; case 'DP': return 'Disputed'; case 'IN': return 'Inactive'; default: return s; }
   }
 
-  openModal() {
+  openModal(land?: any) {
     this.submitted.set(false);
-    this.form.reset({ areaAcres: 1.0, soilType: '', irrigationSource: '', ownershipType: '', surveyNumber: '' });
+    if (land) {
+      this.isEditMode.set(true);
+      this.selected.set(land);
+      this.form.reset({
+        surveyNumber: land.surveyNumber,
+        areaAcres: land.areaAcres,
+        soilType: land.soilType,
+        irrigationSource: land.irrigationSource,
+        ownershipType: land.ownershipType
+      });
+    } else {
+      this.isEditMode.set(false);
+      this.selected.set(null);
+      this.form.reset({ areaAcres: 1.0, soilType: '', irrigationSource: '', ownershipType: '', surveyNumber: '' });
+    }
     this.showModal.set(true);
   }
-  closeModal() { this.showModal.set(false); }
+  closeModal() { this.showModal.set(false); this.isEditMode.set(false); }
 
   // ── Self-service farmer profile setup ─────────────────────────────────
   pInvalid(field: string): boolean {
@@ -377,18 +408,43 @@ export class MyLandHoldingsComponent implements OnInit {
   submit() {
     this.submitted.set(true);
     if (this.form.invalid || !this.myProfile()) return;
-    const body = { ...this.form.value, farmerId: this.myProfile().farmerId, status: 'PE' };
+    const farmerId = this.myProfile().farmerId;
+
+    if (this.isEditMode() && this.selected()) {
+      // Farmer edit — the backend preserves the approval status for a farmer's own holding.
+      const body = { ...this.form.value, farmerId };
+      this.farmerService.updateLandHolding(this.selected().holdingId, body).subscribe({
+        next: (res) => { this.toast.success(res.message || 'Land holding updated'); this.closeModal(); this.load(); },
+        error: (err) => this.toast.error(err.error?.message || 'Failed to update land holding')
+      });
+      return;
+    }
+
+    const body = { ...this.form.value, farmerId, status: 'PE' };
     this.farmerService.createLandHolding(body).subscribe({
       next: (res) => { this.toast.success(res.message || 'Submitted for approval'); this.closeModal(); this.load(); },
       error: (err) => this.toast.error(err.error?.message || 'Failed to submit land holding')
     });
   }
 
+  viewDetails(land: any) {
+    this.detailTitle.set(`Land Holding — ${land.surveyNumber}`);
+    this.detailRows.set([
+      { label: 'Survey Number', value: land.surveyNumber },
+      { label: 'Area (Acres)', value: land.areaAcres },
+      { label: 'Soil Type', value: land.soilType },
+      { label: 'Irrigation Source', value: land.irrigationSource },
+      { label: 'Ownership Type', value: land.ownershipType },
+      { label: 'Status', value: this.statusLabel(land.status) }
+    ]);
+    this.showDetailModal.set(true);
+  }
+
   confirmDelete(land: any) { this.selected.set(land); this.showDeleteConfirm.set(true); }
   executeDelete() {
     this.farmerService.deleteLandHolding(this.selected().holdingId).subscribe({
-      next: (res) => { this.toast.success(res.message || 'Withdrawn'); this.showDeleteConfirm.set(false); this.load(); },
-      error: () => this.toast.error('Failed to withdraw')
+      next: (res) => { this.toast.success(res.message || 'Land holding deleted'); this.showDeleteConfirm.set(false); this.load(); },
+      error: () => this.toast.error('Failed to delete land holding')
     });
   }
 }

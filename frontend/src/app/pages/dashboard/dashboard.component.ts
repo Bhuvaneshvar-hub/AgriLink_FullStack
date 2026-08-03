@@ -7,6 +7,7 @@ import { SubsidyService } from '../../services/subsidy.service';
 import { FarmerService } from '../../services/farmer.service';
 import { ProduceService } from '../../services/produce.service';
 import { CropService } from '../../services/crop.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -62,7 +63,7 @@ import { CropService } from '../../services/crop.service';
             </div>
             <div class="hero-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</div>
             <div class="hero-sub">Active Subsidy Schemes</div>
-          </div>
+          </a>
         }
 
         @if (authService.hasRole(['ComplianceAnalyst'])) {
@@ -285,6 +286,31 @@ import { CropService } from '../../services/crop.service';
             </div>
           </div>
         }
+
+        <!-- Recent Alerts Card — surfaces approvals & other notifications on the dashboard -->
+        <div class="card recent-activity-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Recent Alerts</h3>
+            <a routerLink="/notifications" class="view-all-link">View All</a>
+          </div>
+          <div class="activity-list mt-3">
+            @if (isLoadingNotifications()) {
+              <p class="text-secondary">Loading alerts...</p>
+            } @else if (recentNotifications().length === 0) {
+              <p class="text-secondary">No alerts yet.</p>
+            } @else {
+              @for (note of recentNotifications(); track note.notificationId) {
+                <div class="activity-row">
+                  <i class="material-icons-round activity-icon">{{ notificationIcon(note.category) }}</i>
+                  <div class="activity-details">
+                    <span class="activity-action">{{ note.message }}</span>
+                    <span class="activity-meta">{{ note.category }} &middot; {{ note.createdDate | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
 
         <!-- Quick Actions Card -->
         <div class="card quick-actions-card">
@@ -729,10 +755,13 @@ export class DashboardComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private produceService = inject(ProduceService);
   private cropService = inject(CropService);
+  private notificationService = inject(NotificationService);
 
   isLoadingStats = signal(true);
   isLoadingActivity = signal(true);
   isLoadingRoleStats = signal(true);
+  isLoadingNotifications = signal(true);
+  recentNotifications = signal<any[]>([]);
 
   pendingUsersCount = signal(0);
   pendingApplicationsCount = signal(0);
@@ -802,7 +831,33 @@ export class DashboardComponent implements OnInit {
     return this.authService.currentUserValue;
   }
 
+  // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.).
+  // getAllNotifications is scoped server-side: officers/admin see all, a farmer sees only their own.
+  private loadRecentNotifications(): void {
+    this.isLoadingNotifications.set(true);
+    this.notificationService.getAllNotifications().subscribe({
+      next: (data) => {
+        const sorted = [...(data || [])].sort((a, b) => (b.notificationId || 0) - (a.notificationId || 0));
+        this.recentNotifications.set(sorted.slice(0, 5));
+        this.isLoadingNotifications.set(false);
+      },
+      error: () => this.isLoadingNotifications.set(false)
+    });
+  }
+
+  notificationIcon(category: string): string {
+    switch (category) {
+      case 'Subsidy': return 'monetization_on';
+      case 'InputProcurement': return 'shopping_bag';
+      case 'CropAdvisory': return 'eco';
+      case 'ProduceSale': return 'storefront';
+      case 'Compliance': return 'verified_user';
+      default: return 'notifications';
+    }
+  }
+
   ngOnInit(): void {
+    this.loadRecentNotifications();
     const statCalls: Promise<void>[] = [];
 
     if (this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
@@ -938,7 +993,9 @@ export class DashboardComponent implements OnInit {
       }));
     }
 
-    if (this.authService.hasRole(['SubsidyAdmin'])) {
+    // Active-schemes count feeds the SubsidyAdmin mini-card AND the
+    // "Active Subsidy Schemes" hero card shown to Farmer / ProcurementOfficer.
+    if (this.authService.hasRole(['SubsidyAdmin', 'Farmer', 'ProcurementOfficer'])) {
       roleStatsCalls.push(new Promise((resolve) => {
         this.subsidyService.getAllSchemes().subscribe({
           next: (data) => this.activeSchemesCount.set(data.filter(s => s.status === 'AC').length),

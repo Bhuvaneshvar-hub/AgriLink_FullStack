@@ -20,6 +20,12 @@ export class NotificationService {
     return this.http.post<any>('/agrilink/notification/notifications', notificationData);
   }
 
+  // System/activity notification — allowed for any authenticated role (used to
+  // persist action confirmations so they also appear in Alerts & Notifications).
+  createSystemNotification(notificationData: any): Observable<any> {
+    return this.http.post<any>('/agrilink/notification/notifications/system', notificationData);
+  }
+
   updateNotification(id: number, notificationData: any): Observable<any> {
     return this.http.put<any>(`/agrilink/notification/notifications/${id}`, notificationData);
   }

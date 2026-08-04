@@ -33,6 +33,11 @@ public class FarmerProfile {
 	@Column(name = "userId")
 	private Integer userId;
 
+	// Denormalized from the linked IAM user at creation time so this service can
+	// scope farmer lists to a caller's region without calling iam-service per-request.
+	@Column(name = "regionId")
+	private Integer regionId;
+
 	@Column(name = "name")
 	private String name;
 

@@ -41,10 +41,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // GET /agriLink/user/pending  — list users awaiting approval (Officer/Admin)
+    // GET /agriLink/user/pending  — list users awaiting approval.
+    // AgriLinkAdmin sees every region; ExtensionOfficer sees only their own region's pending users.
     @GetMapping("/pending")
-    public ResponseEntity<List<UserResponseDto>> getPendingUsers() {
-        return ResponseEntity.ok(userService.getPendingUsers());
+    public ResponseEntity<List<UserResponseDto>> getPendingUsers(@AuthenticationPrincipal UserDetails currentUser) {
+        return ResponseEntity.ok(userService.getPendingUsers(currentUser));
     }
 
     // GET /agriLink/user/{id}  — get one user

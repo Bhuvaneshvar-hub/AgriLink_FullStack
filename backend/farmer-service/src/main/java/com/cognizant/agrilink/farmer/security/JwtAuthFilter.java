@@ -30,9 +30,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 String roleName = jwtUtil.extractRoleName(token);
                 if (roleName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     Integer userId = jwtUtil.extractUserId(token);
+                    Integer regionId = jwtUtil.extractRegionId(token);
+                    // regionId rides in the credentials slot (unused for JWT auth) so controllers
+                    // can scope list queries to the caller's region without a separate lookup.
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userId,
-                            null,
+                            regionId,
                             List.of(new SimpleGrantedAuthority("ROLE_" + roleName)));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

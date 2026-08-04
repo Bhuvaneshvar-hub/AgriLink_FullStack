@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CropPlanController {
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String ROLE_EXTENSION_OFFICER = "ROLE_ExtensionOfficer";
 
 	private final CropPlanService cropPlanService;
 	private final FarmerClient farmerClient;
@@ -36,15 +37,17 @@ public class CropPlanController {
 	}
 
 	// GET methods return full data.
-	// A Farmer only ever sees plans belonging to their own farmer profiles;
-	// officers/admins see everything. This is enforced here (server-side), so a
-	// farmer calling the API directly cannot read other farmers' plans.
+	// A Farmer only ever sees plans belonging to their own farmer profiles; an
+	// ExtensionOfficer sees only plans for farmers in their own region (farmer-service's
+	// /farmer-profiles already scopes by region for that role, so forwarding the
+	// caller's token via FarmerClient gets the right set with no extra plumbing here);
+	// Admin and other officers see everything.
 	@GetMapping
 	public ResponseEntity<List<CropPlan>> getAll(Authentication authentication,
 			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String bearerToken) {
-		if (isFarmer(authentication)) {
-			List<Integer> ownedFarmerIds = farmerClient.getOwnedFarmerIds(bearerToken);
-			return ResponseEntity.ok(cropPlanService.getByFarmerIds(ownedFarmerIds));
+		if (isFarmer(authentication) || hasAuthority(authentication, ROLE_EXTENSION_OFFICER)) {
+			List<Integer> scopedFarmerIds = farmerClient.getOwnedFarmerIds(bearerToken);
+			return ResponseEntity.ok(cropPlanService.getByFarmerIds(scopedFarmerIds));
 		}
 		return ResponseEntity.ok(cropPlanService.getAll());
 	}
@@ -99,16 +102,20 @@ public class CropPlanController {
 		return ResponseEntity.ok(new MessageResponse("CropPlan deleted successfully"));
 	}
 
-	private boolean isFarmer(Authentication authentication) {
+	private boolean hasAuthority(Authentication authentication, String role) {
 		if (authentication == null) {
 			return false;
 		}
 		for (GrantedAuthority authority : authentication.getAuthorities()) {
-			if (ROLE_FARMER.equals(authority.getAuthority())) {
+			if (role.equals(authority.getAuthority())) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private boolean isFarmer(Authentication authentication) {
+		return hasAuthority(authentication, ROLE_FARMER);
 	}
 
 	// Guard: a Farmer may only act on plans tied to one of their own profiles.

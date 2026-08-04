@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { InputService } from '../../services/input.service';
 import { FarmerService } from '../../services/farmer.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { ExportService } from '../../services/export.service';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -20,6 +21,28 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
         <div>
           <h1>Input Operations & Supplies</h1>
           <p class="text-secondary">Distribute seeds, fertilizers, and logistics equipment. Catalog stocks and review request items.</p>
+        </div>
+        <div class="header-export-buttons">
+          @if (activeTab() === 'catalog' && catalogs().length > 0) {
+            <button class="btn btn-secondary" (click)="exportCatalog('excel')">
+              <i class="material-icons-round text-success">table_view</i>
+              <span>Export XLS</span>
+            </button>
+            <button class="btn btn-secondary" (click)="exportCatalog('pdf')" style="margin-left: 0.5rem;">
+              <i class="material-icons-round text-danger">picture_as_pdf</i>
+              <span>Export PDF</span>
+            </button>
+          }
+          @if (activeTab() === 'requests' && requests().length > 0) {
+            <button class="btn btn-secondary" (click)="exportRequests('excel')">
+              <i class="material-icons-round text-success">table_view</i>
+              <span>Export XLS</span>
+            </button>
+            <button class="btn btn-secondary" (click)="exportRequests('pdf')" style="margin-left: 0.5rem;">
+              <i class="material-icons-round text-danger">picture_as_pdf</i>
+              <span>Export PDF</span>
+            </button>
+          }
         </div>
       </div>
 
@@ -48,7 +71,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3>Available Supplies & Stocks</h3>
-              @if (isAdminOrOfficer()) {
+              @if (isCatalogManager()) {
                 <button class="btn btn-primary" (click)="openCatalogModal()">
                   <i class="material-icons-round">add_circle</i>
                   <span>Add </span>
@@ -73,13 +96,16 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Category</th>
                         <th>Unit</th>
                         <th>Standard Price</th>
-                        <th>Subsidised Price</th>
+                        <th class="sortable" (click)="toggleCatalogSort('subsidisedPrice')">
+                          Subsidised Price
+                          <i class="material-icons-round sort-icon">{{ getCatalogSortIcon('subsidisedPrice') }}</i>
+                        </th>
                         <th>Available Stock</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      @for (item of catalogs(); track item.inputId) {
+                      @for (item of sortedCatalogs(); track item.inputId) {
                         <tr>
                           <td>{{ item.inputId }}</td>
                           <td><strong>{{ item.name }}</strong></td>
@@ -98,7 +124,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                                   <i class="material-icons-round">add_shopping_cart</i> Request
                                 </button>
                               }
-                              @if (isAdminOrOfficer()) {
+                              @if (isCatalogManager()) {
                                 <button class="menu-item" (click)="openCatalogModal(item)">
                                   <i class="material-icons-round">edit</i> Edit
                                 </button>
@@ -142,12 +168,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <th>Total Price</th>
                         <th>Request Date</th>
                         <th>Assigned Centre</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="toggleRequestSort()">
+                          Status
+                          <i class="material-icons-round sort-icon">{{ getRequestSortIcon() }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      @for (req of requests(); track req.requestId) {
+                      @for (req of sortedRequests(); track req.requestId) {
                         <tr>
                           <td>{{ getInputName(req.inputId) }}</td>
                           <td>{{ req.quantityRequested }}</td>
@@ -279,12 +308,16 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 
                 <div class="form-group mt-3">
                   <label for="reqFarmer">Assign to Profile</label>
-                  <select id="reqFarmer" formControlName="farmerId">
-                    <option value="">Select Profile</option>
-                    @for (prof of farmerProfiles(); track prof.farmerId) {
-                      <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
-                    }
-                  </select>
+                  @if (isFarmer()) {
+                    <input type="text" id="reqFarmer" [value]="farmerProfiles()[0].name + ' (#' + farmerProfiles()[0].farmerId + ')'" readonly style="background: var(--bg-dark); cursor: not-allowed;" />
+                  } @else {
+                    <select id="reqFarmer" formControlName="farmerId">
+                      <option value="">Select Profile</option>
+                      @for (prof of farmerProfiles(); track prof.farmerId) {
+                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                      }
+                    </select>
+                  }
                 </div>
 
                 <div class="form-row mt-3">
@@ -418,6 +451,18 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
     .close-btn:hover {
       color: var(--text-primary);
     }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th.sortable:hover { color: var(--primary-color); }
+    .sort-icon {
+      font-size: 14px !important;
+      vertical-align: middle;
+      margin-left: 2px;
+      color: var(--text-muted);
+    }
     .spinner-large {
       width: 48px;
       height: 48px;
@@ -437,6 +482,7 @@ export class InputsComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private authService = inject(AuthService);
   private toast = inject(ToastService);
+  private exportService = inject(ExportService);
   private fb = inject(FormBuilder);
 
   // State Signals
@@ -452,6 +498,36 @@ export class InputsComponent implements OnInit {
   // Selection Signals
   selectedCatalogItem = signal<any | null>(null);
   selectedRequest = signal<any | null>(null);
+
+  // Sort State
+  catalogSortField = signal<string>('');
+  catalogSortDir = signal<'asc' | 'desc' | ''>('');
+  requestSortDir = signal<'asc' | 'desc' | ''>('');
+
+  // Sorted Computed Lists
+  sortedCatalogs = computed(() => {
+    const field = this.catalogSortField();
+    const dir = this.catalogSortDir();
+    const list = [...this.catalogs()];
+    if (!field || !dir) return list;
+    return list.sort((a, b) => {
+      const aVal = a[field];
+      const bVal = b[field];
+      return dir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  });
+
+  sortedRequests = computed(() => {
+    const dir = this.requestSortDir();
+    const list = [...this.requests()];
+    if (!dir) return list;
+    const order = ['PE', 'AP', 'DL', 'RE'];
+    return list.sort((a, b) => {
+      const ai = order.indexOf(a.status);
+      const bi = order.indexOf(b.status);
+      return dir === 'asc' ? ai - bi : bi - ai;
+    });
+  });
 
   // Calculated Values
   calculatedTotalPrice = signal<number>(0);
@@ -481,7 +557,11 @@ export class InputsComponent implements OnInit {
   }
 
   isAdminOrOfficer(): boolean {
-    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer']);
+    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer']);
+  }
+
+  isCatalogManager(): boolean {
+    return this.authService.hasRole(['AgriLinkAdmin', 'ProcurementOfficer']);
   }
 
   setTab(tab: 'catalog' | 'requests') {
@@ -508,18 +588,17 @@ export class InputsComponent implements OnInit {
 
   private loadAllData() {
     this.isLoading.set(true);
+
+    // Load farmer profiles independently
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (profiles) => this.farmerProfiles.set(profiles),
+      error: () => this.farmerProfiles.set([])
+    });
+
     // Load catalogs
     this.inputService.getAllInputCatalogs().subscribe({
       next: (cats) => {
         this.catalogs.set(cats);
-
-        // Load farmer profiles
-        this.farmerService.getAllFarmerProfiles().subscribe({
-          next: (profiles) => {
-            this.farmerProfiles.set(profiles);
-          }
-        });
-
         // Load requests
         this.inputService.getAllInputRequests().subscribe({
           next: (reqs) => {
@@ -577,16 +656,11 @@ export class InputsComponent implements OnInit {
     this.showDetailModal.set(true);
   }
 
-  getFarmerName(farmerId: number): string {
-    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
-    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
-  }
-
   viewRequestDetails(req: any) {
     this.detailTitle.set(`Input Request #${req.requestId}`);
     this.detailRows.set([
       { label: 'Req ID', value: req.requestId },
-      { label: 'Farmer', value: this.getFarmerName(req.farmerId) },
+      { label: 'Farmer ID', value: '#' + req.farmerId },
       { label: 'Input Item', value: this.getInputName(req.inputId) },
       { label: 'Qty Requested', value: req.quantityRequested },
       { label: 'Total Price', value: this.fmtMoney(req.actualPrice) },
@@ -665,11 +739,18 @@ export class InputsComponent implements OnInit {
 
   // ================= FARMER REQUESTS =================
   openRequestModal(item: any) {
+    if (this.isFarmer() && this.farmerProfiles().length === 0) {
+      this.toast.error('No farmer profile found. Please complete your profile registration first.');
+      return;
+    }
     this.selectedCatalogItem.set(item);
+    const autoFarmerId = this.isFarmer() && this.farmerProfiles().length > 0
+      ? String(this.farmerProfiles()[0].farmerId)
+      : '';
     this.requestForm.reset({
       quantityRequested: 1,
       assignedCentreId: 101,
-      farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : ''
+      farmerId: autoFarmerId
     });
     this.calculatedTotalPrice.set(item.subsidisedPrice);
     this.showRequestModal.set(true);
@@ -711,6 +792,69 @@ export class InputsComponent implements OnInit {
       },
       error: (err) => this.toast.error(err.error?.message || 'Failed to place request')
     });
+  }
+
+  // ================= SORT =================
+  toggleCatalogSort(field: string) {
+    if (this.catalogSortField() !== field) {
+      this.catalogSortField.set(field);
+      this.catalogSortDir.set('asc');
+    } else {
+      const next = this.catalogSortDir() === 'asc' ? 'desc' : this.catalogSortDir() === 'desc' ? '' : 'asc';
+      this.catalogSortDir.set(next as any);
+      if (!next) this.catalogSortField.set('');
+    }
+  }
+
+  getCatalogSortIcon(field: string): string {
+    if (this.catalogSortField() !== field || !this.catalogSortDir()) return 'unfold_more';
+    return this.catalogSortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  toggleRequestSort() {
+    const next = this.requestSortDir() === 'asc' ? 'desc' : this.requestSortDir() === 'desc' ? '' : 'asc';
+    this.requestSortDir.set(next as any);
+  }
+
+  getRequestSortIcon(): string {
+    if (!this.requestSortDir()) return 'unfold_more';
+    return this.requestSortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  // ================= EXPORT =================
+  exportCatalog(format: 'excel' | 'pdf') {
+    const columns = ['Supply ID', 'Name', 'Category', 'Unit', 'Standard Price', 'Subsidised Price', 'Available Stock', 'Status'];
+    const rows = this.sortedCatalogs().map(c => [
+      c.inputId, c.name, c.category, c.unit,
+      '₹' + Number(c.pricePerUnit).toFixed(2),
+      '₹' + Number(c.subsidisedPrice).toFixed(2),
+      c.availableStock + ' ' + c.unit + 's',
+      c.status === 'AC' ? 'Active' : 'Inactive'
+    ]);
+    if (format === 'excel') {
+      this.exportService.exportToExcel(columns, rows, 'input-catalog', 'Input Catalog');
+      this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
+    } else {
+      const opened = this.exportService.exportToPdf(columns, rows, 'input-catalog', 'Input Catalog');
+      if (!opened) this.toast.error('Popup blocked. Allow popups to export PDF.');
+    }
+  }
+
+  exportRequests(format: 'excel' | 'pdf') {
+    const columns = ['Request ID', 'Farmer ID', 'Input Item', 'Qty Requested', 'Total Price', 'Request Date', 'Assigned Centre', 'Status'];
+    const rows = this.sortedRequests().map(r => [
+      r.requestId, '#' + r.farmerId, this.getInputName(r.inputId),
+      r.quantityRequested, '₹' + Number(r.actualPrice).toFixed(2),
+      this.fmtDate(r.requestDate), 'Centre #' + r.assignedCentreId,
+      this.getRequestStatusLabel(r.status)
+    ]);
+    if (format === 'excel') {
+      this.exportService.exportToExcel(columns, rows, 'input-requests', 'Farmer Input Requests');
+      this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
+    } else {
+      const opened = this.exportService.exportToPdf(columns, rows, 'input-requests', 'Farmer Input Requests');
+      if (!opened) this.toast.error('Popup blocked. Allow popups to export PDF.');
+    }
   }
 
   updateStatus(req: any, status: 'AP' | 'RE' | 'DL') {

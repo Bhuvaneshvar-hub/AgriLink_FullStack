@@ -62,7 +62,7 @@ import { CropService } from '../../services/crop.service';
             </div>
             <div class="hero-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</div>
             <div class="hero-sub">Active Subsidy Schemes</div>
-          </div>
+          </a>
         }
 
         @if (authService.hasRole(['ComplianceAnalyst'])) {

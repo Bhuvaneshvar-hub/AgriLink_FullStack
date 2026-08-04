@@ -50,7 +50,14 @@ public class FarmerProfileService {
 				.bankAccountNumber(dto.getBankAccountNumber())
 				.status(Status.IN)   // Inactive until the account is approved
 				.build();
-		return create(profile);
+		try {
+			return create(profile);
+		} catch (RuntimeException e) {
+			// The IAM login account was already created; without this the account would be
+			// left with no linked FarmerProfile. Roll it back so registration can be retried.
+			iamRegisterClient.deleteRegistration(userId);
+			throw e;
+		}
 	}
 
 	public List<FarmerProfile> getAll() {
@@ -113,5 +120,15 @@ public class FarmerProfileService {
 	public void delete(Integer id) {
 		FarmerProfile farmerProfile = getById(id);
 		farmerProfileRepository.delete(farmerProfile);
+	}
+
+	/**
+	 * Sets a farmer profile's status — backs the officer/admin verify (Verified),
+	 * activate (Active) and deactivate (Inactive) actions.
+	 */
+	public FarmerProfile setStatus(Integer id, Status status) {
+		FarmerProfile farmerProfile = getById(id);
+		farmerProfile.setStatus(status);
+		return farmerProfileRepository.save(farmerProfile);
 	}
 }

@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cognizant.agrilink.produce.client.FarmerClient;
+import com.cognizant.agrilink.produce.notification.NotificationClient;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
 import com.cognizant.agrilink.produce.enums.PaymentStatus;
@@ -46,6 +47,9 @@ class ProduceSaleControllerExtendedTest {
 
 	@Mock
 	private FarmerClient farmerClient;
+
+	@Mock
+	private NotificationClient notificationClient;
 
 	@InjectMocks
 	private ProduceSaleController produceSaleController;

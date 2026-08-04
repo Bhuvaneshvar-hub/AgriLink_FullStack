@@ -211,6 +211,19 @@ public class UserService {
         return toResponseDto(user);
     }
 
+    // ── 1e-rollback. Undo a self-registration that never got a linked profile ──
+    // Used by farmer-service (and similar) to compensate when the local profile
+    // save fails after this account was already created. Only removes accounts
+    // still Pending, so an approved/active account can never be wiped this way.
+    @Transactional
+    public void deleteRegistration(Integer id) {
+        UserDetails user = findOrThrow(id);
+        if (user.getStatus() != UserDetails.Status.P) {
+            throw new IllegalStateException("Only a pending self-registration can be rolled back");
+        }
+        userDetailsRepository.deleteById(id);
+    }
+
     // ── 1f. Approve a pending user ──────────────────────────────────────────────
     @Transactional
     public UserResponseDto approveUser(Integer id, UserDetails approver) {

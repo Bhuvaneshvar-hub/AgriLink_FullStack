@@ -1,7 +1,10 @@
 package com.cognizant.agrilink.farmer.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,6 +17,7 @@ import com.cognizant.agrilink.farmer.dto.LandHoldingDto;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.entity.LandHolding;
 import com.cognizant.agrilink.farmer.enums.Status;
+import com.cognizant.agrilink.farmer.notification.NotificationClient;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import com.cognizant.agrilink.farmer.service.LandHoldingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +40,9 @@ class LandHoldingControllerTest {
 
 	@Mock
 	private FarmerProfileService farmerProfileService;
+
+	@Mock
+	private NotificationClient notificationClient;
 
 	@InjectMocks
 	private LandHoldingController landHoldingController;
@@ -105,6 +112,33 @@ class LandHoldingControllerTest {
 		mockMvc.perform(delete("/land-holdings/1"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.message").value("LandHolding deleted successfully"));
+	}
+
+	@Test
+	void approveNotifiesOwner() throws Exception {
+		when(landHoldingService.setStatus(1, Status.AC)).thenReturn(landHolding);
+		when(farmerProfileService.getById(1))
+				.thenReturn(FarmerProfile.builder().farmerId(1).userId(42).build());
+
+		mockMvc.perform(put("/land-holdings/1/approve"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("LandHolding approved"));
+
+		// The owning farmer (userId 42) is alerted; admins see it too (unscoped list).
+		verify(notificationClient).notify(eq(42), anyString(), eq("Compliance"), isNull());
+	}
+
+	@Test
+	void rejectNotifiesOwner() throws Exception {
+		when(landHoldingService.setStatus(1, Status.DP)).thenReturn(landHolding);
+		when(farmerProfileService.getById(1))
+				.thenReturn(FarmerProfile.builder().farmerId(1).userId(42).build());
+
+		mockMvc.perform(put("/land-holdings/1/reject"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("LandHolding marked disputed"));
+
+		verify(notificationClient).notify(eq(42), anyString(), eq("Compliance"), isNull());
 	}
 
 	// ── Ownership enforcement ─────────────────────────────────────────────

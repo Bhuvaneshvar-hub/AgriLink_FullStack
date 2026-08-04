@@ -4,6 +4,7 @@ import com.cognizant.agrilink.farmer.dto.FarmerProfileDto;
 import com.cognizant.agrilink.farmer.dto.MessageResponse;
 import com.cognizant.agrilink.farmer.dto.SelfRegisterFarmerDto;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
+import com.cognizant.agrilink.farmer.enums.Status;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -82,6 +83,27 @@ public class FarmerProfileController {
 		}
 		farmerProfileService.create(dto);
 		return ResponseEntity.ok(new MessageResponse("FarmerProfile created successfully"));
+	}
+
+	// Officer/admin verifies a farmer's identity/land records -> Verified.
+	@PutMapping("/{id}/verify")
+	public ResponseEntity<MessageResponse> verify(@PathVariable Integer id) {
+		farmerProfileService.setStatus(id, Status.VE);
+		return ResponseEntity.ok(new MessageResponse("FarmerProfile verified"));
+	}
+
+	// Officer/admin (re)activates a farmer profile -> Active.
+	@PutMapping("/{id}/activate")
+	public ResponseEntity<MessageResponse> activate(@PathVariable Integer id) {
+		farmerProfileService.setStatus(id, Status.AC);
+		return ResponseEntity.ok(new MessageResponse("FarmerProfile activated"));
+	}
+
+	// Officer/admin deactivates a farmer profile -> Inactive.
+	@PutMapping("/{id}/deactivate")
+	public ResponseEntity<MessageResponse> deactivate(@PathVariable Integer id) {
+		farmerProfileService.setStatus(id, Status.IN);
+		return ResponseEntity.ok(new MessageResponse("FarmerProfile deactivated"));
 	}
 
 	@PutMapping("/{id}")

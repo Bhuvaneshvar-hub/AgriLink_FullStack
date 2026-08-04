@@ -62,6 +62,15 @@ INSERT INTO land_holding (holdingId, farmerId, surveyNumber, areaAcres, soilType
 (8, 5, 'SVY-527H', 3.7, 'Sandy', 'Drip', 'Owned', 'AC'),
 (9, 6, 'SVY-633J', 5.5, 'Clay', 'Canal', 'Leased', 'AC');
 
+DELETE FROM crop_history;
+
+INSERT INTO crop_history (historyId, holdingId, farmerId, cropName, season, cropYear, areaAcres, yieldQuintals, remarks) VALUES
+(1, 1, 1, 'Paddy', 'Kharif', 2024, 4.2, 92.5, 'Good monsoon; healthy yield.'),
+(2, 1, 1, 'Groundnut', 'Rabi', 2025, 4.2, 38.0, 'Rotated to restore soil nitrogen.'),
+(3, 3, 2, 'Sugarcane', 'Perennial', 2024, 5.0, 210.0, 'Canal irrigation supported strong growth.'),
+(4, 5, 3, 'Cotton', 'Kharif', 2024, 6.4, 47.5, 'Minor pink bollworm incidence controlled.'),
+(5, 8, 5, 'Tomato', 'Zaid', 2025, 3.7, 120.0, 'Drip irrigation improved fruit quality.');
+
 -- =====================================================================
 -- 3) agrilink_crop
 -- =====================================================================
@@ -215,7 +224,7 @@ USE agrilink_notification;
 DELETE FROM notification;
 
 INSERT INTO notification (notificationId, userId, message, category, status, createdDate) VALUES
-(1, 1, 'Reminder: Submit your PM-KISAN renewal form by end of the month.', 'SubsidyAlert', 'UN', '2026-01-05'),
+(1, 1, 'Reminder: Submit your PM-KISAN renewal form by end of the month.', 'Subsidy', 'UN', '2026-01-05'),
 (2, 1, 'Advisory: Pest warning issued for Cotton in Krishnagiri district. Spray Neem oil.', 'CropAdvisory', 'UN', '2026-05-22'),
-(3, 2, 'Input Request #3 for Urea Fertilizer has been APPROVED.', 'InputAlert', 'RD', '2026-03-06'),
-(4, 1, 'System Notification: Scheduled maintenance of the portal tonight between 12:00 AM - 02:00 AM.', 'SystemAlert', 'RD', '2026-07-25');
+(3, 2, 'Input Request #3 for Urea Fertilizer has been APPROVED.', 'InputProcurement', 'RD', '2026-03-06'),
+(4, 1, 'System Notification: Scheduled maintenance of the portal tonight between 12:00 AM - 02:00 AM.', 'Compliance', 'RD', '2026-07-25');

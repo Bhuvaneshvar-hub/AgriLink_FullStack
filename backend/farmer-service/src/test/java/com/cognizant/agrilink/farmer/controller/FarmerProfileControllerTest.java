@@ -107,6 +107,33 @@ class FarmerProfileControllerTest {
 				.andExpect(jsonPath("$.message").value("FarmerProfile deleted successfully"));
 	}
 
+	@Test
+	void verifyReturnsMessageOnly() throws Exception {
+		when(farmerProfileService.setStatus(1, Status.VE)).thenReturn(farmerProfile);
+
+		mockMvc.perform(put("/farmer-profiles/1/verify"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("FarmerProfile verified"));
+	}
+
+	@Test
+	void activateReturnsMessageOnly() throws Exception {
+		when(farmerProfileService.setStatus(1, Status.AC)).thenReturn(farmerProfile);
+
+		mockMvc.perform(put("/farmer-profiles/1/activate"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("FarmerProfile activated"));
+	}
+
+	@Test
+	void deactivateReturnsMessageOnly() throws Exception {
+		when(farmerProfileService.setStatus(1, Status.IN)).thenReturn(farmerProfile);
+
+		mockMvc.perform(put("/farmer-profiles/1/deactivate"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("FarmerProfile deactivated"));
+	}
+
 	// ── Ownership enforcement ─────────────────────────────────────────────
 
 	private static org.springframework.security.core.Authentication farmer(Integer userId) {

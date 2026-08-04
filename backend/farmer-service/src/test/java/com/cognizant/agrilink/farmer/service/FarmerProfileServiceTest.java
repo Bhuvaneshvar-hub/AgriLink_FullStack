@@ -115,4 +115,15 @@ class FarmerProfileServiceTest {
 
 		verify(farmerProfileRepository, times(1)).delete(farmerProfile);
 	}
+
+	@Test
+	void setStatusUpdatesStatus() {
+		when(farmerProfileRepository.findById(1)).thenReturn(Optional.of(farmerProfile));
+		when(farmerProfileRepository.save(any(FarmerProfile.class))).thenReturn(farmerProfile);
+
+		farmerProfileService.setStatus(1, Status.VE);
+
+		assertThat(farmerProfile.getStatus()).isEqualTo(Status.VE);
+		verify(farmerProfileRepository).save(farmerProfile);
+	}
 }

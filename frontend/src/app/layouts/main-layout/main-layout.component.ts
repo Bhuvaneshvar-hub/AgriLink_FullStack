@@ -1,8 +1,11 @@
-import { Component, inject, signal, HostListener } from '@angular/core';
+import { Component, inject, signal, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { UserService } from '../../services/user.service';
+import { FarmerService } from '../../services/farmer.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -39,6 +42,9 @@ import { ToastService } from '../../services/toast.service';
             <a routerLink="/pending-users" routerLinkActive="active" (click)="closeSidebar()">
               <i class="material-icons-round">how_to_reg</i>
               <span>Pending Approvals</span>
+              @if (pendingApprovalsCount() > 0) {
+                <span class="nav-badge">{{ pendingApprovalsCount() }}</span>
+              }
             </a>
           }
 
@@ -217,6 +223,21 @@ import { ToastService } from '../../services/toast.service';
     }
     .sidebar-nav a i {
       font-size: 20px;
+    }
+    .nav-badge {
+      margin-left: auto;
+      background-color: var(--danger, #dc2626);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
     .sidebar-nav a:hover {
       background-color: var(--sidebar-hover-bg);
@@ -473,13 +494,43 @@ import { ToastService } from '../../services/toast.service';
     }
   `]
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   public authService = inject(AuthService);
   private toastService = inject(ToastService);
   private router = inject(Router);
-  
+  private userService = inject(UserService);
+  private farmerService = inject(FarmerService);
+
   isSidebarOpen = signal(false);
   isProfileMenuOpen = signal(false);
+
+  // Count shown as a badge next to "Pending Approvals" (pending users + pending land holdings).
+  pendingApprovalsCount = signal(0);
+
+  ngOnInit(): void {
+    this.refreshPendingCount();
+    // Recompute after navigation so approving/rejecting elsewhere keeps the badge current.
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => this.refreshPendingCount());
+  }
+
+  private refreshPendingCount(): void {
+    if (!this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+      this.pendingApprovalsCount.set(0);
+      return;
+    }
+    let users = 0;
+    let holdings = 0;
+    this.userService.getPendingUsers().subscribe({
+      next: (data) => { users = (data || []).length; this.pendingApprovalsCount.set(users + holdings); },
+      error: () => {}
+    });
+    this.farmerService.getAllLandHoldings().subscribe({
+      next: (data) => { holdings = (data || []).filter(h => h.status === 'PE').length; this.pendingApprovalsCount.set(users + holdings); },
+      error: () => {}
+    });
+  }
 
   get currentUser() {
     return this.authService.currentUserValue;
@@ -497,7 +548,7 @@ export class MainLayoutComponent {
 
   goToProfile() {
     this.closeProfileMenu();
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/profile']);
   }
 
   get userInitials(): string {

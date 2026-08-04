@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .requestMatchers("/agriLink/session/login",
                                  "/agriLink/session/refresh",
                                  "/agriLink/session/register").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/agriLink/session/register/*").permitAll()
                 // Create user: Admin (any role) or ExtensionOfficer (Farmers only — enforced in service)
                 .requestMatchers(HttpMethod.POST, "/agriLink/user/createUser")
                     .hasAnyRole("AgriLinkAdmin", "ExtensionOfficer")

@@ -5,8 +5,9 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
 import { FarmerService } from '../../services/farmer.service';
-import { CropService } from '../../services/crop.service';
 import { ProduceService } from '../../services/produce.service';
+import { CropService } from '../../services/crop.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -21,19 +22,6 @@ import { ProduceService } from '../../services/produce.service';
 
       <!-- Hero Row -->
       <div class="hero-grid">
-        <div class="hero-card hero-profile">
-          <div class="hero-card-top">
-            <span class="hero-chip">Account</span>
-            <i class="material-icons-round">account_circle</i>
-          </div>
-          <div class="hero-name">{{ currentUser?.name }}</div>
-          <div class="hero-sub">{{ currentUser?.email }}</div>
-          <div class="hero-footer">
-            <span class="hero-footer-label">Role</span>
-            <span class="hero-footer-value">{{ currentUser?.roleName }}</span>
-          </div>
-        </div>
-
         @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
           <a routerLink="/pending-users" class="hero-card hero-amber">
             <div class="hero-card-top">
@@ -56,8 +44,19 @@ import { ProduceService } from '../../services/produce.service';
           </a>
         }
 
-        @if (authService.hasRole(['SubsidyAdmin'])) {
-          <a routerLink="/schemes" class="hero-card hero-teal">
+        @if (authService.hasRole(['AgriLinkAdmin'])) {
+          <a routerLink="/farmers" class="hero-card hero-amber">
+            <div class="hero-card-top">
+              <span class="hero-chip">Needs Review</span>
+              <i class="material-icons-round">terrain</i>
+            </div>
+            <div class="hero-value">{{ isLoadingStats() ? '...' : pendingLandCount() }}</div>
+            <div class="hero-sub">Pending Land Approvals</div>
+          </a>
+        }
+
+        @if (!authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+          <a routerLink="/schemes" class="hero-card hero-blue">
             <div class="hero-card-top">
               <span class="hero-chip">Live</span>
               <i class="material-icons-round">inventory_2</i>
@@ -100,6 +99,34 @@ import { ProduceService } from '../../services/produce.service';
           </a>
         }
       </div>
+
+      <!-- Status Overview (role-specific bar-graph breakdowns) -->
+      @if (isLoadingRoleStats()) {
+        <div class="chart-grid mb-3">
+          <div class="card chart-card"><p class="text-secondary">Loading status overview...</p></div>
+        </div>
+      } @else if (chartCards().length > 0) {
+        <div class="chart-grid mb-3">
+          @for (chart of chartCards(); track chart.title) {
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><i class="material-icons-round chart-card-icon">{{ chart.icon }}</i>{{ chart.title }}</h3>
+              </div>
+              <div class="bar-chart mt-3">
+                @for (bar of chart.bars; track bar.label) {
+                  <div class="bar-row">
+                    <span class="bar-label">{{ bar.label }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="bar.percent" [style.background-color]="bar.color"></div>
+                    </div>
+                    <span class="bar-count">{{ bar.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
 
       <!-- Mini Activity Row (audit-log based; only roles with audit read access) -->
       @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
@@ -260,6 +287,31 @@ import { ProduceService } from '../../services/produce.service';
           </div>
         }
 
+        <!-- Recent Alerts Card — surfaces approvals & other notifications on the dashboard -->
+        <div class="card recent-activity-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Recent Alerts</h3>
+            <a routerLink="/notifications" class="view-all-link">View All</a>
+          </div>
+          <div class="activity-list mt-3">
+            @if (isLoadingNotifications()) {
+              <p class="text-secondary">Loading alerts...</p>
+            } @else if (recentNotifications().length === 0) {
+              <p class="text-secondary">No alerts yet.</p>
+            } @else {
+              @for (note of recentNotifications(); track note.notificationId) {
+                <div class="activity-row">
+                  <i class="material-icons-round activity-icon">{{ notificationIcon(note.category) }}</i>
+                  <div class="activity-details">
+                    <span class="activity-action">{{ note.message }}</span>
+                    <span class="activity-meta">{{ note.category }} &middot; {{ note.createdDate | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
         <!-- Quick Actions Card -->
         <div class="card quick-actions-card">
           <div class="card-header">
@@ -361,9 +413,6 @@ import { ProduceService } from '../../services/produce.service';
     a.hero-card:hover {
       transform: translateY(-3px);
     }
-    .hero-profile {
-      background: linear-gradient(135deg, var(--sidebar-bg) 0%, var(--primary-color) 100%);
-    }
     .hero-amber {
       background: linear-gradient(135deg, #b45309 0%, var(--warning) 100%);
     }
@@ -419,6 +468,54 @@ import { ProduceService } from '../../services/produce.service';
     }
     .hero-footer-value {
       font-weight: 700;
+    }
+
+    /* Status overview bar charts */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-card-icon {
+      font-size: 18px;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+      color: var(--primary-color);
+    }
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 32px;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .bar-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .bar-track {
+      height: 10px;
+      background-color: var(--bg-dark);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width var(--transition-normal);
+      min-width: 3px;
+    }
+    .bar-count {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: right;
+      font-family: var(--font-title);
     }
 
     /* Mini activity row */
@@ -656,15 +753,19 @@ export class DashboardComponent implements OnInit {
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
   private farmerService = inject(FarmerService);
-  private cropService = inject(CropService);
   private produceService = inject(ProduceService);
+  private cropService = inject(CropService);
+  private notificationService = inject(NotificationService);
 
   isLoadingStats = signal(true);
   isLoadingActivity = signal(true);
   isLoadingRoleStats = signal(true);
+  isLoadingNotifications = signal(true);
+  recentNotifications = signal<any[]>([]);
 
   pendingUsersCount = signal(0);
   pendingApplicationsCount = signal(0);
+  pendingLandCount = signal(0);
   activeUsersCount = signal(0);
   recentActivity = signal<any[]>([]);
   moduleActivityStats = signal<{ module: string; totalCount: number; days: { label: string; count: number; percent: number }[] }[]>([]);
@@ -690,14 +791,73 @@ export class DashboardComponent implements OnInit {
   myProduceListingsCount = signal(0);
   mySubsidyStats = signal<{ total: number; pending: number }>({ total: 0, pending: 0 });
 
+  // Status-breakdown bar charts (role-specific)
+  chartCards = signal<{ title: string; icon: string; bars: { label: string; count: number; percent: number; color: string }[] }[]>([]);
+
   private pendingUsersList: any[] = [];
   private pendingApplicationsList: any[] = [];
+  private pendingLandList: any[] = [];
+  private cropPlansRaw: any[] = [];
+  private subsidyAppsRaw: any[] = [];
+  private produceListingsRaw: any[] = [];
+  private produceSalesRaw: any[] = [];
+
+  private readonly CROP_STATUS_META: Record<string, { label: string; color: string }> = {
+    PLANNED: { label: 'Planned', color: 'var(--secondary-color)' },
+    SOWING: { label: 'Sowing', color: 'var(--info)' },
+    GROWING: { label: 'Growing', color: 'var(--primary-color)' },
+    HARVESTED: { label: 'Harvested', color: 'var(--success)' },
+    FAILED: { label: 'Failed', color: 'var(--danger)' }
+  };
+  private readonly SUBSIDY_STATUS_META: Record<string, { label: string; color: string }> = {
+    PE: { label: 'Pending', color: 'var(--warning)' },
+    AP: { label: 'Approved', color: 'var(--success)' },
+    RE: { label: 'Rejected', color: 'var(--danger)' },
+    DB: { label: 'Disbursed', color: 'var(--secondary-color)' }
+  };
+  private readonly PRODUCE_STATUS_META: Record<string, { label: string; color: string }> = {
+    AV: { label: 'Available', color: 'var(--success)' },
+    PB: { label: 'Pending Bid', color: 'var(--warning)' },
+    WD: { label: 'Withdrawn', color: 'var(--text-muted)' },
+    SO: { label: 'Sold', color: 'var(--secondary-color)' }
+  };
+  private readonly PAYMENT_STATUS_META: Record<string, { label: string; color: string }> = {
+    PD: { label: 'Paid', color: 'var(--success)' },
+    PE: { label: 'Pending', color: 'var(--warning)' },
+    OV: { label: 'Overdue', color: 'var(--danger)' }
+  };
 
   get currentUser() {
     return this.authService.currentUserValue;
   }
 
+  // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.).
+  // getAllNotifications is scoped server-side: officers/admin see all, a farmer sees only their own.
+  private loadRecentNotifications(): void {
+    this.isLoadingNotifications.set(true);
+    this.notificationService.getAllNotifications().subscribe({
+      next: (data) => {
+        const sorted = [...(data || [])].sort((a, b) => (b.notificationId || 0) - (a.notificationId || 0));
+        this.recentNotifications.set(sorted.slice(0, 5));
+        this.isLoadingNotifications.set(false);
+      },
+      error: () => this.isLoadingNotifications.set(false)
+    });
+  }
+
+  notificationIcon(category: string): string {
+    switch (category) {
+      case 'Subsidy': return 'monetization_on';
+      case 'InputProcurement': return 'shopping_bag';
+      case 'CropAdvisory': return 'eco';
+      case 'ProduceSale': return 'storefront';
+      case 'Compliance': return 'verified_user';
+      default: return 'notifications';
+    }
+  }
+
   ngOnInit(): void {
+    this.loadRecentNotifications();
     const statCalls: Promise<void>[] = [];
 
     if (this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
@@ -723,6 +883,7 @@ export class DashboardComponent implements OnInit {
             this.pendingApplicationsList = pending;
             this.totalDisbursedAmount.set(data.reduce((sum, a) => sum + (a.disbursedAmount || 0), 0));
             this.rejectedApplicationsCount.set(data.filter(a => a.status === 'RE').length);
+            this.subsidyAppsRaw = data;
           },
           error: () => {},
           complete: () => resolve()
@@ -735,6 +896,19 @@ export class DashboardComponent implements OnInit {
       statCalls.push(new Promise((resolve) => {
         this.userService.getAllUsers().subscribe({
           next: (data) => this.activeUsersCount.set(data.filter(u => u.status === 'A').length),
+          error: () => {},
+          complete: () => resolve()
+        });
+      }));
+
+      // Land holdings a farmer submitted (status PE) await admin approval on the Farmers page.
+      statCalls.push(new Promise((resolve) => {
+        this.farmerService.getAllLandHoldings().subscribe({
+          next: (data) => {
+            const pending = (data || []).filter(h => h.status === 'PE');
+            this.pendingLandCount.set(pending.length);
+            this.pendingLandList = pending;
+          },
           error: () => {},
           complete: () => resolve()
         });
@@ -786,24 +960,42 @@ export class DashboardComponent implements OnInit {
       }));
     }
 
-    if (this.authService.hasRole(['ProcurementOfficer'])) {
+    if (this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
       roleStatsCalls.push(new Promise((resolve) => {
-        this.produceService.getAllProduceListings().subscribe({
-          next: (data) => this.availableListingsCount.set(data.filter(l => l.status === 'AV').length),
-          error: () => {},
-          complete: () => resolve()
-        });
-      }));
-      roleStatsCalls.push(new Promise((resolve) => {
-        this.produceService.getAllProduceSales().subscribe({
-          next: (data) => this.pendingPaymentsCount.set(data.filter(s => s.paymentStatus === 'PE').length),
+        this.cropService.getAllCropPlans().subscribe({
+          next: (data) => this.cropPlansRaw = data,
           error: () => {},
           complete: () => resolve()
         });
       }));
     }
 
-    if (this.authService.hasRole(['SubsidyAdmin'])) {
+    if (this.authService.hasRole(['ProcurementOfficer'])) {
+      roleStatsCalls.push(new Promise((resolve) => {
+        this.produceService.getAllProduceListings().subscribe({
+          next: (data) => {
+            this.availableListingsCount.set(data.filter(l => l.status === 'AV').length);
+            this.produceListingsRaw = data;
+          },
+          error: () => {},
+          complete: () => resolve()
+        });
+      }));
+      roleStatsCalls.push(new Promise((resolve) => {
+        this.produceService.getAllProduceSales().subscribe({
+          next: (data) => {
+            this.pendingPaymentsCount.set(data.filter(s => s.paymentStatus === 'PE').length);
+            this.produceSalesRaw = data;
+          },
+          error: () => {},
+          complete: () => resolve()
+        });
+      }));
+    }
+
+    // Active-schemes count feeds the SubsidyAdmin mini-card AND the
+    // "Active Subsidy Schemes" hero card shown to Farmer / ProcurementOfficer.
+    if (this.authService.hasRole(['SubsidyAdmin', 'Farmer', 'ProcurementOfficer'])) {
       roleStatsCalls.push(new Promise((resolve) => {
         this.subsidyService.getAllSchemes().subscribe({
           next: (data) => this.activeSchemesCount.set(data.filter(s => s.status === 'AC').length),
@@ -829,6 +1021,7 @@ export class DashboardComponent implements OnInit {
                   total: mine.length,
                   growing: mine.filter(p => p.status === 'GROWING').length
                 });
+                this.cropPlansRaw = mine;
               },
               error: () => {},
               complete: () => resolve()
@@ -839,25 +1032,69 @@ export class DashboardComponent implements OnInit {
               },
               error: () => {}
             });
+            this.subsidyService.getApplicationsByFarmer(farmerId).subscribe({
+              next: (data) => {
+                this.mySubsidyStats.set({
+                  total: data.length,
+                  pending: data.filter(a => a.status === 'PE').length
+                });
+                this.subsidyAppsRaw = data;
+              },
+              error: () => {}
+            });
           },
           error: () => resolve()
         });
       }));
-      roleStatsCalls.push(new Promise((resolve) => {
-        this.subsidyService.getAllApplications().subscribe({
-          next: (data) => {
-            this.mySubsidyStats.set({
-              total: data.length,
-              pending: data.filter(a => a.status === 'PE').length
-            });
-          },
-          error: () => {},
-          complete: () => resolve()
-        });
-      }));
     }
 
-    Promise.all(roleStatsCalls).then(() => this.isLoadingRoleStats.set(false));
+    Promise.all(roleStatsCalls).then(() => {
+      this.isLoadingRoleStats.set(false);
+      this.buildChartCards();
+    });
+  }
+
+  private buildBars(
+    data: any[],
+    statusField: string,
+    meta: Record<string, { label: string; color: string }>
+  ): { label: string; count: number; percent: number; color: string }[] {
+    const counts = new Map<string, number>();
+    for (const item of data) {
+      const key = item[statusField];
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const max = Math.max(1, ...counts.values());
+    return Object.keys(meta).map(key => {
+      const count = counts.get(key) || 0;
+      return { label: meta[key].label, count, percent: Math.round((count / max) * 100), color: meta[key].color };
+    });
+  }
+
+  private buildChartCards(): void {
+    const cards: { title: string; icon: string; bars: { label: string; count: number; percent: number; color: string }[] }[] = [];
+
+    if (this.authService.hasRole(['Farmer'])) {
+      cards.push({ title: 'My Crop Plans', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'My Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['ExtensionOfficer'])) {
+      cards.push({ title: 'Crop Plans (All Farmers)', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['ProcurementOfficer'])) {
+      cards.push({ title: 'Produce Listings', icon: 'storefront', bars: this.buildBars(this.produceListingsRaw, 'status', this.PRODUCE_STATUS_META) });
+      cards.push({ title: 'Sale Payment Status', icon: 'payments', bars: this.buildBars(this.produceSalesRaw, 'paymentStatus', this.PAYMENT_STATUS_META) });
+    }
+    if (this.authService.hasRole(['SubsidyAdmin', 'ComplianceAnalyst'])) {
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+    if (this.authService.hasRole(['AgriLinkAdmin'])) {
+      cards.push({ title: 'Crop Plans', icon: 'eco', bars: this.buildBars(this.cropPlansRaw, 'status', this.CROP_STATUS_META) });
+      cards.push({ title: 'Subsidy Applications', icon: 'assignment', bars: this.buildBars(this.subsidyAppsRaw, 'status', this.SUBSIDY_STATUS_META) });
+    }
+
+    this.chartCards.set(cards);
   }
 
   private buildModuleActivityStats(logs: any[]): void {
@@ -930,6 +1167,17 @@ export class DashboardComponent implements OnInit {
       });
     }
 
-    this.actionNeededItems.set(items.slice(0, 5));
+    for (const land of this.pendingLandList.slice(0, 3)) {
+      items.push({
+        key: `land-${land.holdingId}`,
+        title: `Land holding ${land.surveyNumber} pending approval`,
+        subtitle: 'Review on the Farmer & Land Registration page',
+        icon: 'terrain',
+        color: 'var(--warning)',
+        link: '/farmers'
+      });
+    }
+
+    this.actionNeededItems.set(items.slice(0, 8));
   }
 }

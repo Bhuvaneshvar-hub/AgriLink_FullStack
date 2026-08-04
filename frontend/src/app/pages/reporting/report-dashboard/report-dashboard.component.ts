@@ -21,16 +21,18 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           <p class="text-secondary">Generate and review agricultural metric reports, yield logs, and financial scopes.</p>
         </div>
         
-        <div class="header-export-buttons">
-          <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()">
-            <i class="material-icons-round text-success">table_view</i>
-            <span>Export XLS</span>
-          </button>
-          <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;">
-            <i class="material-icons-round text-danger">picture_as_pdf</i>
-            <span>Export PDF</span>
-          </button>
-        </div>
+        @if (canGenerate()) {
+          <div class="header-export-buttons">
+            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()">
+              <i class="material-icons-round text-success">table_view</i>
+              <span>Export XLS</span>
+            </button>
+            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;">
+              <i class="material-icons-round text-danger">picture_as_pdf</i>
+              <span>Export PDF</span>
+            </button>
+          </div>
+        }
       </div>
 
       <!-- Visual Analytics Section -->

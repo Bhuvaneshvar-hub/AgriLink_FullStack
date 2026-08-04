@@ -5,6 +5,7 @@ import com.cognizant.agrilink.notification.entity.Notification;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import com.cognizant.agrilink.notification.repository.NotificationRepository;
 import com.cognizant.agrilink.notification.exception.ResourceNotFoundException;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,16 @@ public class NotificationService {
 		return notificationRepository.findAll();
 	}
 
+	/** All notifications addressed to a single recipient (used to scope a farmer to their own inbox). */
+	public List<Notification> getByUserId(Integer userId) {
+		return notificationRepository.findByUserId(userId);
+	}
+
+	/** Count of a recipient's unread notifications — powers the inbox badge. */
+	public long unreadCount(Integer userId) {
+		return notificationRepository.countByUserIdAndStatus(userId, NotificationStatus.UN);
+	}
+
 	public Notification getById(Integer id) {
 		return notificationRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Notification not found with id " + id));
@@ -32,7 +43,7 @@ public class NotificationService {
 				.message(dto.getMessage())
 				.category(dto.getCategory())
 				.status(dto.getStatus() != null ? dto.getStatus() : NotificationStatus.UN)
-				.createdDate(dto.getCreatedDate())
+				.createdDate(dto.getCreatedDate() != null ? dto.getCreatedDate() : LocalDate.now())
 				.build();
 		return notificationRepository.save(notification);
 	}
@@ -44,6 +55,13 @@ public class NotificationService {
 		notification.setCategory(dto.getCategory());
 		notification.setStatus(dto.getStatus());
 		notification.setCreatedDate(dto.getCreatedDate());
+		return notificationRepository.save(notification);
+	}
+
+	/** Transitions a notification to a new read/dismissed state — used by the recipient's inbox actions. */
+	public Notification setStatus(Integer id, NotificationStatus status) {
+		Notification notification = getById(id);
+		notification.setStatus(status);
 		return notificationRepository.save(notification);
 	}
 

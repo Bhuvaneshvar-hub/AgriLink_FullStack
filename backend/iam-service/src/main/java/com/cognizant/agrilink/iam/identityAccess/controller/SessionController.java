@@ -48,6 +48,14 @@ public class SessionController {
                         "userId", created.getUserId()));
     }
 
+    // DELETE /agriLink/session/register/{id}  — public (rollback of a self-registration
+    // that never got its linked profile; only works while the account is still Pending)
+    @DeleteMapping("/register/{id}")
+    public ResponseEntity<Map<String, String>> deleteRegistration(@PathVariable Integer id) {
+        userService.deleteRegistration(id);
+        return ResponseEntity.ok(Map.of("message", "Registration rolled back"));
+    }
+
     // POST /agriLink/session/logout  — requires valid JWT
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(

@@ -49,10 +49,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3>Available Marketplace Produce</h3>
-              <button class="btn btn-primary" (click)="openListingModal()">
-                <i class="material-icons-round">add_circle</i>
-                <span>New Crop</span>
-              </button>
+              @if (canManageListing()) {
+                <button class="btn btn-primary" (click)="openListingModal()">
+                  <i class="material-icons-round">add_circle</i>
+                  <span>New</span>
+                </button>
+              }
             </div>
 
             @if (listings().length === 0) {
@@ -67,7 +69,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Farmer ID</th>
                         <th>Crop Type</th>
                         <th>Harvest Date</th>
                         <th>Quantity (Kg)</th>
@@ -80,7 +81,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (item of paginatedListings(); track item.listingId) {
                         <tr>
-                          <td>{{ getFarmerName(item.farmerId) }}</td>
                           <td>{{ getCropName(item.cropId) }}</td>
                           <td>{{ item.harvestDate | date:'mediumDate' }}</td>
                           <td>{{ item.quantityKg }} Kg</td>
@@ -103,7 +103,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                               <button class="menu-item" (click)="viewListingDetails(item)">
                                 <i class="material-icons-round">visibility</i> View
                               </button>
-                              @if (isFarmer()) {
+                              @if (canManageListing()) {
                                 <button class="menu-item" (click)="openListingModal(item)">
                                   <i class="material-icons-round">edit</i> Edit
                                 </button>
@@ -111,7 +111,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                                   <i class="material-icons-round">delete</i> Withdraw Listing
                                 </button>
                               }
-                              @if (isProcurementOrAdmin() && (item.status === 'AV' || item.status === 'PB')) {
+                              @if (isProcurement() && (item.status === 'AV' || item.status === 'PB')) {
                                 <button class="menu-item" (click)="openBuyModal(item)">
                                   <i class="material-icons-round">shopping_cart</i> Buy
                                 </button>
@@ -153,9 +153,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Sale ID</th>
-                        <th>Listing ID</th>
-                        <th>Buyer ID</th>
                         <th>Quantity Sold</th>
                         <th>Agreed Price/Kg</th>
                         <th>Total Amount</th>
@@ -167,9 +164,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (sale of paginatedSales(); track sale.saleId) {
                         <tr>
-                          <td>{{ sale.saleId }}</td>
-                          <td>#{{ sale.listingId }} ({{ getCropNameForListing(sale.listingId) }})</td>
-                          <td>#{{ sale.buyerId }}</td>
                           <td>{{ sale.quantitySoldKg }} Kg</td>
                           <td>{{ sale.agreedPricePerKg | currency:'INR':'symbol-narrow' }}</td>
                           <td><strong>{{ sale.totalAmount | currency:'INR':'symbol-narrow' }}</strong></td>
@@ -287,7 +281,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid">Save Listing</button>
+                <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save" aria-label="Save">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -531,6 +527,17 @@ export class ProduceComponent implements OnInit {
     return this.authService.hasRole(['AgriLinkAdmin', 'ProcurementOfficer']);
   }
 
+  // Only the Procurement Officer buys produce (records sales); the admin does not.
+  isProcurement(): boolean {
+    return this.authService.hasRole(['ProcurementOfficer']);
+  }
+
+  // Only Farmers and AgriLinkAdmin may create/edit/withdraw produce listings
+  // (mirrors produce-service SecurityConfig for POST/PUT/DELETE /produce-listings).
+  canManageListing(): boolean {
+    return this.authService.hasRole(['Farmer', 'AgriLinkAdmin']);
+  }
+
   setTab(tab: 'listings' | 'sales') {
     this.activeTab.set(tab);
   }
@@ -584,7 +591,10 @@ export class ProduceComponent implements OnInit {
         // Load listings
         this.produceService.getAllProduceListings().subscribe({
           next: (list) => {
-            this.listings.set(list);
+            // Show most recently harvested produce first.
+            const sorted = [...(list || [])].sort((a, b) =>
+              new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
+            this.listings.set(sorted);
             this.listingPage = 0;
           }
         });

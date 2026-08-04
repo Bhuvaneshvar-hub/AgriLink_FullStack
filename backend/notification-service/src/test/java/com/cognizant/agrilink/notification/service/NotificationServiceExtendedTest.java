@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.notification.dto.NotificationDto;
 import com.cognizant.agrilink.notification.entity.Notification;
+import com.cognizant.agrilink.notification.enums.NotificationCategory;
 import com.cognizant.agrilink.notification.enums.NotificationStatus;
 import com.cognizant.agrilink.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,7 +48,7 @@ class NotificationServiceExtendedTest {
 				.notificationId(1)
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
@@ -57,7 +58,7 @@ class NotificationServiceExtendedTest {
 		return NotificationDto.builder()
 				.userId(1)
 				.message("Sowing reminder")
-				.category("CropAdvisory")
+				.category(NotificationCategory.CropAdvisory)
 				.status(NotificationStatus.UN)
 				.createdDate(LocalDate.of(2026, 6, 15))
 				.build();
@@ -65,12 +66,12 @@ class NotificationServiceExtendedTest {
 
 	private static Stream<Arguments> dtoFields() {
 		return Stream.of(
-				Arguments.of(10, "Sowing window opens", "CropAdvisory", NotificationStatus.UN, LocalDate.of(2026, 1, 1)),
-				Arguments.of(20, "Subsidy approved", "Subsidy", NotificationStatus.RD, LocalDate.of(2025, 12, 31)),
-				Arguments.of(30, "Seed order placed", "InputProcurement", NotificationStatus.UN, LocalDate.of(2024, 2, 29)),
-				Arguments.of(40, "Produce listed", "ProduceSale", NotificationStatus.UN, LocalDate.of(2030, 6, 15)),
-				Arguments.of(50, "Compliance due", "Compliance", NotificationStatus.RD, LocalDate.of(2000, 2, 29)),
-				Arguments.of(60, "Weather warning", "WeatherAlert", NotificationStatus.UN, LocalDate.of(2099, 7, 4)));
+				Arguments.of(10, "Sowing window opens", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 1, 1)),
+				Arguments.of(20, "Subsidy approved", NotificationCategory.Subsidy, NotificationStatus.RD, LocalDate.of(2025, 12, 31)),
+				Arguments.of(30, "Seed order placed", NotificationCategory.InputProcurement, NotificationStatus.UN, LocalDate.of(2024, 2, 29)),
+				Arguments.of(40, "Produce listed", NotificationCategory.ProduceSale, NotificationStatus.UN, LocalDate.of(2030, 6, 15)),
+				Arguments.of(50, "Compliance due", NotificationCategory.Compliance, NotificationStatus.RD, LocalDate.of(2000, 2, 29)),
+				Arguments.of(60, "Weather warning", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2099, 7, 4)));
 	}
 
 	private static Stream<Arguments> dateArguments() {
@@ -141,7 +142,7 @@ class NotificationServiceExtendedTest {
 		Notification captured = captor.getValue();
 		assertThat(captured.getUserId()).isEqualTo(1);
 		assertThat(captured.getMessage()).isEqualTo("Sowing reminder");
-		assertThat(captured.getCategory()).isEqualTo("CropAdvisory");
+		assertThat(captured.getCategory()).isEqualTo(NotificationCategory.CropAdvisory);
 		assertThat(captured.getStatus()).isEqualTo(NotificationStatus.UN);
 		assertThat(captured.getCreatedDate()).isEqualTo(LocalDate.of(2026, 6, 15));
 	}
@@ -155,6 +156,32 @@ class NotificationServiceExtendedTest {
 
 		verify(notificationRepository).save(captor.capture());
 		assertThat(captor.getValue().getNotificationId()).isNull();
+	}
+
+	@Test
+	void createDefaultsCreatedDateToTodayWhenNull() {
+		when(notificationRepository.save(any(Notification.class))).thenReturn(buildNotification());
+		NotificationDto dto = buildDto();
+		dto.setCreatedDate(null);
+		ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+		notificationService.create(dto);
+
+		verify(notificationRepository).save(captor.capture());
+		assertThat(captor.getValue().getCreatedDate()).isEqualTo(LocalDate.now());
+	}
+
+	@Test
+	void createDefaultsStatusToUnreadWhenNull() {
+		when(notificationRepository.save(any(Notification.class))).thenReturn(buildNotification());
+		NotificationDto dto = buildDto();
+		dto.setStatus(null);
+		ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+		notificationService.create(dto);
+
+		verify(notificationRepository).save(captor.capture());
+		assertThat(captor.getValue().getStatus()).isEqualTo(NotificationStatus.UN);
 	}
 
 	@Test
@@ -177,7 +204,7 @@ class NotificationServiceExtendedTest {
 		NotificationDto dto = NotificationDto.builder()
 				.userId(55)
 				.message("Updated message")
-				.category("Subsidy")
+				.category(NotificationCategory.Subsidy)
 				.status(NotificationStatus.RD)
 				.createdDate(LocalDate.of(2027, 3, 10))
 				.build();
@@ -189,7 +216,7 @@ class NotificationServiceExtendedTest {
 		Notification captured = captor.getValue();
 		assertThat(captured.getUserId()).isEqualTo(55);
 		assertThat(captured.getMessage()).isEqualTo("Updated message");
-		assertThat(captured.getCategory()).isEqualTo("Subsidy");
+		assertThat(captured.getCategory()).isEqualTo(NotificationCategory.Subsidy);
 		assertThat(captured.getStatus()).isEqualTo(NotificationStatus.RD);
 		assertThat(captured.getCreatedDate()).isEqualTo(LocalDate.of(2027, 3, 10));
 	}
@@ -225,6 +252,87 @@ class NotificationServiceExtendedTest {
 		verify(notificationRepository, never()).delete(any(Notification.class));
 	}
 
+	// ── getByUserId ───────────────────────────────────────────────────────
+
+	@Test
+	void getByUserIdReturnsRecipientInbox() {
+		when(notificationRepository.findByUserId(7))
+				.thenReturn(List.of(buildNotification(), buildNotification()));
+
+		assertThat(notificationService.getByUserId(7)).hasSize(2);
+		verify(notificationRepository).findByUserId(7);
+	}
+
+	@Test
+	void getByUserIdReturnsEmptyWhenNone() {
+		when(notificationRepository.findByUserId(7)).thenReturn(new ArrayList<>());
+
+		assertThat(notificationService.getByUserId(7)).isEmpty();
+		verify(notificationRepository).findByUserId(7);
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {1, 2, 100, 5000, 999999, 2147483647})
+	void getByUserIdQueriesRepositoryWithGivenUserId(int userId) {
+		when(notificationRepository.findByUserId(userId)).thenReturn(List.of(buildNotification()));
+
+		notificationService.getByUserId(userId);
+
+		verify(notificationRepository).findByUserId(userId);
+	}
+
+	// ── unreadCount ───────────────────────────────────────────────────────
+
+	@Test
+	void unreadCountCountsUnreadForUser() {
+		when(notificationRepository.countByUserIdAndStatus(7, NotificationStatus.UN)).thenReturn(3L);
+
+		assertThat(notificationService.unreadCount(7)).isEqualTo(3L);
+		verify(notificationRepository).countByUserIdAndStatus(7, NotificationStatus.UN);
+	}
+
+	@Test
+	void unreadCountReturnsZeroWhenNoneUnread() {
+		when(notificationRepository.countByUserIdAndStatus(7, NotificationStatus.UN)).thenReturn(0L);
+
+		assertThat(notificationService.unreadCount(7)).isZero();
+	}
+
+	@ParameterizedTest
+	@ValueSource(longs = {0L, 1L, 5L, 42L, 1000L})
+	void unreadCountReturnsRepositoryCount(long count) {
+		when(notificationRepository.countByUserIdAndStatus(7, NotificationStatus.UN)).thenReturn(count);
+
+		assertThat(notificationService.unreadCount(7)).isEqualTo(count);
+	}
+
+	// ── setStatus ─────────────────────────────────────────────────────────
+
+	@ParameterizedTest
+	@EnumSource(NotificationStatus.class)
+	void setStatusTransitionsAndSaves(NotificationStatus status) {
+		Notification existing = buildNotification();
+		when(notificationRepository.findById(1)).thenReturn(Optional.of(existing));
+		when(notificationRepository.save(any(Notification.class))).thenReturn(existing);
+		ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+		notificationService.setStatus(1, status);
+
+		verify(notificationRepository).findById(1);
+		verify(notificationRepository).save(captor.capture());
+		assertThat(captor.getValue().getStatus()).isEqualTo(status);
+	}
+
+	@Test
+	void setStatusThrowsWhenMissingAndNeverSaves() {
+		when(notificationRepository.findById(99)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> notificationService.setStatus(99, NotificationStatus.RD))
+				.isInstanceOf(EntityNotFoundException.class)
+				.hasMessage("Notification not found with id 99");
+		verify(notificationRepository, never()).save(any(Notification.class));
+	}
+
 	@ParameterizedTest
 	@ValueSource(ints = {1, 2, 3, 5, 10, 50, 100})
 	void getAllReturnsExpectedSize(int size) {
@@ -258,9 +366,8 @@ class NotificationServiceExtendedTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"CropAdvisory", "Subsidy", "InputProcurement", "ProduceSale", "Compliance",
-			"WeatherAlert", "MarketPrice", "PestWarning"})
-	void createMapsVariousCategories(String category) {
+	@EnumSource(NotificationCategory.class)
+	void createMapsVariousCategories(NotificationCategory category) {
 		when(notificationRepository.save(any(Notification.class))).thenReturn(buildNotification());
 		NotificationDto dto = buildDto();
 		dto.setCategory(category);
@@ -359,7 +466,7 @@ class NotificationServiceExtendedTest {
 
 	@ParameterizedTest
 	@NullSource
-	void createMapsNullCreatedDate(LocalDate createdDate) {
+	void createDefaultsNullCreatedDateToToday(LocalDate createdDate) {
 		when(notificationRepository.save(any(Notification.class))).thenReturn(buildNotification());
 		NotificationDto dto = buildDto();
 		dto.setCreatedDate(createdDate);
@@ -368,12 +475,12 @@ class NotificationServiceExtendedTest {
 		notificationService.create(dto);
 
 		verify(notificationRepository).save(captor.capture());
-		assertThat(captor.getValue().getCreatedDate()).isNull();
+		assertThat(captor.getValue().getCreatedDate()).isEqualTo(LocalDate.now());
 	}
 
 	@ParameterizedTest
 	@MethodSource("dtoFields")
-	void createMapsAllFieldCombinations(Integer userId, String message, String category, NotificationStatus status,
+	void createMapsAllFieldCombinations(Integer userId, String message, NotificationCategory category, NotificationStatus status,
 			LocalDate createdDate) {
 		when(notificationRepository.save(any(Notification.class))).thenReturn(buildNotification());
 		NotificationDto dto = NotificationDto.builder()
@@ -398,7 +505,7 @@ class NotificationServiceExtendedTest {
 
 	@ParameterizedTest
 	@MethodSource("dtoFields")
-	void updateMapsAllFieldCombinations(Integer userId, String message, String category, NotificationStatus status,
+	void updateMapsAllFieldCombinations(Integer userId, String message, NotificationCategory category, NotificationStatus status,
 			LocalDate createdDate) {
 		Notification existing = buildNotification();
 		when(notificationRepository.findById(1)).thenReturn(Optional.of(existing));
@@ -430,9 +537,9 @@ class NotificationServiceExtendedTest {
 			"3, InputProcurement, UN",
 			"4, ProduceSale, UN",
 			"5, Compliance, RD",
-			"6, WeatherAlert, UN"
+			"6, CropAdvisory, UN"
 	})
-	void updateMapsCsvCombinations(Integer userId, String category, NotificationStatus status) {
+	void updateMapsCsvCombinations(Integer userId, NotificationCategory category, NotificationStatus status) {
 		Notification existing = buildNotification();
 		when(notificationRepository.findById(1)).thenReturn(Optional.of(existing));
 		when(notificationRepository.save(any(Notification.class))).thenReturn(existing);

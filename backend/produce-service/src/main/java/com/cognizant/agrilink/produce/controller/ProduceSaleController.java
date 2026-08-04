@@ -4,6 +4,7 @@ import com.cognizant.agrilink.produce.client.FarmerClient;
 import com.cognizant.agrilink.produce.dto.MessageResponse;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
+import com.cognizant.agrilink.produce.notification.NotificationClient;
 import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -25,13 +26,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProduceSaleController {
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String NOTIF_CATEGORY = "ProduceSale";
 
 	private final ProduceSaleService produceSaleService;
 	private final FarmerClient farmerClient;
+	private final NotificationClient notificationClient;
 
-	public ProduceSaleController(ProduceSaleService produceSaleService, FarmerClient farmerClient) {
+	public ProduceSaleController(ProduceSaleService produceSaleService, FarmerClient farmerClient,
+			NotificationClient notificationClient) {
 		this.produceSaleService = produceSaleService;
 		this.farmerClient = farmerClient;
+		this.notificationClient = notificationClient;
 	}
 
 	// A Farmer only ever sees sales whose listing belongs to their own farmer
@@ -56,8 +61,10 @@ public class ProduceSaleController {
 
 	// Non-GET methods return only a message
 	@PostMapping
-	public ResponseEntity<MessageResponse> create(@RequestBody ProduceSaleDto dto) {
+	public ResponseEntity<MessageResponse> create(@RequestBody ProduceSaleDto dto, HttpServletRequest request) {
 		produceSaleService.create(dto);
+		// Alert the selling farmer (listing owner) that a buyer booking/sale was recorded.
+		notifySeller(dto, request);
 		return ResponseEntity.ok(new MessageResponse("ProduceSale created successfully"));
 	}
 
@@ -88,5 +95,25 @@ public class ProduceSaleController {
 	/** Resolves the farmerId(s) owned by the caller via farmer-service, forwarding the JWT. */
 	private List<Integer> ownedFarmerIds(HttpServletRequest request) {
 		return farmerClient.getOwnedFarmerIds(request.getHeader("Authorization"));
+	}
+
+	/**
+	 * Notifies the farmer who owns the sold listing that a sale/booking was recorded.
+	 * Best-effort: any failure resolving the owner or reaching notification-service is
+	 * swallowed so it never breaks the sale operation.
+	 */
+	private void notifySeller(ProduceSaleDto dto, HttpServletRequest request) {
+		try {
+			String bearer = request.getHeader("Authorization");
+			Integer farmerId = produceSaleService.getListingOwnerFarmerId(dto.getListingId());
+			Integer ownerUserId = farmerClient.getUserIdByFarmerId(farmerId, bearer);
+			if (ownerUserId != null) {
+				String message = "A sale of " + dto.getQuantitySoldKg() + " kg was recorded for your produce listing #"
+						+ dto.getListingId() + ".";
+				notificationClient.notify(ownerUserId, message, NOTIF_CATEGORY, bearer);
+			}
+		} catch (Exception e) {
+			// Notification is best-effort; never fail the sale.
+		}
 	}
 }

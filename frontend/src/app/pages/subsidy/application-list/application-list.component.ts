@@ -9,6 +9,7 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
 import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { exportTableToExcel } from '../../../utils/export-excel.util';
 
 @Component({
   selector: 'app-application-list',
@@ -27,13 +28,19 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             }
           </p>
         </div>
-        <!-- Farmers and Extension Officers can file applications -->
-        @if (canCreate()) {
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            <i class="material-icons-round">post_add</i>
-            <span>New Application</span>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0">
+            <i class="material-icons-round text-success">table_view</i>
+            <span>Export XLS</span>
           </button>
-        }
+          <!-- Farmers and Extension Officers can file applications -->
+          @if (canCreate()) {
+            <button class="btn btn-primary" (click)="openCreateModal()">
+              <i class="material-icons-round">post_add</i>
+              <span>New Application</span>
+            </button>
+          }
+        </div>
       </div>
 
       <!-- Filters & Search -->
@@ -325,6 +332,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     </div>
   `,
   styles: [`
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
     .filters-card {
       padding: 1rem 1.5rem 0.5rem;
       margin-bottom: 1.5rem;
@@ -478,7 +490,7 @@ export class ApplicationListComponent implements OnInit {
   }
 
   canCreate(): boolean {
-    return this.authService.hasRole(['Farmer', 'ExtensionOfficer', 'AgriLinkAdmin']);
+    return this.authService.hasRole(['Farmer', 'ExtensionOfficer', 'SubsidyAdmin', 'AgriLinkAdmin']);
   }
 
   canReview(): boolean {
@@ -489,8 +501,8 @@ export class ApplicationListComponent implements OnInit {
     // Only pending applications can be deleted/withdrawn.
     if (app.status !== 'PE') return false;
     
-    // Farmer can delete own, admin can delete any
-    if (this.authService.hasRole(['AgriLinkAdmin'])) return true;
+    // Farmer can delete own; SubsidyAdmin and AgriLinkAdmin can delete any
+    if (this.authService.hasRole(['SubsidyAdmin', 'AgriLinkAdmin'])) return true;
     return this.isFarmer() && app.userId === this.authService.currentUserValue?.userId;
   }
 
@@ -546,6 +558,20 @@ export class ApplicationListComponent implements OnInit {
       case 'DB': return 'Disbursed';
       default: return status;
     }
+  }
+
+  onExportExcel(): void {
+    const headers = ['Farmer', 'Scheme', 'Application Date', 'Eligibility Score (%)', 'Disbursed Amount', 'Disbursed Date', 'Status'];
+    const rows = this.filteredApplications().map(a => [
+      this.getFarmerName(a.farmerId),
+      this.getSchemeName(a.schemeId),
+      this.fmtDate(a.applicationDate),
+      a.eligibilityScore ?? '',
+      a.disbursedAmount ? this.fmtMoney(a.disbursedAmount) : '-',
+      a.disbursedDate ? this.fmtDate(a.disbursedDate) : '-',
+      this.getStatusLabel(a.status)
+    ]);
+    exportTableToExcel(headers, rows, 'subsidy-applications');
   }
 
   private fmtDate(d: any): string {

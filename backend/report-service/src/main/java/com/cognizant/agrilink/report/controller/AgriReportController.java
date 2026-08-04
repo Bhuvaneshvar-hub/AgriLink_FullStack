@@ -20,6 +20,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,7 @@ public class AgriReportController {
 	}
 
 	@PostMapping({"/generate", ""})
+	@PreAuthorize("hasAnyRole('SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<MessageResponse> generate(@RequestBody AgriReportDto dto) {
 		log.info("Generating report with scope: {}", dto.getScope());
 		agriReportService.create(dto);
@@ -48,34 +50,40 @@ public class AgriReportController {
 	}
 
 	@GetMapping({"/fetchAll", ""})
+	@PreAuthorize("hasAnyRole('ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<List<AgriReport>> fetchAll() {
 		log.info("Fetching all reports metadata");
 		return ResponseEntity.ok(agriReportService.getAll());
 	}
 
 	@GetMapping({"/fetchById/{reportId}", "/{reportId}"})
+	@PreAuthorize("hasAnyRole('ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<AgriReport> fetchById(@PathVariable(name = "reportId") Integer reportId) {
 		return ResponseEntity.ok(agriReportService.getById(reportId));
 	}
 
 	@GetMapping("/fetchByScope/{scope}")
+	@PreAuthorize("hasAnyRole('ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<List<AgriReport>> fetchByScope(@PathVariable String scope) {
 		return ResponseEntity.ok(agriReportService.getByScope(scope));
 	}
 
 	@PutMapping("/{reportId}")
+	@PreAuthorize("hasAnyRole('SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<MessageResponse> update(@PathVariable(name = "reportId") Integer reportId, @RequestBody AgriReportDto dto) {
 		agriReportService.update(reportId, dto);
 		return ResponseEntity.ok(new MessageResponse("AgriReport updated successfully"));
 	}
 
 	@DeleteMapping({"/delete/{reportId}", "/{reportId}"})
+	@PreAuthorize("hasAnyRole('SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public ResponseEntity<MessageResponse> delete(@PathVariable(name = "reportId") Integer reportId) {
 		agriReportService.delete(reportId);
 		return ResponseEntity.ok(new MessageResponse("AgriReport deleted successfully"));
 	}
 
 	@PostMapping("/export")
+	@PreAuthorize("hasAnyRole('SubsidyAdmin', 'ComplianceAnalyst', 'AgriLinkAdmin')")
 	public void exportReports(@RequestBody Map<String, String> request, HttpServletResponse response) throws Exception {
 		String format = request.getOrDefault("format", "excel").toLowerCase();
 		List<AgriReport> reports = agriReportService.getAll();

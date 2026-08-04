@@ -46,10 +46,12 @@ public class SecurityConfig {
 										"ComplianceAnalyst", "AgriLinkAdmin")
 						.requestMatchers(HttpMethod.POST, "/agriLink/subsidyScheme/createApplication")
 								.hasAnyRole("Farmer", "ExtensionOfficer", "SubsidyAdmin", "AgriLinkAdmin")
+						// review / approve / disburse — SubsidyAdmin & Admin only
 						.requestMatchers(HttpMethod.PUT, "/agriLink/subsidyScheme/updateApplication/**", "/agriLink/subsidyScheme/reviewApplication/**", "/agriLink/subsidyScheme/updateApplicationStatus/**")
-								.hasAnyRole("Farmer", "ExtensionOfficer", "SubsidyAdmin", "AgriLinkAdmin")
+								.hasAnyRole("SubsidyAdmin", "AgriLinkAdmin")
+						// withdraw — Farmer (own) & admins; Extension Officer only files/views
 						.requestMatchers(HttpMethod.DELETE, "/agriLink/subsidyScheme/deleteApplication/**")
-								.hasAnyRole("Farmer", "ExtensionOfficer", "SubsidyAdmin", "AgriLinkAdmin")
+								.hasAnyRole("Farmer", "SubsidyAdmin", "AgriLinkAdmin")
 						.anyRequest().authenticated())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();

@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
+import { FarmerService } from '../../../services/farmer.service';
 import { ToastService } from '../../../services/toast.service';
 import { NAME_PATTERN } from '../../../utils/validators';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
@@ -347,6 +348,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
 })
 export class UserListComponent implements OnInit {
   private userService = inject(UserService);
+  private farmerService = inject(FarmerService);
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
 
@@ -551,9 +553,35 @@ export class UserListComponent implements OnInit {
     } else {
       this.userService.createUser(val).subscribe({
         next: (res) => {
-          this.toastService.success(res.message || 'User created successfully.');
-          this.closeFormModal();
-          this.loadUsers();
+          const roleName = this.roles().find(r => r.roleId === val.roleId)?.roleName;
+          if (roleName === 'Farmer' && res?.userId) {
+            // A Farmer login needs a linked farmer profile - without it the farmer has
+            // no name/record in the farmer-service (e.g. their subsidy applications
+            // display as "Farmer #<id>"). Create a minimal Active profile here.
+            this.farmerService.createFarmerProfile({
+              userId: res.userId,
+              name: val.name,
+              phone: val.phone,
+              status: 'AC'
+            }).subscribe({
+              next: () => {
+                this.toastService.success('Farmer account and profile created successfully.');
+                this.closeFormModal();
+                this.loadUsers();
+              },
+              error: () => {
+                // The login account was created; surface that the profile step failed
+                // so an admin can complete it from the Farmer Registration page.
+                this.toastService.error('User created, but the farmer profile could not be created. Complete it from Farmer Registration.');
+                this.closeFormModal();
+                this.loadUsers();
+              }
+            });
+          } else {
+            this.toastService.success(res.message || 'User created successfully.');
+            this.closeFormModal();
+            this.loadUsers();
+          }
         },
         error: (err) => {
           this.toastService.error(err.error?.message || 'Failed to create user account.');

@@ -75,21 +75,25 @@ import { CommonModule } from '@angular/common';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
+      padding: 1rem;
     }
     .auth-card {
       background-color: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 1rem;
-      padding: 2.5rem;
+      padding: 1.75rem;
       width: 100%;
-      max-width: 460px;
+      max-width: 380px;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
       box-shadow: var(--shadow-lg);
       transition: border-color var(--transition-normal), max-width var(--transition-normal);
     }
     .auth-card.wide {
-      max-width: 620px;
-      padding: 2rem 2.5rem;
+      max-width: 460px;
+      padding: 1.25rem 1.5rem;
     }
     .auth-card:hover {
       border-color: var(--primary-color);

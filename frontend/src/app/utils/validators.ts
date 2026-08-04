@@ -22,3 +22,22 @@ export function notFutureDate(control: AbstractControl): ValidationErrors | null
   endOfToday.setHours(23, 59, 59, 999);
   return value.getTime() > endOfToday.getTime() ? { futureDate: true } : null;
 }
+
+/**
+ * Form-group-level validator: flags 'confirmPassword' with a { mismatch: true }
+ * error whenever it doesn't equal 'password'. Attach via the FormGroup's
+ * validators (not an individual control), since it needs both fields.
+ */
+export function passwordsMatch(group: AbstractControl): ValidationErrors | null {
+  const password = group.get('password')?.value;
+  const confirmPassword = group.get('confirmPassword');
+  if (!confirmPassword) return null;
+
+  if (confirmPassword.value && password !== confirmPassword.value) {
+    confirmPassword.setErrors({ ...confirmPassword.errors, mismatch: true });
+  } else if (confirmPassword.errors) {
+    const { mismatch, ...rest } = confirmPassword.errors;
+    confirmPassword.setErrors(Object.keys(rest).length ? rest : null);
+  }
+  return null;
+}

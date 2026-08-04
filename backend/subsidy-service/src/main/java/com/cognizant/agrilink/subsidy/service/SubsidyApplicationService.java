@@ -66,6 +66,9 @@ public class SubsidyApplicationService {
 
 	public SubsidyApplication reviewApplication(Integer id, SubsidyApplicationDto dto) {
 		SubsidyApplication subsidyApplication = getById(id);
+		if (dto.getStatus() != null) {
+			subsidyApplication.setStatus(dto.getStatus());
+		}
 		subsidyApplication.setReviewedBy(dto.getReviewedBy());
 		subsidyApplication.setEligibilityScore(dto.getEligibilityScore());
 		return subsidyApplicationRepository.save(subsidyApplication);

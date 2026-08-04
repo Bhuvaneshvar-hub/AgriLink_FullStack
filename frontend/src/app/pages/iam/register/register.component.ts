@@ -5,7 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { FarmerService } from '../../../services/farmer.service';
 import { ToastService } from '../../../services/toast.service';
-import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../../utils/validators';
+import { notFutureDate, passwordsMatch, NAME_PATTERN, GMAIL_PATTERN } from '../../../utils/validators';
 import { INDIAN_STATES } from '../../../utils/indian-states';
 
 @Component({
@@ -89,6 +89,28 @@ import { INDIAN_STATES } from '../../../utils/indian-states';
             </button>
           </div>
           <span class="error-text" [class.visible]="isFieldInvalid('password')">Password must be at least 8 characters</span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <div class="password-input-wrap">
+            <input
+              [type]="showConfirmPassword() ? 'text' : 'password'"
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              placeholder="Re-enter your password"
+              [class.input-error]="isFieldInvalid('confirmPassword')" />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              (click)="showConfirmPassword.set(!showConfirmPassword())"
+              [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'">
+              <i class="material-icons-round">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</i>
+            </button>
+          </div>
+          <span class="error-text" [class.visible]="isFieldInvalid('confirmPassword')">
+            {{ registerForm.get('confirmPassword')?.errors?.['passwordMismatch'] ? 'Passwords do not match' : 'Please confirm your password' }}
+          </span>
         </div>
 
         <div class="form-row-2">
@@ -292,6 +314,7 @@ export class RegisterComponent {
   isLoading = signal(false);
   submitted = signal(false);
   showPassword = signal(false);
+  showConfirmPassword = signal(false);
   readonly indianStates = INDIAN_STATES;
   registerForm: FormGroup = this.fb.group({
     // Login-account fields
@@ -300,6 +323,7 @@ export class RegisterComponent {
     phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     regionId: [1, [Validators.required, Validators.min(1)]],
     password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', [Validators.required]],
     // Farmer profile fields (a full profile is created on registration, Inactive until approval)
     dateOfBirth: ['', [Validators.required, notFutureDate]],
     gender: ['', [Validators.required]],
@@ -308,7 +332,7 @@ export class RegisterComponent {
     district: ['', [Validators.required]],
     state: ['', [Validators.required]],
     bankAccountNumber: ['', [Validators.required]]
-  });
+  }, { validators: passwordsMatch });
 
   isFieldInvalid(field: string): boolean {
     const control = this.registerForm.get(field);
@@ -320,8 +344,10 @@ export class RegisterComponent {
     if (this.registerForm.invalid) return;
 
     this.isLoading.set(true);
+    // confirmPassword is a UI-only field; exclude it from the API payload.
+    const { confirmPassword, ...payload } = this.registerForm.value;
     // Creates BOTH the login account (Pending) and a linked FarmerProfile (Inactive).
-    this.farmerService.selfRegisterFarmer(this.registerForm.value).subscribe({
+    this.farmerService.selfRegisterFarmer(payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);
         this.toastService.success(res.message || 'Registration submitted! Awaiting approval.');

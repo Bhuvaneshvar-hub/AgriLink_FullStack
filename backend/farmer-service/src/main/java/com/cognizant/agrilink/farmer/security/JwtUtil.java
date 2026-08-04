@@ -38,4 +38,8 @@ public class JwtUtil {
     public Integer extractUserId(String t) {
         return Integer.parseInt(extractAllClaims(t).getSubject());
     }
+
+    public Integer extractRegionId(String t) {
+        return extractAllClaims(t).get("regionId", Integer.class);
+    }
 }

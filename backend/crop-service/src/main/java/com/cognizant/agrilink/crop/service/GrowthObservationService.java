@@ -21,6 +21,13 @@ public class GrowthObservationService {
 		return growthObservationRepository.findAll();
 	}
 
+	public List<GrowthObservation> getByPlanIds(List<Integer> planIds) {
+		if (planIds == null || planIds.isEmpty()) {
+			return List.of();
+		}
+		return growthObservationRepository.findByPlanIdIn(planIds);
+	}
+
 	public GrowthObservation getById(Integer id) {
 		return growthObservationRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("GrowthObservation not found with id " + id));

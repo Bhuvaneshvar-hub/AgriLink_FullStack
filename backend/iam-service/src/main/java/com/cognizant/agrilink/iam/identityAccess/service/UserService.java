@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -115,11 +116,15 @@ public class UserService {
         return toResponseDto(user);
     }
 
-    // ── 1a-pending. List users awaiting approval (Officer/Admin) ────────────────
-    public List<UserResponseDto> getPendingUsers() {
-        return userDetailsRepository.findByStatus(UserDetails.Status.P).stream()
-                .map(this::toResponseDto)
-                .toList();
+    // ── 1a-pending. List users awaiting approval ────────────────────────────────
+    // AgriLinkAdmin sees pending users from every region; an ExtensionOfficer only
+    // sees the ones in their own region, since that's all they're able to approve.
+    public List<UserResponseDto> getPendingUsers(UserDetails currentUser) {
+        Stream<UserDetails> pending = userDetailsRepository.findByStatus(UserDetails.Status.P).stream();
+        if (!ROLE_ADMIN.equals(currentUser.getRole().getRoleName())) {
+            pending = pending.filter(u -> u.getRegionId() != null && u.getRegionId().equals(currentUser.getRegionId()));
+        }
+        return pending.map(this::toResponseDto).toList();
     }
 
     // ── 1a. List all users (Admin only) ────────────────────────────────────────

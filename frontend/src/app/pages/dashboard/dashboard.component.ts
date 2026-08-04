@@ -20,6 +20,50 @@ import { NotificationService } from '../../services/notification.service';
         <p class="text-secondary">Here is an overview of the agricultural portal activities based on your role.</p>
       </div>
 
+      <!-- Subsidy Overview (SubsidyAdmin only) — headline totals shown up top -->
+      @if (authService.hasRole(['SubsidyAdmin'])) {
+        <div class="stats-grid subsidy-overview-grid">
+          <a routerLink="/schemes" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-blue"><i class="material-icons-round">inventory_2</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Schemes</span>
+              <span class="stat-value">{{ isLoadingRoleStats() ? '...' : totalSchemesCount() }}</span>
+            </div>
+          </a>
+          <a routerLink="/applications" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-teal"><i class="material-icons-round">assignment</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Applications</span>
+              <span class="stat-value">{{ isLoadingStats() ? '...' : totalApplicationsCount() }}</span>
+            </div>
+          </a>
+          <a routerLink="/schemes" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-green"><i class="material-icons-round">check_circle</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Active Schemes</span>
+              <span class="stat-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</span>
+            </div>
+          </a>
+          <div class="stat-card">
+            <div class="stat-icon subsidy-icon-amber"><i class="material-icons-round">payments</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Disbursed</span>
+              <span class="stat-value">₹{{ isLoadingRoleStats() ? '...' : (totalDisbursedAmount() | number) }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (!isLoadingStats() && pendingApplicationsCount() > 0) {
+          <a routerLink="/applications" class="alert-banner mb-3">
+            <i class="material-icons-round alert-banner-icon">assignment_late</i>
+            <div class="alert-banner-text">
+              <strong>{{ pendingApplicationsCount() }}</strong> subsidy application{{ pendingApplicationsCount() === 1 ? '' : 's' }} awaiting your review
+            </div>
+            <span class="alert-banner-cta">Review Now <i class="material-icons-round">arrow_forward</i></span>
+          </a>
+        }
+      }
+
       <!-- Hero Row -->
       <div class="hero-grid">
         @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
@@ -33,7 +77,7 @@ import { NotificationService } from '../../services/notification.service';
           </a>
         }
 
-        @if (authService.hasRole(['AgriLinkAdmin', 'SubsidyAdmin', 'ExtensionOfficer', 'ComplianceAnalyst'])) {
+        @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ComplianceAnalyst'])) {
           <a routerLink="/applications" class="hero-card hero-blue">
             <div class="hero-card-top">
               <span class="hero-chip">Awaiting Action</span>
@@ -55,7 +99,7 @@ import { NotificationService } from '../../services/notification.service';
           </a>
         }
 
-        @if (!authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+        @if (authService.hasRole(['ProcurementOfficer'])) {
           <a routerLink="/schemes" class="hero-card hero-blue">
             <div class="hero-card-top">
               <span class="hero-chip">Live</span>
@@ -157,7 +201,7 @@ import { NotificationService } from '../../services/notification.service';
       }
 
       <!-- Role Insights Row (responsibility-specific KPIs) -->
-      @if (authService.hasRole(['ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+      @if (authService.hasRole(['ExtensionOfficer', 'ProcurementOfficer', 'ComplianceAnalyst'])) {
         <div class="mini-grid">
           @if (authService.hasRole(['ExtensionOfficer'])) {
             <div class="mini-card">
@@ -182,18 +226,6 @@ import { NotificationService } from '../../services/notification.service';
               <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : pendingPaymentsCount() }}</div>
               <span class="mini-caption">Produce sales awaiting payment</span>
             </a>
-          }
-          @if (authService.hasRole(['SubsidyAdmin'])) {
-            <a routerLink="/schemes" class="mini-card mini-card-link">
-              <div class="mini-card-header"><span class="mini-label">Active Schemes</span></div>
-              <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</div>
-              <span class="mini-caption">Currently open for applications</span>
-            </a>
-            <div class="mini-card">
-              <div class="mini-card-header"><span class="mini-label">Total Disbursed</span></div>
-              <div class="mini-big-value">₹{{ isLoadingRoleStats() ? '...' : (totalDisbursedAmount() | number) }}</div>
-              <span class="mini-caption">Across all approved applications</span>
-            </div>
           }
           @if (authService.hasRole(['ComplianceAnalyst'])) {
             <a routerLink="/applications" class="mini-card mini-card-link">
@@ -273,7 +305,7 @@ import { NotificationService } from '../../services/notification.service';
                 <p class="text-secondary">Nothing pending &mdash; you're all caught up!</p>
               } @else {
                 @for (item of actionNeededItems(); track item.key) {
-                  <a [routerLink]="item.link" class="action-needed-row">
+                  <a [routerLink]="item.link" class="action-needed-row" [style.border-left-color]="item.color">
                     <i class="material-icons-round action-needed-icon" [style.color]="item.color">{{ item.icon }}</i>
                     <div class="action-needed-details">
                       <span class="action-needed-title">{{ item.title }}</span>
@@ -391,6 +423,83 @@ import { NotificationService } from '../../services/notification.service';
     </div>
   `,
   styles: [`
+    /* Subsidy Overview (SubsidyAdmin headline stats) */
+    .subsidy-overview-grid {
+      margin-bottom: 1.5rem;
+    }
+    .subsidy-stat-link {
+      text-decoration: none;
+      color: inherit;
+      transition: transform var(--transition-normal), border-color var(--transition-normal);
+    }
+    .subsidy-stat-link:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+    }
+    .subsidy-icon-blue {
+      background-color: rgba(59, 130, 246, 0.14);
+      color: var(--secondary-color);
+    }
+    .subsidy-icon-teal {
+      background-color: rgba(6, 182, 212, 0.14);
+      color: var(--info);
+    }
+    .subsidy-icon-green {
+      background-color: rgba(22, 163, 74, 0.14);
+      color: var(--success);
+    }
+
+    /* Compact alert banner (e.g. "Awaiting Action" highlight) — a slim strip
+       instead of a full hero tile, so it reads as an inline nudge rather than
+       another equally-weighted stat block. */
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.9rem 1.25rem;
+      border-radius: 0.65rem;
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all var(--transition-normal);
+    }
+    .alert-banner:hover {
+      background-color: rgba(245, 158, 11, 0.16);
+      border-color: var(--warning);
+      transform: translateY(-1px);
+    }
+    .alert-banner-icon {
+      font-size: 22px;
+      color: var(--warning);
+      flex-shrink: 0;
+    }
+    .alert-banner-text {
+      flex-grow: 1;
+      font-size: 0.9rem;
+    }
+    .alert-banner-text strong {
+      font-size: 1.1rem;
+      font-family: var(--font-title);
+      color: var(--warning);
+    }
+    .alert-banner-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--warning);
+      flex-shrink: 0;
+    }
+    .alert-banner-cta i {
+      font-size: 16px;
+    }
+    .subsidy-icon-amber {
+      background-color: rgba(245, 158, 11, 0.14);
+      color: var(--warning);
+    }
+
     /* Hero cards */
     .hero-grid {
       display: grid;
@@ -683,14 +792,17 @@ import { NotificationService } from '../../services/notification.service';
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.65rem 0.5rem;
+      padding: 0.65rem 0.75rem;
       border-radius: 0.5rem;
+      border-left: 3px solid transparent;
+      background-color: rgba(148, 163, 184, 0.05);
       text-decoration: none;
       color: var(--text-primary);
-      transition: background-color var(--transition-fast);
+      transition: background-color var(--transition-fast), transform var(--transition-fast);
     }
     .action-needed-row:hover {
       background-color: var(--primary-light);
+      transform: translateX(2px);
     }
     .action-needed-icon {
       font-size: 20px;
@@ -781,6 +893,8 @@ export class DashboardComponent implements OnInit {
 
   // SubsidyAdmin
   activeSchemesCount = signal(0);
+  totalSchemesCount = signal(0);
+  totalApplicationsCount = signal(0);
   totalDisbursedAmount = signal(0);
 
   // ComplianceAnalyst
@@ -881,6 +995,7 @@ export class DashboardComponent implements OnInit {
             const pending = data.filter(a => a.status === 'PE');
             this.pendingApplicationsCount.set(pending.length);
             this.pendingApplicationsList = pending;
+            this.totalApplicationsCount.set(data.length);
             this.totalDisbursedAmount.set(data.reduce((sum, a) => sum + (a.disbursedAmount || 0), 0));
             this.rejectedApplicationsCount.set(data.filter(a => a.status === 'RE').length);
             this.subsidyAppsRaw = data;
@@ -993,12 +1108,15 @@ export class DashboardComponent implements OnInit {
       }));
     }
 
-    // Active-schemes count feeds the SubsidyAdmin mini-card AND the
-    // "Active Subsidy Schemes" hero card shown to Farmer / ProcurementOfficer.
-    if (this.authService.hasRole(['SubsidyAdmin', 'Farmer', 'ProcurementOfficer'])) {
+    // Active/total-schemes counts feed the SubsidyAdmin overview AND the
+    // "Active Subsidy Schemes" hero card shown to ProcurementOfficer.
+    if (this.authService.hasRole(['SubsidyAdmin', 'ProcurementOfficer'])) {
       roleStatsCalls.push(new Promise((resolve) => {
         this.subsidyService.getAllSchemes().subscribe({
-          next: (data) => this.activeSchemesCount.set(data.filter(s => s.status === 'AC').length),
+          next: (data) => {
+            this.activeSchemesCount.set(data.filter(s => s.status === 'AC').length);
+            this.totalSchemesCount.set(data.length);
+          },
           error: () => {},
           complete: () => resolve()
         });

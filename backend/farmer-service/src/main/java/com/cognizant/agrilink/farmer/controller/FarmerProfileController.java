@@ -31,14 +31,21 @@ public class FarmerProfileController {
 	}
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String ROLE_EXTENSION_OFFICER = "ROLE_ExtensionOfficer";
 
 	// GET methods return full data.
-	// A Farmer only ever sees their own profile; officers/admins see everything.
+	// A Farmer only ever sees their own profile; an ExtensionOfficer sees only
+	// farmers in their own region (that's all they're able to approve/manage);
+	// Admin and other officers see everything.
 	@GetMapping
 	public ResponseEntity<List<FarmerProfile>> getAll(Authentication authentication) {
 		if (isFarmer(authentication)) {
 			Integer userId = (Integer) authentication.getPrincipal();
 			return ResponseEntity.ok(farmerProfileService.getByUserId(userId));
+		}
+		if (hasAuthority(authentication, ROLE_EXTENSION_OFFICER)) {
+			Integer regionId = (Integer) authentication.getCredentials();
+			return ResponseEntity.ok(farmerProfileService.getByRegionId(regionId));
 		}
 		return ResponseEntity.ok(farmerProfileService.getAll());
 	}
@@ -52,16 +59,20 @@ public class FarmerProfileController {
 		return ResponseEntity.ok(profile);
 	}
 
-	private boolean isFarmer(Authentication authentication) {
+	private boolean hasAuthority(Authentication authentication, String role) {
 		if (authentication == null) {
 			return false;
 		}
 		for (GrantedAuthority authority : authentication.getAuthorities()) {
-			if (ROLE_FARMER.equals(authority.getAuthority())) {
+			if (role.equals(authority.getAuthority())) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private boolean isFarmer(Authentication authentication) {
+		return hasAuthority(authentication, ROLE_FARMER);
 	}
 
 	// Public farmer self-registration: creates the IAM login account (Pending) and a

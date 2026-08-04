@@ -29,10 +29,12 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           </p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0">
-            <i class="material-icons-round text-success">table_view</i>
-            <span>Export XLS</span>
-          </button>
+          @if (!isFarmer()) {
+            <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0">
+              <i class="material-icons-round text-success">table_view</i>
+              <span>Export XLS</span>
+            </button>
+          }
           <!-- Farmers and Extension Officers can file applications -->
           @if (canCreate()) {
             <button class="btn btn-primary" (click)="openCreateModal()">
@@ -98,6 +100,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
+                  <th>S.No</th>
                   <th>Farmer Name</th>
                   <th>Scheme Name</th>
                   <th>Application Date</th>
@@ -109,8 +112,9 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (app of paginatedApplications(); track app.applicationId) {
+                @for (app of paginatedApplications(); track app.applicationId; let i = $index) {
                   <tr>
+                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ getFarmerName(app.farmerId) }}</strong></td>
                     <td>{{ getSchemeName(app.schemeId) }}</td>
                     <td>{{ app.applicationDate | date:'mediumDate' }}</td>
@@ -544,7 +548,11 @@ export class ApplicationListComponent implements OnInit {
   }
 
   getFarmerName(farmerId: number): string {
-    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    // Applications filed through the app store the farmer's userId in the farmerId
+    // field, while seeded applications use the profile's own farmerId. Match on
+    // farmerId first, then fall back to userId, so the real name resolves in both cases.
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId)
+      ?? this.farmerProfiles().find(p => p.userId == farmerId);
     return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 

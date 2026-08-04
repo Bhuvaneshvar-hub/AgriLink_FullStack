@@ -22,10 +22,12 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           <p class="text-secondary">Browse available agricultural relief funds, machinery grants, and seed subsidies.</p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredSchemes().length === 0">
-            <i class="material-icons-round text-success">table_view</i>
-            <span>Export XLS</span>
-          </button>
+          @if (!authService.hasRole(['Farmer'])) {
+            <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredSchemes().length === 0">
+              <i class="material-icons-round text-success">table_view</i>
+              <span>Export XLS</span>
+            </button>
+          }
           @if (canEdit()) {
             <button class="btn btn-primary" (click)="openCreateModal()">
               <i class="material-icons-round">add_circle</i>
@@ -88,7 +90,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>S.No</th>
                   <th>Scheme Name</th>
                   <th>Category</th>
                   <th>Benefit Amount</th>
@@ -99,9 +101,9 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (scheme of paginatedSchemes(); track scheme.schemeId) {
+                @for (scheme of paginatedSchemes(); track scheme.schemeId; let i = $index) {
                   <tr>
-                    <td>{{ scheme.schemeId }}</td>
+                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ scheme.schemeName }}</strong></td>
                     <td>{{ scheme.category }}</td>
                     <td>{{ scheme.benefitAmount | currency:'INR':'symbol-narrow' }}</td>

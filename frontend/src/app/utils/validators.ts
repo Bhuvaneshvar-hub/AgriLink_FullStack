@@ -24,21 +24,20 @@ export function notFutureDate(control: AbstractControl): ValidationErrors | null
 }
 
 /**
- * Cross-field validator applied to a FormGroup: sets a `passwordMismatch` error
- * on the `confirmPassword` control when it doesn't match `password`. Kept on the
- * child control (not the group) so the field-level error UI can display it.
+ * Form-group-level validator: flags 'confirmPassword' with a { mismatch: true }
+ * error whenever it doesn't equal 'password'. Attach via the FormGroup's
+ * validators (not an individual control), since it needs both fields.
  */
 export function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
-  const confirm = group.get('confirmPassword');
-  if (!confirm) return null;
-  // Preserve any other errors already on the control (e.g. required).
-  const existing = confirm.errors ?? {};
-  if (confirm.value && password !== confirm.value) {
-    confirm.setErrors({ ...existing, passwordMismatch: true });
-  } else {
-    const { passwordMismatch, ...rest } = existing;
-    confirm.setErrors(Object.keys(rest).length ? rest : null);
+  const confirmPassword = group.get('confirmPassword');
+  if (!confirmPassword) return null;
+
+  if (confirmPassword.value && password !== confirmPassword.value) {
+    confirmPassword.setErrors({ ...confirmPassword.errors, mismatch: true });
+  } else if (confirmPassword.errors) {
+    const { mismatch, ...rest } = confirmPassword.errors;
+    confirmPassword.setErrors(Object.keys(rest).length ? rest : null);
   }
   return null;
 }

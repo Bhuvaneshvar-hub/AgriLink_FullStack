@@ -8,6 +8,7 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
 import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { exportTableToExcel } from '../../../utils/export-excel.util';
 
 @Component({
   selector: 'app-scheme-list',
@@ -20,12 +21,18 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           <h1>Subsidy & Scheme Catalog</h1>
           <p class="text-secondary">Browse available agricultural relief funds, machinery grants, and seed subsidies.</p>
         </div>
-        @if (canEdit()) {
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            <i class="material-icons-round">add_circle</i>
-            <span>Create </span>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredSchemes().length === 0">
+            <i class="material-icons-round text-success">table_view</i>
+            <span>Export XLS</span>
           </button>
-        }
+          @if (canEdit()) {
+            <button class="btn btn-primary" (click)="openCreateModal()">
+              <i class="material-icons-round">add_circle</i>
+              <span>Create </span>
+            </button>
+          }
+        </div>
       </div>
 
       <!-- Filters & Search -->
@@ -246,6 +253,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     </div>
   `,
   styles: [`
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
     .filters-card {
       padding: 1rem 1.5rem 0.5rem;
       margin-bottom: 1.5rem;
@@ -366,6 +378,22 @@ export class SchemeListComponent implements OnInit {
   private fmtMoney(v: any): string {
     const n = Number(v);
     return isNaN(n) ? String(v) : '₹' + n.toFixed(2);
+  }
+
+  onExportExcel(): void {
+    const headers = ['ID', 'Scheme Name', 'Category', 'Benefit Amount', 'Funding Source', 'Eligibility Criteria', 'Start Date', 'End Date', 'Status'];
+    const rows = this.filteredSchemes().map(s => [
+      s.schemeId,
+      s.schemeName,
+      s.category,
+      this.fmtMoney(s.benefitAmount),
+      s.fundingSource,
+      s.eligibilityCriteria,
+      this.fmtDate(s.startDate),
+      this.fmtDate(s.endDate),
+      s.status === 'AC' ? 'Active' : 'Inactive'
+    ]);
+    exportTableToExcel(headers, rows, 'subsidy-schemes');
   }
 
   viewSchemeDetails(scheme: any): void {

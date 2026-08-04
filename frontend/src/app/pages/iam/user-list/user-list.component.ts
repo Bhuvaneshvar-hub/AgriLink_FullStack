@@ -22,8 +22,8 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredUsers().length === 0">
-            <i class="material-icons-round">file_download</i>
-            <span>Export to Excel</span>
+            <i class="material-icons-round text-success">table_view</i>
+            <span>Export XLS</span>
           </button>
           <button class="btn btn-primary" (click)="openCreateModal()">
             <i class="material-icons-round">person_add</i>

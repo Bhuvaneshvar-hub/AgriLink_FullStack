@@ -83,20 +83,20 @@ import { ToastService } from '../../../services/toast.service';
     }
     .brand {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
     .brand-icon {
-      font-size: 48px;
+      font-size: 36px;
       color: var(--primary-color);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.35rem;
     }
     .brand h1 {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
       font-weight: 700;
     }
     .brand p {
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
     }
     .input-error {
       border-color: var(--danger) !important;

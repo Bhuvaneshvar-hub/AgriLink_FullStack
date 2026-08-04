@@ -68,7 +68,13 @@ public class ProduceDataSeeder implements CommandLineRunner {
 				{16, 2, 2600.0, "A", 27.0, ListingStatus.SO},  // index 16
 				{16, 3, 1150.0, "B", 50.0, ListingStatus.PB},  // index 17
 				{16, 1, 3200.0, "A", 23.0, ListingStatus.AV},  // index 18
-				{16, 2, 820.0, "A", 29.0, ListingStatus.AV}    // index 19
+				{16, 2, 820.0, "A", 29.0, ListingStatus.AV},   // index 19
+				// Demo Farmer (farmerId 17) — the default farmer login (farmer@agrilink.com)
+				{17, 1, 1200.0, "A", 28.0, ListingStatus.SO},  // index 20
+				{17, 2, 800.0, "A", 45.0, ListingStatus.PB},   // index 21
+				{17, 3, 2000.0, "B", 22.0, ListingStatus.AV},  // index 22
+				{17, 1, 600.0, "C", 18.0, ListingStatus.AV},   // index 23
+				{17, 2, 1500.0, "A", 55.0, ListingStatus.WD}   // index 24
 		};
 
 		List<ProduceListing> listings = new ArrayList<>();
@@ -109,6 +115,10 @@ public class ProduceDataSeeder implements CommandLineRunner {
 		// yogapriya (farmerId 16): listing index 16 sold, index 17 partially booked.
 		recordSale(listings.get(16), 4, 2600.0, 27.0, LocalDate.of(2026, 2, 15), PaymentStatus.PD);
 		recordSale(listings.get(17), 4, 500.0, 50.0, LocalDate.of(2026, 2, 27), PaymentStatus.OV);
+		// Demo Farmer (farmerId 17): listing index 20 fully sold, index 21 partially booked.
+		recordSale(listings.get(20), 4, 700.0, 27.5, LocalDate.of(2026, 2, 15), PaymentStatus.PD);
+		recordSale(listings.get(20), 3, 500.0, 28.0, LocalDate.of(2026, 2, 20), PaymentStatus.PD);
+		recordSale(listings.get(21), 4, 400.0, 44.0, LocalDate.of(2026, 3, 10), PaymentStatus.PE);
 	}
 
 	private void recordSale(ProduceListing listing, int buyerId, double quantitySoldKg,

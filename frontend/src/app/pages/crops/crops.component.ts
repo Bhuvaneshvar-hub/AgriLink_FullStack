@@ -61,12 +61,12 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               <h3>Crop Catalog Database</h3>
               <div class="header-actions">
                 @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
-                  <button class="btn btn-secondary" (click)="exportCatalog('excel')">
-                    <i class="material-icons-round">grid_on</i>
-                    <span>Export Excel</span>
+                  <button class="btn btn-export" (click)="exportCatalog('excel')">
+                    <i class="material-icons-round icon-xls">grid_on</i>
+                    <span>Export XLS</span>
                   </button>
-                  <button class="btn btn-secondary" (click)="exportCatalog('pdf')">
-                    <i class="material-icons-round">picture_as_pdf</i>
+                  <button class="btn btn-export" (click)="exportCatalog('pdf')">
+                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
                     <span>Export PDF</span>
                   </button>
                 }
@@ -149,12 +149,12 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               <h3>{{ isFarmer() ? 'My Crop Plans' : 'Crop Seeding & Harvesting Plans' }}</h3>
               <div class="header-actions">
                 @if (isAdminOrOfficer() && cropPlans().length > 0) {
-                  <button class="btn btn-secondary" (click)="exportPlans('excel')">
-                    <i class="material-icons-round">grid_on</i>
-                    <span>Export Excel</span>
+                  <button class="btn btn-export" (click)="exportPlans('excel')">
+                    <i class="material-icons-round icon-xls">grid_on</i>
+                    <span>Export XLS</span>
                   </button>
-                  <button class="btn btn-secondary" (click)="exportPlans('pdf')">
-                    <i class="material-icons-round">picture_as_pdf</i>
+                  <button class="btn btn-export" (click)="exportPlans('pdf')">
+                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
                     <span>Export PDF</span>
                   </button>
                 }
@@ -302,12 +302,12 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               @if (isAdminOrOfficer()) {
                 <div class="header-actions">
                   @if (growthObservations().length > 0) {
-                    <button class="btn btn-secondary" (click)="exportObservations('excel')">
-                      <i class="material-icons-round">grid_on</i>
-                      <span>Export Excel</span>
+                    <button class="btn btn-export" (click)="exportObservations('excel')">
+                      <i class="material-icons-round icon-xls">grid_on</i>
+                      <span>Export XLS</span>
                     </button>
-                    <button class="btn btn-secondary" (click)="exportObservations('pdf')">
-                      <i class="material-icons-round">picture_as_pdf</i>
+                    <button class="btn btn-export" (click)="exportObservations('pdf')">
+                      <i class="material-icons-round icon-pdf">picture_as_pdf</i>
                       <span>Export PDF</span>
                     </button>
                   }
@@ -1079,6 +1079,28 @@ import { INDIAN_STATES } from '../../utils/indian-states';
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    /* Export buttons: light card style with colored file-type icons */
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface, #ffffff);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .btn-export:hover {
+      background: var(--bg-dark);
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .btn-export .material-icons-round { font-size: 20px; }
+    .icon-xls { color: #16a34a; }
+    .icon-pdf { color: #ef4444; }
     /* Pest/disease flag toggle card */
     .observation-flag {
       display: flex;

@@ -5,11 +5,22 @@ import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
+  // Public landing / home page (no layout, no guard)
+  {
+    path: 'home',
+    loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent)
+  },
+
   // Auth Layout Routes
   {
     path: '',
     component: AuthLayoutComponent,
     children: [
+      {
+        path: '',
+        redirectTo: '/home',
+        pathMatch: 'full'
+      },
       {
         path: 'login',
         loadComponent: () => import('./pages/iam/login/login.component').then(m => m.LoginComponent)

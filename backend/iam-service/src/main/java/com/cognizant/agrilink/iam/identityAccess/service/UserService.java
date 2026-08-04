@@ -321,6 +321,7 @@ public class UserService {
                 .refreshToken(rawRefreshToken)        // raw token sent to client ONCE
                 .expiresIn(accessTokenExpiryMs / 1000)
                 .userId(user.getUserId())
+                .name(user.getName())
                 .roleName(user.getRole().getRoleName())
                 .regionId(user.getRegionId())
                 .build();
@@ -362,6 +363,7 @@ public class UserService {
                 .refreshToken(newRawRefreshToken)     // new raw token returned to client
                 .expiresIn(accessTokenExpiryMs / 1000)
                 .userId(user.getUserId())
+                .name(user.getName())
                 .roleName(user.getRole().getRoleName())
                 .regionId(user.getRegionId())
                 .build();

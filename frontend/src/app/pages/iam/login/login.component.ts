@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
@@ -172,12 +172,20 @@ import { ToastService } from '../../../services/toast.service';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  ngOnInit(): void {
+    // If a valid session already exists, skip the login screen (e.g. when landing
+    // on the root URL, which redirects here) and go straight to the dashboard.
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
 
   isLoading = signal(false);
   submitted = signal(false);

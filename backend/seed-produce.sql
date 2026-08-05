@@ -33,19 +33,22 @@ INSERT INTO produce_listing (listingId, farmerId, cropId, harvestDate, quantityK
 (19, 16, 1, '2026-03-05', 3200.0, 'A', 23.0, 'AV'),
 (20, 16, 2, '2026-03-17', 820.0, 'A', 29.0, 'AV');
 
--- Sales across all payment statuses: PD=Paid, PE=Pending, OV=Overdue
-INSERT INTO produce_sale (saleId, listingId, buyerId, quantitySoldKg, agreedPricePerKg, totalAmount, saleDate, paymentStatus) VALUES
-(1, 1, 4, 1500.0, 24.5, 36750.0, '2026-01-12', 'PD'),
-(2, 1, 4, 1000.0, 24.0, 24000.0, '2026-01-18', 'PD'),
-(3, 2, 4, 1800.0, 21.8, 39240.0, '2026-03-20', 'PD'),
-(4, 3, 4, 500.0, 54.0, 27000.0, '2026-06-25', 'PE'),
+-- Sales across both payment statuses: PD=Paid, PE=Pending.
+-- farmerPaymentConfirmed is the selling farmer's own acknowledgement that the money
+-- arrived, a secondary check on the buyer marking a settlement Paid; paid rows are
+-- split between confirmed and awaiting-confirmation.
+INSERT INTO produce_sale (saleId, listingId, buyerId, quantitySoldKg, agreedPricePerKg, totalAmount, saleDate, paymentStatus, farmerPaymentConfirmed, farmerConfirmedDate) VALUES
+(1, 1, 4, 1500.0, 24.5, 36750.0, '2026-01-12', 'PD', 1, '2026-01-14'),
+(2, 1, 4, 1000.0, 24.0, 24000.0, '2026-01-18', 'PD', 1, '2026-01-20'),
+(3, 2, 4, 1800.0, 21.8, 39240.0, '2026-03-20', 'PD', 0, NULL),
+(4, 3, 4, 500.0, 54.0, 27000.0, '2026-06-25', 'PE', 0, NULL),
 -- bala's sales
-(9, 13, 4, 1200.0, 26.0, 31200.0, '2026-02-10', 'PD'),
-(10, 13, 4, 1000.0, 25.5, 25500.0, '2026-02-14', 'PD'),
-(11, 14, 4, 600.0, 21.0, 12600.0, '2026-02-25', 'PE'),
+(9, 13, 4, 1200.0, 26.0, 31200.0, '2026-02-10', 'PD', 1, '2026-02-12'),
+(10, 13, 4, 1000.0, 25.5, 25500.0, '2026-02-14', 'PD', 0, NULL),
+(11, 14, 4, 600.0, 21.0, 12600.0, '2026-02-25', 'PE', 0, NULL),
 -- yogapriya's sales
-(12, 17, 4, 2600.0, 27.0, 70200.0, '2026-02-15', 'PD'),
-(13, 18, 4, 500.0, 50.0, 25000.0, '2026-02-27', 'OV');
+(12, 17, 4, 2600.0, 27.0, 70200.0, '2026-02-15', 'PD', 1, '2026-02-17'),
+(13, 18, 4, 500.0, 50.0, 25000.0, '2026-02-27', 'PE', 0, NULL);
 
 SELECT 'produce_listing' AS tbl, COUNT(*) AS rows_now FROM produce_listing
 UNION ALL

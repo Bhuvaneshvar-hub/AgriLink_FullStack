@@ -5,7 +5,8 @@ package com.cognizant.agrilink.produce.enums;
  * <ul>
  *   <li>{@code PE} - Pending</li>
  *   <li>{@code PD} - Paid</li>
- *   <li>{@code OV} - Overdue</li>
+ *   <li>{@code OV} - Overdue (retired: no longer offered when recording a sale,
+ *       retained so rows persisted before its removal still deserialize)</li>
  * </ul>
  */
 public enum PaymentStatus {

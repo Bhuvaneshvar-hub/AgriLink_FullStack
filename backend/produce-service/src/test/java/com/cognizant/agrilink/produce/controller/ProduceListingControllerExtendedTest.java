@@ -18,6 +18,7 @@ import com.cognizant.agrilink.produce.entity.ProduceListing;
 import com.cognizant.agrilink.produce.enums.ListingStatus;
 import com.cognizant.agrilink.produce.exception.GlobalExceptionHandler;
 import com.cognizant.agrilink.produce.service.ProduceListingService;
+import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -43,6 +44,9 @@ class ProduceListingControllerExtendedTest {
 
 	@Mock
 	private ProduceListingService produceListingService;
+
+	@Mock
+	private ProduceSaleService produceSaleService;
 
 	@Mock
 	private FarmerClient farmerClient;

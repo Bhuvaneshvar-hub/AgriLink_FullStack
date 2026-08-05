@@ -137,6 +137,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
+                        <th>Farmer</th>
                         <th>Input Item</th>
                         <th>Qty Requested</th>
                         <th>Total Price</th>
@@ -149,6 +150,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (req of requests(); track req.requestId) {
                         <tr>
+                          <td>{{ getFarmerName(req.farmerId) }}</td>
                           <td>{{ getInputName(req.inputId) }}</td>
                           <td>{{ req.quantityRequested }}</td>
                           <td><strong>{{ req.actualPrice | currency:'INR':'symbol-narrow' }}</strong></td>
@@ -481,7 +483,7 @@ export class InputsComponent implements OnInit {
   }
 
   isAdminOrOfficer(): boolean {
-    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer']);
+    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer']);
   }
 
   setTab(tab: 'catalog' | 'requests') {
@@ -721,6 +723,8 @@ export class InputsComponent implements OnInit {
     this.inputService.updateInputRequest(req.requestId, body).subscribe({
       next: (res) => {
         this.toast.success(res.message || `Request status changed to ${status}`);
+        // Approving deducts the quantity from catalog stock server-side, so the
+        // catalog has to be re-read along with the requests.
         this.loadAllData();
       },
       error: (err) => this.toast.error(err.error?.message || 'Error updating status')

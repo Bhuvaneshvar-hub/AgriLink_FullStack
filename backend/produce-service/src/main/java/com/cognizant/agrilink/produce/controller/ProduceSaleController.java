@@ -4,6 +4,7 @@ import com.cognizant.agrilink.produce.client.FarmerClient;
 import com.cognizant.agrilink.produce.dto.MessageResponse;
 import com.cognizant.agrilink.produce.dto.ProduceSaleDto;
 import com.cognizant.agrilink.produce.entity.ProduceSale;
+import com.cognizant.agrilink.produce.enums.PaymentStatus;
 import com.cognizant.agrilink.produce.notification.NotificationClient;
 import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,13 +66,39 @@ public class ProduceSaleController {
 		produceSaleService.create(dto);
 		// Alert the selling farmer (listing owner) that a buyer booking/sale was recorded.
 		notifySeller(dto, request);
+		if (dto.getPaymentStatus() == PaymentStatus.PD) {
+			notifyPaymentMarkedPaid(dto.getListingId(), request);
+		}
 		return ResponseEntity.ok(new MessageResponse("ProduceSale created successfully"));
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<MessageResponse> update(@PathVariable Integer id, @RequestBody ProduceSaleDto dto) {
+	public ResponseEntity<MessageResponse> update(@PathVariable Integer id, @RequestBody ProduceSaleDto dto,
+			HttpServletRequest request) {
+		boolean alreadyPaid = isAlreadyPaid(id);
 		produceSaleService.update(id, dto);
+		// A fresh move to Paid is only the buyer's claim - ask the farmer to confirm receipt.
+		if (!alreadyPaid && dto.getPaymentStatus() == PaymentStatus.PD) {
+			notifyPaymentMarkedPaid(dto.getListingId(), request);
+		}
 		return ResponseEntity.ok(new MessageResponse("ProduceSale updated successfully"));
+	}
+
+	/**
+	 * The selling farmer's own acknowledgement that the money arrived - a secondary
+	 * check on the buyer having marked the sale Paid. A Farmer may only confirm a sale
+	 * against one of their own listings.
+	 */
+	@PostMapping("/{id}/farmer-confirmation")
+	public ResponseEntity<MessageResponse> confirmFarmerPayment(@PathVariable Integer id,
+			Authentication authentication, HttpServletRequest request) {
+		ProduceSale sale = produceSaleService.getById(id);
+		if (isFarmer(authentication) && !produceSaleService.isSaleOwnedBy(sale, ownedFarmerIds(request))) {
+			throw new AccessDeniedException("You can only confirm payments for your own sales");
+		}
+		ProduceSale confirmed = produceSaleService.confirmFarmerPayment(id);
+		notifyBuyerOfConfirmation(confirmed, request);
+		return ResponseEntity.ok(new MessageResponse("Payment receipt confirmed successfully"));
 	}
 
 	@DeleteMapping("/{id}")
@@ -114,6 +141,53 @@ public class ProduceSaleController {
 			}
 		} catch (Exception e) {
 			// Notification is best-effort; never fail the sale.
+		}
+	}
+
+	/**
+	 * Asks the selling farmer to confirm receipt after the buyer marks a settlement
+	 * Paid. Best-effort, exactly like {@link #notifySeller}.
+	 */
+	private void notifyPaymentMarkedPaid(Integer listingId, HttpServletRequest request) {
+		try {
+			String bearer = request.getHeader("Authorization");
+			Integer farmerId = produceSaleService.getListingOwnerFarmerId(listingId);
+			Integer ownerUserId = farmerClient.getUserIdByFarmerId(farmerId, bearer);
+			if (ownerUserId != null) {
+				String message = "A payment for your produce listing #" + listingId
+						+ " was marked as Paid. Please confirm in the Produce Market that you received it.";
+				notificationClient.notify(ownerUserId, message, NOTIF_CATEGORY, bearer);
+			}
+		} catch (Exception e) {
+			// Notification is best-effort; never fail the update.
+		}
+	}
+
+	/** Tells the buyer their payment was acknowledged by the farmer. Best-effort. */
+	private void notifyBuyerOfConfirmation(ProduceSale sale, HttpServletRequest request) {
+		try {
+			if (sale == null || sale.getBuyerId() == null) {
+				return;
+			}
+			String message = "The farmer confirmed receiving your payment for sale #" + sale.getSaleId()
+					+ " (listing #" + sale.getListingId() + ").";
+			notificationClient.notify(sale.getBuyerId(), message, NOTIF_CATEGORY,
+					request.getHeader("Authorization"));
+		} catch (Exception e) {
+			// Notification is best-effort; never fail the confirmation.
+		}
+	}
+
+	/**
+	 * Pre-update payment status, used to fire the farmer confirmation request only on a
+	 * fresh transition into Paid. Resolves to {@code false} if the sale cannot be read.
+	 */
+	private boolean isAlreadyPaid(Integer id) {
+		try {
+			ProduceSale existing = produceSaleService.getById(id);
+			return existing != null && existing.getPaymentStatus() == PaymentStatus.PD;
+		} catch (Exception e) {
+			return false;
 		}
 	}
 }

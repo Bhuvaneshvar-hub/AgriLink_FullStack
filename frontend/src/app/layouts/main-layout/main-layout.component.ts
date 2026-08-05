@@ -104,7 +104,7 @@ import { FarmerService } from '../../services/farmer.service';
             </a>
           }
 
-          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer'])) {
+          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer', 'ProcurementOfficer'])) {
             <a routerLink="/inputs" routerLinkActive="active" (click)="closeSidebar()">
               <i class="material-icons-round">shopping_bag</i>
               <span>Input Operations</span>

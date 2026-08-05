@@ -39,6 +39,7 @@ public class FarmerProfileService {
 
 		FarmerProfileDto profile = FarmerProfileDto.builder()
 				.userId(userId)
+				.regionId(dto.getRegionId())
 				.name(dto.getName())
 				.dateOfBirth(dto.getDateOfBirth())
 				.gender(dto.getGender())
@@ -68,6 +69,10 @@ public class FarmerProfileService {
 		return farmerProfileRepository.findByUserId(userId);
 	}
 
+	public List<FarmerProfile> getByRegionId(Integer regionId) {
+		return farmerProfileRepository.findByRegionId(regionId);
+	}
+
 	public FarmerProfile getById(Integer id) {
 		return farmerProfileRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("FarmerProfile not found with id " + id));
@@ -81,6 +86,7 @@ public class FarmerProfileService {
 		}
 		FarmerProfile farmerProfile = FarmerProfile.builder()
 				.userId(dto.getUserId())
+				.regionId(dto.getRegionId())
 				.name(dto.getName())
 				.dateOfBirth(dto.getDateOfBirth())
 				.gender(dto.getGender())
@@ -104,6 +110,7 @@ public class FarmerProfileService {
 					"A farmer profile already exists with national ID " + dto.getNationalIdNumber());
 		}
 		farmerProfile.setUserId(dto.getUserId());
+		farmerProfile.setRegionId(dto.getRegionId());
 		farmerProfile.setName(dto.getName());
 		farmerProfile.setDateOfBirth(dto.getDateOfBirth());
 		farmerProfile.setGender(dto.getGender());

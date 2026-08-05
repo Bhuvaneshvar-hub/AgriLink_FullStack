@@ -48,7 +48,7 @@
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
   
-  --sidebar-width: 260px;
+  --sidebar-width: 210px;
 }
 
 /* Global Reset & Base Styling */
@@ -56,6 +56,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Scales every rem-based size (fonts, padding, gaps) down app-wide, so the UI reads
+   as a comfortably compact density instead of oversized at 100% browser zoom. */
+html {
+  font-size: 12.5px;
 }
 
 body {
@@ -135,7 +141,11 @@ label {
   color: var(--text-secondary);
 }
 
-input, select, textarea {
+/* Excludes checkbox/radio — applying text-input padding/border/background/focus-glow
+   to them makes native checkboxes render as an oversized blob, and the focus glow
+   popping in/out as focus moves between checkboxes reads as the checkbox "growing
+   and shrinking" on every click. */
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   background-color: var(--bg-dark);
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
@@ -147,7 +157,7 @@ input, select, textarea {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-input:focus, select:focus, textarea:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px var(--primary-light);
 }
@@ -155,6 +165,15 @@ input:focus, select:focus, textarea:focus {
 input:disabled, select:disabled, textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* --- Date / Time pickers: prominent calendar affordance (all modules) --- */

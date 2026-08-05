@@ -15,6 +15,7 @@ public class FarmerProfileDto {
 
 	private Integer farmerId;
 	private Integer userId;
+	private Integer regionId;
 	private String name;
 	private LocalDate dateOfBirth;
 	private String gender;

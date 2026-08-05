@@ -49,8 +49,6 @@ import { AuthService } from '../../services/auth.service';
             }
           </div>
           <div class="hero-stats">
-            <div class="stat"><strong>8</strong><span>Integrated modules</span></div>
-            <div class="stat-divider"></div>
             <div class="stat"><strong>6</strong><span>User roles</span></div>
             <div class="stat-divider"></div>
             <div class="stat"><strong>100%</strong><span>End-to-end lifecycle</span></div>
@@ -227,7 +225,7 @@ import { AuthService } from '../../services/auth.service';
     .hero-content h1 span { color: #bbf7d0; }
     .hero-content p { font-size: 1.1rem; opacity: 0.92; margin-bottom: 2rem; line-height: 1.6; }
     .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
-    .hero-stats { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+    .hero-stats { display: flex; align-items: center; justify-content: center; gap: 3rem; flex-wrap: wrap; }
     .stat { display: flex; flex-direction: column; }
     .stat strong { font-size: 2rem; font-weight: 800; }
     .stat span { font-size: 0.85rem; opacity: 0.85; }

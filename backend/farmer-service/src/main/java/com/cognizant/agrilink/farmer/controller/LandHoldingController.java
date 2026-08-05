@@ -29,6 +29,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class LandHoldingController {
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String ROLE_EXTENSION_OFFICER = "ROLE_ExtensionOfficer";
 	private static final String NOTIF_CATEGORY = "Compliance";
 
 	private final LandHoldingService landHoldingService;
@@ -44,11 +45,20 @@ public class LandHoldingController {
 	}
 
 	// GET methods return full data.
-	// A Farmer only ever sees land holdings tied to their own farmer profile(s); officers/admins see everything.
+	// A Farmer only ever sees land holdings tied to their own farmer profile(s); an
+	// ExtensionOfficer sees only holdings belonging to farmers in their own region
+	// (matching the farmer-profiles scoping); Admin and other officers see everything.
 	@GetMapping
 	public ResponseEntity<List<LandHolding>> getAll(Authentication authentication) {
 		if (isFarmer(authentication)) {
 			return ResponseEntity.ok(landHoldingService.getByFarmerIds(ownedFarmerIds(authentication)));
+		}
+		if (hasAuthority(authentication, ROLE_EXTENSION_OFFICER)) {
+			Integer regionId = (Integer) authentication.getCredentials();
+			List<Integer> regionFarmerIds = farmerProfileService.getByRegionId(regionId).stream()
+					.map(profile -> profile.getFarmerId())
+					.toList();
+			return ResponseEntity.ok(landHoldingService.getByFarmerIds(regionFarmerIds));
 		}
 		return ResponseEntity.ok(landHoldingService.getAll());
 	}
@@ -134,16 +144,20 @@ public class LandHoldingController {
 		return ResponseEntity.ok(new MessageResponse("LandHolding deleted successfully"));
 	}
 
-	private boolean isFarmer(Authentication authentication) {
+	private boolean hasAuthority(Authentication authentication, String role) {
 		if (authentication == null) {
 			return false;
 		}
 		for (GrantedAuthority authority : authentication.getAuthorities()) {
-			if (ROLE_FARMER.equals(authority.getAuthority())) {
+			if (role.equals(authority.getAuthority())) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private boolean isFarmer(Authentication authentication) {
+		return hasAuthority(authentication, ROLE_FARMER);
 	}
 
 	/** Resolves the farmerId(s) owned by the authenticated farmer via their profile(s). */

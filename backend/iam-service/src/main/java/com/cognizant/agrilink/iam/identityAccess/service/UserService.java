@@ -19,6 +19,7 @@ import com.cognizant.agrilink.iam.identityAccess.repository.AuditLogRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserDetailsRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserRoleRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserSessionRepository;
+import com.cognizant.agrilink.iam.notification.NotificationClient;
 import com.cognizant.agrilink.iam.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -26,8 +27,11 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -36,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +55,7 @@ public class UserService {
     private final AuditLogRepository    auditLogRepository;
     private final PasswordEncoder       passwordEncoder;
     private final JwtUtil               jwtUtil;
+    private final NotificationClient    notificationClient;
 
     @Value("${jwt.access-token-expiry-ms}")
     private long accessTokenExpiryMs;
@@ -115,11 +121,15 @@ public class UserService {
         return toResponseDto(user);
     }
 
-    // ── 1a-pending. List users awaiting approval (Officer/Admin) ────────────────
-    public List<UserResponseDto> getPendingUsers() {
-        return userDetailsRepository.findByStatus(UserDetails.Status.P).stream()
-                .map(this::toResponseDto)
-                .toList();
+    // ── 1a-pending. List users awaiting approval ────────────────────────────────
+    // AgriLinkAdmin sees pending users from every region; an ExtensionOfficer only
+    // sees the ones in their own region, since that's all they're able to approve.
+    public List<UserResponseDto> getPendingUsers(UserDetails currentUser) {
+        Stream<UserDetails> pending = userDetailsRepository.findByStatus(UserDetails.Status.P).stream();
+        if (!ROLE_ADMIN.equals(currentUser.getRole().getRoleName())) {
+            pending = pending.filter(u -> u.getRegionId() != null && u.getRegionId().equals(currentUser.getRegionId()));
+        }
+        return pending.map(this::toResponseDto).toList();
     }
 
     // ── 1a. List all users (Admin only) ────────────────────────────────────────
@@ -252,7 +262,17 @@ public class UserService {
 
         audit(user.getUserId(), "APPROVE_USER", null);
 
+        notificationClient.notify(user.getUserId(),
+                "Your account has been approved. You can now log in.", "Compliance", currentBearerToken());
+
         return toResponseDto(user);
+    }
+
+    /** Reads the caller's Authorization header on the request thread (for JWT forwarding to async calls). */
+    private String currentBearerToken() {
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest().getHeader(HttpHeaders.AUTHORIZATION) : null;
     }
 
     private UserDetails findOrThrow(Integer id) {

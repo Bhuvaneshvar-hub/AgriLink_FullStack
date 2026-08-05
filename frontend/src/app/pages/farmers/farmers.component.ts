@@ -1142,6 +1142,7 @@ export class FarmersComponent implements OnInit {
     // the IAM user. Build a clean profile payload without email/password.
     const profilePayload: any = {
       name: v.name,
+      regionId: v.regionId,
       dateOfBirth: v.dateOfBirth,
       gender: v.gender,
       nationalIdNumber: v.nationalIdNumber,

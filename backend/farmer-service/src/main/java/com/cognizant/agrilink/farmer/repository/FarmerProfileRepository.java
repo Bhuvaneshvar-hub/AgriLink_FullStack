@@ -10,6 +10,8 @@ public interface FarmerProfileRepository extends JpaRepository<FarmerProfile, In
 
 	List<FarmerProfile> findByUserId(Integer userId);
 
+	List<FarmerProfile> findByRegionId(Integer regionId);
+
 	boolean existsByNationalIdNumber(String nationalIdNumber);
 
 	boolean existsByNationalIdNumberAndFarmerIdNot(String nationalIdNumber, Integer farmerId);

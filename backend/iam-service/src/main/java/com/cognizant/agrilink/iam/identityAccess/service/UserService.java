@@ -19,6 +19,7 @@ import com.cognizant.agrilink.iam.identityAccess.repository.AuditLogRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserDetailsRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserRoleRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserSessionRepository;
+import com.cognizant.agrilink.iam.notification.NotificationClient;
 import com.cognizant.agrilink.iam.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -26,8 +27,11 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -51,6 +55,7 @@ public class UserService {
     private final AuditLogRepository    auditLogRepository;
     private final PasswordEncoder       passwordEncoder;
     private final JwtUtil               jwtUtil;
+    private final NotificationClient    notificationClient;
 
     @Value("${jwt.access-token-expiry-ms}")
     private long accessTokenExpiryMs;
@@ -257,7 +262,17 @@ public class UserService {
 
         audit(user.getUserId(), "APPROVE_USER", null);
 
+        notificationClient.notify(user.getUserId(),
+                "Your account has been approved. You can now log in.", "Compliance", currentBearerToken());
+
         return toResponseDto(user);
+    }
+
+    /** Reads the caller's Authorization header on the request thread (for JWT forwarding to async calls). */
+    private String currentBearerToken() {
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest().getHeader(HttpHeaders.AUTHORIZATION) : null;
     }
 
     private UserDetails findOrThrow(Integer id) {

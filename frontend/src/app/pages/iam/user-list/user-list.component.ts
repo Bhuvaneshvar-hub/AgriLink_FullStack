@@ -89,7 +89,6 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>S.No</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Phone</th>
@@ -100,9 +99,8 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (user of paginatedUsers(); track user.userId; let i = $index) {
+                @for (user of paginatedUsers(); track user.userId) {
                   <tr>
-                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ user.name }}</strong></td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.phone }}</td>

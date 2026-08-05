@@ -25,6 +25,10 @@ public class SubsidyApplicationService {
 		return subsidyApplicationRepository.findByUserId(userId);
 	}
 
+	public List<SubsidyApplication> getByFarmerId(Integer farmerId) {
+		return subsidyApplicationRepository.findByFarmerId(farmerId);
+	}
+
 	public SubsidyApplication getById(Integer id) {
 		return subsidyApplicationRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Subsidy application not found with id " + id));

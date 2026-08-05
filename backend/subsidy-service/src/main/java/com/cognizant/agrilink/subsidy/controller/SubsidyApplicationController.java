@@ -3,8 +3,10 @@ package com.cognizant.agrilink.subsidy.controller;
 import com.cognizant.agrilink.subsidy.dto.MessageResponse;
 import com.cognizant.agrilink.subsidy.dto.SubsidyApplicationDto;
 import com.cognizant.agrilink.subsidy.entity.SubsidyApplication;
+import com.cognizant.agrilink.subsidy.notification.NotificationClient;
 import com.cognizant.agrilink.subsidy.service.SubsidyApplicationService;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -17,17 +19,23 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @RestController
 @RequestMapping("/agriLink/subsidyScheme")
 public class SubsidyApplicationController {
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
+	private static final String NOTIF_CATEGORY = "Subsidy";
 
 	private final SubsidyApplicationService subsidyApplicationService;
+	private final NotificationClient notificationClient;
 
-	public SubsidyApplicationController(SubsidyApplicationService subsidyApplicationService) {
+	public SubsidyApplicationController(SubsidyApplicationService subsidyApplicationService,
+			NotificationClient notificationClient) {
 		this.subsidyApplicationService = subsidyApplicationService;
+		this.notificationClient = notificationClient;
 	}
 
 	// GET methods return full data.
@@ -50,13 +58,18 @@ public class SubsidyApplicationController {
 		return ResponseEntity.ok(application);
 	}
 
+	// farmerId here is the FarmerProfile id, not the caller's userId — those are different
+	// id spaces. A Farmer's JWT only carries their userId, so ownership is verified against
+	// the returned rows' userId rather than comparing farmerId to currentUserId directly.
 	@GetMapping("/fetchApplicationsByFarmer/{farmerId}")
 	public ResponseEntity<List<SubsidyApplication>> getByFarmerId(@PathVariable Integer farmerId,
 			Authentication authentication) {
-		if (isFarmer(authentication) && !currentUserId(authentication).equals(farmerId)) {
+		List<SubsidyApplication> applications = subsidyApplicationService.getByFarmerId(farmerId);
+		if (isFarmer(authentication) && applications.stream()
+				.anyMatch(a -> !currentUserId(authentication).equals(a.getUserId()))) {
 			throw new AccessDeniedException("You can only view your own subsidy applications");
 		}
-		return ResponseEntity.ok(subsidyApplicationService.getByUserId(farmerId));
+		return ResponseEntity.ok(applications);
 	}
 
 	// Non-GET methods return only a message.
@@ -90,15 +103,38 @@ public class SubsidyApplicationController {
 	@PutMapping("/reviewApplication/{applicationId}")
 	public ResponseEntity<MessageResponse> reviewApplication(@PathVariable Integer applicationId,
 			@RequestBody SubsidyApplicationDto dto) {
-		subsidyApplicationService.reviewApplication(applicationId, dto);
+		SubsidyApplication updated = subsidyApplicationService.reviewApplication(applicationId, dto);
+		notifyStatusChange(updated);
 		return ResponseEntity.ok(new MessageResponse("SubsidyApplication reviewed successfully"));
 	}
 
 	@PutMapping("/updateApplicationStatus/{applicationId}")
 	public ResponseEntity<MessageResponse> updateStatus(@PathVariable Integer applicationId,
 			@RequestBody SubsidyApplicationDto dto) {
-		subsidyApplicationService.updateStatus(applicationId, dto);
+		SubsidyApplication updated = subsidyApplicationService.updateStatus(applicationId, dto);
+		notifyStatusChange(updated);
 		return ResponseEntity.ok(new MessageResponse("SubsidyApplication status updated successfully"));
+	}
+
+	// Alerts the applying farmer that their application's status changed. Best-effort:
+	// a status the farmer doesn't need to hear about (still Pending) is skipped.
+	private void notifyStatusChange(SubsidyApplication application) {
+		String message = switch (application.getStatus()) {
+			case AP -> "Your subsidy application #" + application.getApplicationId() + " has been approved.";
+			case RE -> "Your subsidy application #" + application.getApplicationId() + " was rejected.";
+			case DB -> "Your subsidy application #" + application.getApplicationId() + " has been disbursed.";
+			case PE -> null;
+		};
+		if (message != null) {
+			notificationClient.notify(application.getUserId(), message, NOTIF_CATEGORY, currentBearerToken());
+		}
+	}
+
+	/** Reads the caller's Authorization header on the request thread (for JWT forwarding to async calls). */
+	private String currentBearerToken() {
+		ServletRequestAttributes attributes =
+				(ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		return attributes != null ? attributes.getRequest().getHeader(HttpHeaders.AUTHORIZATION) : null;
 	}
 
 	@DeleteMapping("/deleteApplication/{applicationId}")

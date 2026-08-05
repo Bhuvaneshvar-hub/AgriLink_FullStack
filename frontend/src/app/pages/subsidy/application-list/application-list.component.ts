@@ -614,9 +614,13 @@ export class ApplicationListComponent implements OnInit {
 
   openCreateModal(): void {
     const today = new Date().toISOString().substring(0, 10);
+    // A Farmer's own farmerId is their farmer_profile.farmerId (NOT their userId — those
+    // are different id spaces). getAllFarmerProfiles() is scoped server-side to the caller's
+    // own profile(s) for a Farmer, so the first entry is always their own.
+    const ownFarmerId = this.isFarmer() ? this.farmerProfiles()[0]?.farmerId : '';
     this.appForm = this.fb.group({
       schemeId: [null, [Validators.required]],
-      farmerId: [this.isFarmer() ? this.authService.currentUserValue?.userId : '', this.isFarmer() ? [] : [Validators.required, Validators.min(1)]],
+      farmerId: [ownFarmerId, this.isFarmer() ? [] : [Validators.required, Validators.min(1)]],
       eligibilityScore: [80.0, [Validators.required, Validators.min(0), Validators.max(100)]],
       applicationDate: [today, [Validators.required]]
     });
@@ -630,13 +634,16 @@ export class ApplicationListComponent implements OnInit {
   onCreateSubmit(): void {
     if (this.appForm.invalid) return;
     const val = this.appForm.value;
-    
+
     // Add default user details for farmer submission
     if (this.isFarmer()) {
       val.userId = this.authService.currentUserValue?.userId;
     } else {
-      // For officers, set userId matching farmerId
-      val.userId = val.farmerId;
+      // For officers: farmerId in the form is the real farmer_profile.farmerId, but the
+      // owning user's userId is a different id — resolve it from the loaded profiles
+      // rather than reusing farmerId (they are not interchangeable).
+      const profile = this.farmerProfiles().find(p => p.farmerId == val.farmerId);
+      val.userId = profile?.userId ?? null;
     }
 
     this.subsidyService.createApplication(val).subscribe({

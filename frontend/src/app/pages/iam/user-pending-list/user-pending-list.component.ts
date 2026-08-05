@@ -39,7 +39,6 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
               <table>
                 <thead>
                   <tr>
-                    <th>User ID</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
@@ -52,8 +51,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <tbody>
                   @for (user of paginatedUsers(); track user.userId) {
                     <tr>
-                      <td>{{ user.userId }}</td>
-                      <td><strong>{{ user.name }}</strong></td>
+                      <td><strong>{{ user.name }}</strong> <span class="id-note">(#{{ user.userId }})</span></td>
                       <td>{{ user.email }}</td>
                       <td>{{ user.phone }}</td>
                       <td>{{ user.roleName }}</td>
@@ -94,8 +92,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
               <table>
                 <thead>
                   <tr>
-                    <th>Holding ID</th>
-                    <th>Farmer ID</th>
+                    <th>Farmer</th>
                     <th>Survey #</th>
                     <th>Area (Acres)</th>
                     <th>Soil</th>
@@ -108,8 +105,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <tbody>
                   @for (h of pendingHoldings(); track h.holdingId) {
                     <tr>
-                      <td>{{ h.holdingId }}</td>
-                      <td>#{{ h.farmerId }}</td>
+                      <td>{{ getFarmerName(h.farmerId) }} <span class="id-note">(#{{ h.farmerId }})</span></td>
                       <td>{{ h.surveyNumber }}</td>
                       <td>{{ h.areaAcres }}</td>
                       <td>{{ h.soilType }}</td>
@@ -154,6 +150,10 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
       color: var(--text-primary);
     }
     .mb-4 { margin-bottom: 1.5rem; }
+    .id-note {
+      color: var(--text-muted);
+      font-size: 0.8em;
+    }
     .approve-btn {
       padding: 0.35rem 0.75rem !important;
       font-size: 0.8rem !important;
@@ -185,6 +185,7 @@ export class UserPendingListComponent implements OnInit {
   users = signal<any[]>([]);
   pendingHoldings = signal<any[]>([]);
   isLoading = signal(true);
+  private farmerNames = new Map<number, string>();
 
   // Detail (view) modal
   showDetailModal = signal(false);
@@ -202,7 +203,7 @@ export class UserPendingListComponent implements OnInit {
   loadAll(): void {
     this.isLoading.set(true);
     let done = 0;
-    const finish = () => { if (++done === 2) this.isLoading.set(false); };
+    const finish = () => { if (++done === 3) this.isLoading.set(false); };
 
     this.userService.getPendingUsers().subscribe({
       next: (data) => this.users.set(data || []),
@@ -216,6 +217,19 @@ export class UserPendingListComponent implements OnInit {
       error: () => { this.toastService.error('Failed to load pending land holdings.'); finish(); },
       complete: () => finish()
     });
+
+    // Resolves land holdings' farmerId -> name, so the table can show a name instead of a raw id.
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (profiles) => {
+        this.farmerNames = new Map((profiles || []).map(p => [p.farmerId, p.name]));
+      },
+      error: () => {},
+      complete: () => finish()
+    });
+  }
+
+  getFarmerName(farmerId: number): string {
+    return this.farmerNames.get(farmerId) || 'Unknown Farmer';
   }
 
   paginatedUsers(): any[] {
@@ -234,9 +248,8 @@ export class UserPendingListComponent implements OnInit {
   }
 
   viewUserDetails(user: any): void {
-    this.detailTitle.set(`User #${user.userId}`);
+    this.detailTitle.set(`${user.name} (#${user.userId})`);
     this.detailRows.set([
-      { label: 'User ID', value: user.userId },
       { label: 'Name', value: user.name },
       { label: 'Email', value: user.email },
       { label: 'Phone', value: user.phone },

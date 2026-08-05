@@ -51,7 +51,7 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
           @if (canCreate()) {
             <button class="btn btn-primary" (click)="openCreateModal()" title="File a new subsidy application">
               <i class="material-icons-round">post_add</i>
-              <span>New Application</span>
+              <span>Application</span>
             </button>
           }
         </div>
@@ -114,7 +114,13 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
                 <tr>
                   <th>Farmer Name</th>
                   <th>Scheme Name</th>
-                  <th>Application Date</th>
+                  <th class="sortable" (click)="toggleDateSort()"
+                      [title]="dateSortDir === 'asc' ? 'Sorted oldest first — click for newest first' : 'Sorted newest first — click for oldest first'">
+                    <span class="sort-header">
+                      Application Date
+                      <i class="material-icons-round sort-icon">{{ dateSortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</i>
+                    </span>
+                  </th>
                   <th>Disbursed Amt</th>
                   <th>Disbursed Date</th>
                   <th>Status</th>
@@ -372,6 +378,24 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
     </div>
   `,
   styles: [`
+    /* Sortable column header */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th.sortable .sort-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    th.sortable .sort-icon {
+      font-size: 1rem;
+      opacity: 0.7;
+    }
+    th.sortable:hover .sort-icon {
+      opacity: 1;
+    }
     /* Keep the form a constant height: validation messages overlay a reserved
        slot below each field instead of pushing the layout taller. */
     form .form-group {
@@ -482,9 +506,12 @@ export class ApplicationListComponent implements OnInit {
   schemeFilter = '';
   statusFilter = '';
 
-  // Pagination
+  // Sorting on the Application Date column: 'desc' (newest first) by default.
+  dateSortDir: 'asc' | 'desc' = 'desc';
+
+  // Pagination — remember the chosen page size across navigation.
   currentPage = 0;
-  pageSize = 10;
+  pageSize = Number(localStorage.getItem('agrilink.tablePageSize')) || 10;
 
   // Forms
   appForm!: FormGroup;
@@ -572,8 +599,20 @@ export class ApplicationListComponent implements OnInit {
       list = list.filter(a => a.status === this.statusFilter);
     }
 
+    // Sort by application date in the chosen direction (copy first so we
+    // never mutate the source signal's array).
+    list = [...list].sort((a, b) => {
+      const diff = new Date(a.applicationDate).getTime() - new Date(b.applicationDate).getTime();
+      return this.dateSortDir === 'asc' ? diff : -diff;
+    });
+
     this.filteredApplications.set(list);
     this.currentPage = 0;
+  }
+
+  toggleDateSort(): void {
+    this.dateSortDir = this.dateSortDir === 'asc' ? 'desc' : 'asc';
+    this.applyFilters();
   }
 
   paginatedApplications(): any[] {
@@ -589,6 +628,7 @@ export class ApplicationListComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+    localStorage.setItem('agrilink.tablePageSize', String(size));
   }
 
   getSchemeName(schemeId: number): string {

@@ -14,9 +14,9 @@ import { CommonModule } from '@angular/common';
       <div class="pagination-controls">
         <div class="page-size-selector">
           <label>Show</label>
-          <select (change)="onPageSizeChange($event)">
+          <select [value]="pageSize" (change)="onPageSizeChange($event)">
             @for (size of sizeOptions; track size) {
-              <option [value]="size" [selected]="size === pageSize">{{ size }}</option>
+              <option [value]="size">{{ size }}</option>
             }
           </select>
         </div>
@@ -130,7 +130,7 @@ export class PaginationComponent implements OnChanges {
   @Input() currentPage = 0;
   @Input() pageSize = 10;
   @Input() totalElements = 0;
-  @Input() sizeOptions = [5, 10, 20, 50];
+  @Input() sizeOptions = [3, 5, 10, 20, 50];
 
   @Output() pageChange = new EventEmitter<number>();
   @Output() pageSizeChange = new EventEmitter<number>();

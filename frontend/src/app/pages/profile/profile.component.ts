@@ -77,9 +77,11 @@ import { ToastService } from '../../services/toast.service';
               <div class="detail-row">
                 <span class="detail-label">Status</span>
                 <span class="badge" [ngClass]="{
-                  'badge-success': farmProfile()?.status === 'AC',
+                  'badge-success': farmProfile()?.status === 'AC' || farmProfile()?.status === 'VE',
+                  'badge-warning': farmProfile()?.status === 'PE',
+                  'badge-danger': farmProfile()?.status === 'DP',
                   'badge-secondary': farmProfile()?.status === 'IN'
-                }">{{ farmProfile()?.status === 'AC' ? 'Active' : 'Inactive' }}</span>
+                }">{{ farmStatusLabel(farmProfile()?.status) }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Date of Birth</span>
@@ -292,6 +294,18 @@ export class ProfileComponent implements OnInit {
         },
         error: () => {}
       });
+    }
+  }
+
+  /** Farmer-domain status codes (see farmer-service enums/Status.java). */
+  farmStatusLabel(status: string | undefined): string {
+    switch (status) {
+      case 'AC': return 'Active';
+      case 'VE': return 'Verified';
+      case 'PE': return 'Pending';
+      case 'DP': return 'Disputed';
+      case 'IN': return 'Inactive';
+      default: return status || '';
     }
   }
 

@@ -70,10 +70,7 @@ public class NotificationController {
 		return ResponseEntity.ok(new MessageResponse("Notification created successfully"));
 	}
 
-	// System/workflow-generated targeted alert, emitted by other services on domain
-	// events (e.g. a land-holding submitted/approved/rejected). Allowed for any
-	// authenticated role so a backend workflow can record an alert regardless of the
-	// acting user's role — it is not exposed as a user-facing broadcast action.
+	
 	@PostMapping("/system")
 	public ResponseEntity<MessageResponse> createSystem(@RequestBody NotificationDto dto) {
 		notificationService.create(dto);

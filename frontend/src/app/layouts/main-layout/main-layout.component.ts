@@ -169,7 +169,12 @@ import { FarmerService } from '../../services/farmer.service';
     .main-wrapper {
       display: flex;
       min-height: 100vh;
-      width: 100vw;
+      /* 100%, not 100vw: 100vw includes the vertical scrollbar's width, which
+         made the layout permanently ~15px wider than the usable viewport and
+         produced a horizontal scrollbar on every page. */
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
       background-color: var(--bg-dark);
     }
     .sidebar {
@@ -452,7 +457,11 @@ import { FarmerService } from '../../services/farmer.service';
     .main-content-area {
       padding: 2rem;
       flex-grow: 1;
+      min-width: 0;
       overflow-y: auto;
+      /* Must be explicit: with overflow-y set, an unspecified overflow-x
+         computes to auto, which gave this pane its own horizontal scrollbar. */
+      overflow-x: hidden;
     }
 
     .mobile-toggle {
@@ -508,11 +517,25 @@ export class MainLayoutComponent implements OnInit {
   pendingApprovalsCount = signal(0);
 
   ngOnInit(): void {
+    this.syncFarmerDisplayName();
     this.refreshPendingCount();
     // Recompute after navigation so approving/rejecting elsewhere keeps the badge current.
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => this.refreshPendingCount());
+  }
+
+  /**
+   * A Farmer's real name lives on their farmer profile, so take the display name
+   * from there. GET /farmer-profiles is already scoped to the caller, so the first
+   * row is this user's own profile.
+   */
+  private syncFarmerDisplayName(): void {
+    if (!this.authService.hasRole(['Farmer'])) return;
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (profiles) => this.authService.updateDisplayName((profiles || [])[0]?.name),
+      error: () => {}
+    });
   }
 
   private refreshPendingCount(): void {

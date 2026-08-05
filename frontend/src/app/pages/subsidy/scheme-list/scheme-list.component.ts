@@ -44,7 +44,7 @@ function endAfterStartValidator(group: AbstractControl): ValidationErrors | null
           @if (canEdit()) {
             <button class="btn btn-primary" (click)="openCreateModal()" title="Create Scheme">
               <i class="material-icons-round">add_circle</i>
-              <span>Create </span>
+              <span>Scheme</span>
             </button>
           }
         </div>
@@ -396,9 +396,9 @@ export class SchemeListComponent implements OnInit {
   categoryFilter = '';
   statusFilter = '';
 
-  // Pagination
+  // Pagination — remember the chosen page size across navigation.
   currentPage = 0;
-  pageSize = 10;
+  pageSize = Number(localStorage.getItem('agrilink.tablePageSize')) || 10;
 
   // Form
   schemeForm!: FormGroup;
@@ -502,6 +502,7 @@ export class SchemeListComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+    localStorage.setItem('agrilink.tablePageSize', String(size));
   }
 
   isFieldInvalid(field: string): boolean {

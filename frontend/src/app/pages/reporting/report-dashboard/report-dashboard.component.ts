@@ -23,11 +23,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
         
         @if (canGenerate()) {
           <div class="header-export-buttons">
-            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()">
+            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()" title="Export reports to Excel">
               <i class="material-icons-round text-success">table_view</i>
               <span>Export XLS</span>
             </button>
-            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;">
+            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;" title="Export reports to PDF">
               <i class="material-icons-round text-danger">picture_as_pdf</i>
               <span>Export PDF</span>
             </button>
@@ -266,7 +266,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 }
               </div>
 
-              <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="reportForm.invalid || selectedMetrics.size === 0">
+              <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="reportForm.invalid || selectedMetrics.size === 0" title="Generate report">
                 <i class="material-icons-round">analytics</i>
                 <span>Generate Report Metadata</span>
               </button>
@@ -328,11 +328,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                         <td>{{ report.generatedDate | date:'mediumDate' }}</td>
                         <td>
                           <app-action-menu>
-                            <button class="menu-item" (click)="viewReportDetails(report)">
+                            <button class="menu-item" (click)="viewReportDetails(report)" title="View report details">
                               <i class="material-icons-round">visibility</i> View
                             </button>
                             @if (canGenerate()) {
-                              <button class="menu-item danger" (click)="confirmDelete(report)">
+                              <button class="menu-item danger" (click)="confirmDelete(report)" title="Delete report">
                                 <i class="material-icons-round">delete</i> Delete
                               </button>
                             }
@@ -377,6 +377,19 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     </div>
   `,
   styles: [`
+    /* Keep the form a constant height: validation messages overlay a reserved
+       slot below each field instead of pushing the layout taller. */
+    form .form-group {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+    form .error-text {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.15rem;
+      line-height: 1.15;
+    }
     .grid-layout {
       display: flex;
       flex-direction: row;

@@ -33,13 +33,12 @@ public class NotificationController {
 	}
 
 	// GET methods return full data.
-	// A Farmer only ever sees their own notifications; officers/admins see everything.
+	// Notifications are personal alerts — every role, including officers/admins, only
+	// ever sees their own inbox here (identical to /me). There is intentionally no
+	// "view everyone's notifications" mode; that would leak other users' alerts.
 	@GetMapping
 	public ResponseEntity<List<Notification>> getAll(Authentication authentication) {
-		if (isFarmer(authentication)) {
-			return ResponseEntity.ok(notificationService.getByUserId(currentUserId(authentication)));
-		}
-		return ResponseEntity.ok(notificationService.getAll());
+		return ResponseEntity.ok(notificationService.getByUserId(currentUserId(authentication)));
 	}
 
 	// The authenticated user's own inbox — for any role.

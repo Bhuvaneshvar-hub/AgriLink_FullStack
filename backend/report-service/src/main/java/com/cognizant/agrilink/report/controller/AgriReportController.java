@@ -131,11 +131,17 @@ public class AgriReportController {
 			int rowNum = 1;
 			for (AgriReport report : reports) {
 				Row row = sheet.createRow(rowNum++);
-				row.createCell(0).setCellValue(report.getReportId());
-				row.createCell(1).setCellValue(report.getGeneratedBy());
-				row.createCell(2).setCellValue(report.getScope());
-				row.createCell(3).setCellValue(report.getMetrics());
-				row.createCell(4).setCellValue(String.valueOf(report.getGeneratedDate()));
+				// Guard against null Integer/String values: unboxing a null into
+				// setCellValue(double) throws NPE and aborts the whole export.
+				if (report.getReportId() != null) {
+					row.createCell(0).setCellValue(report.getReportId());
+				}
+				if (report.getGeneratedBy() != null) {
+					row.createCell(1).setCellValue(report.getGeneratedBy());
+				}
+				row.createCell(2).setCellValue(report.getScope() != null ? report.getScope() : "");
+				row.createCell(3).setCellValue(report.getMetrics() != null ? report.getMetrics() : "");
+				row.createCell(4).setCellValue(report.getGeneratedDate() != null ? String.valueOf(report.getGeneratedDate()) : "");
 			}
 
 			workbook.write(response.getOutputStream());

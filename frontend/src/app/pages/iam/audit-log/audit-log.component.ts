@@ -85,7 +85,6 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>S.No</th>
                   <th>User Name</th>
                   <th>Module</th>
                   <th>Action performed</th>
@@ -94,9 +93,8 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (log of paginatedLogs(); track log.auditId; let i = $index) {
+                @for (log of paginatedLogs(); track log.auditId) {
                   <tr>
-                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ getUserName(log.userId) }}</strong></td>
                     <td><span class="module-label">{{ log.module }}</span></td>
                     <td>{{ log.action }}</td>

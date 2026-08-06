@@ -9,6 +9,7 @@ import { ConfirmationModalComponent } from '../../../components/confirmation-mod
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
 import { exportTableToExcel } from '../../../utils/export-excel.util';
+import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/table-sort.util';
 
 /**
  * Cross-field validator: the scheme's End Date must be strictly after its
@@ -103,12 +104,27 @@ function endAfterStartValidator(group: AbstractControl): ValidationErrors | null
             <table>
               <thead>
                 <tr>
-                  <th>Scheme Name</th>
-                  <th>Category</th>
-                  <th>Benefit Amount</th>
-                  <th>Funding Source</th>
+                  <th class="sortable" (click)="sortBy('schemeName')" title="Sort by Scheme Name">
+                    <span>Scheme Name</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'schemeName'">{{ sortIcon(sortField() === 'schemeName', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('category')" title="Sort by Category">
+                    <span>Category</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'category'">{{ sortIcon(sortField() === 'category', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('benefitAmount')" title="Sort by Benefit Amount">
+                    <span>Benefit Amount</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'benefitAmount'">{{ sortIcon(sortField() === 'benefitAmount', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('fundingSource')" title="Sort by Funding Source">
+                    <span>Funding Source</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'fundingSource'">{{ sortIcon(sortField() === 'fundingSource', sortAsc()) }}</i>
+                  </th>
                   <th>Eligibility Criteria</th>
-                  <th>Validity Period</th>
+                  <th class="sortable" (click)="sortBy('startDate')" title="Sort by Validity Period">
+                    <span>Validity Period</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'startDate'">{{ sortIcon(sortField() === 'startDate', sortAsc()) }}</i>
+                  </th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -400,6 +416,11 @@ export class SchemeListComponent implements OnInit {
   currentPage = 0;
   pageSize = Number(localStorage.getItem('agrilink.tablePageSize')) || 10;
 
+  // Sorting
+  sortField = signal<string | null>(null);
+  sortAsc = signal(true);
+  readonly sortIcon = sortIconFn;
+
   // Form
   schemeForm!: FormGroup;
 
@@ -489,10 +510,16 @@ export class SchemeListComponent implements OnInit {
     this.currentPage = 0;
   }
 
+  sortBy(field: string): void {
+    toggleSort(this.sortField, this.sortAsc, field);
+    this.currentPage = 0;
+  }
+
   paginatedSchemes(): any[] {
+    const sorted = applySort(this.filteredSchemes(), this.sortField(), this.sortAsc());
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-    return this.filteredSchemes().slice(start, end);
+    return sorted.slice(start, end);
   }
 
   onPageChange(page: number): void {

@@ -115,14 +115,17 @@ class NotificationControllerInboxTest {
 	}
 
 	@Test
-	void getAllForOfficerReturnsEverything() throws Exception {
-		when(notificationService.getAll()).thenReturn(List.of(notificationFor(1, 5), notificationFor(2, 6)));
+	void getAllForOfficerReturnsOnlyOwnNotifications() throws Exception {
+		// Notifications are personal — officers/admins also only see their own inbox here,
+		// never everyone else's (that would leak other users' alerts).
+		when(notificationService.getByUserId(9)).thenReturn(List.of(notificationFor(1, 9)));
 
 		mockMvc.perform(get("/notifications").principal(officer(9)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2));
-		verify(notificationService).getAll();
-		verify(notificationService, never()).getByUserId(any());
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].userId").value(9));
+		verify(notificationService).getByUserId(9);
+		verify(notificationService, never()).getAll();
 	}
 
 	// ── PUT /notifications/{id}/read | /unread | /dismiss ─────────────────

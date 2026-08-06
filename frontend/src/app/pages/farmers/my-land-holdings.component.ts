@@ -10,6 +10,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
+import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 
 @Component({
   selector: 'app-my-land-holdings',
@@ -56,8 +57,31 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
             <table>
               <thead>
                 <tr>
-                  <th>Survey Number</th><th>Area (Acres)</th><th>Soil Type</th>
-                  <th>Irrigation</th><th>Ownership</th><th>Status</th><th>Actions</th>
+                  <th class="sortable" (click)="sortBy('surveyNumber')" title="Sort by survey number">
+                    <span>Survey Number</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'surveyNumber'">{{ sortIcon(sortField() === 'surveyNumber', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('areaAcres')" title="Sort by area">
+                    <span>Area (Acres)</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'areaAcres'">{{ sortIcon(sortField() === 'areaAcres', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('soilType')" title="Sort by soil type">
+                    <span>Soil Type</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'soilType'">{{ sortIcon(sortField() === 'soilType', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('irrigationSource')" title="Sort by irrigation source">
+                    <span>Irrigation</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'irrigationSource'">{{ sortIcon(sortField() === 'irrigationSource', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('ownershipType')" title="Sort by ownership type">
+                    <span>Ownership</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'ownershipType'">{{ sortIcon(sortField() === 'ownershipType', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('status')" title="Sort by status">
+                    <span>Status</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'status'">{{ sortIcon(sortField() === 'status', sortAsc()) }}</i>
+                  </th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,6 +307,10 @@ export class MyLandHoldingsComponent implements OnInit {
   detailTitle = signal<string>('');
   detailRows = signal<DetailRow[]>([]);
   isEditMode = signal(false);
+  sortField = signal<string | null>(null);
+  sortAsc = signal(true);
+
+  readonly sortIcon = sortIcon;
 
   page = 0;
   pageSize = 10;
@@ -333,11 +361,14 @@ export class MyLandHoldingsComponent implements OnInit {
   }
 
   paginated(): any[] {
+    const sorted = applySort(this.holdings(), this.sortField(), this.sortAsc());
     const start = this.page * this.pageSize;
-    return this.holdings().slice(start, start + this.pageSize);
+    return sorted.slice(start, start + this.pageSize);
   }
   onPageChange(p: number) { this.page = p; }
   onPageSizeChange(s: number) { this.pageSize = s; this.page = 0; }
+
+  sortBy(field: string) { toggleSort(this.sortField, this.sortAsc, field); this.page = 0; }
 
   statusLabel(s: string): string {
     switch (s) { case 'AC': return 'Active'; case 'PE': return 'Pending'; case 'DP': return 'Disputed'; case 'IN': return 'Inactive'; default: return s; }

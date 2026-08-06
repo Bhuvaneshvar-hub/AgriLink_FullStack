@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
-import { FarmerService } from '../../../services/farmer.service';
 import { ToastService } from '../../../services/toast.service';
 import { NAME_PATTERN } from '../../../utils/validators';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
@@ -15,7 +15,7 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
   template: `
     <div class="user-list-page">
       <div class="page-header d-flex justify-content-between align-items-center mb-3">
@@ -224,11 +224,19 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
                     <select id="formRole" formControlName="roleId">
                       <option [value]="null" disabled>Select role...</option>
                       @for (role of roles(); track role.roleId) {
-                        <option [value]="role.roleId">{{ role.roleName }}</option>
+                        <option [value]="role.roleId" [disabled]="!isEditMode() && role.roleName === 'Farmer'">
+                          {{ role.roleName }}{{ !isEditMode() && role.roleName === 'Farmer' ? ' (use Farmer Registration)' : '' }}
+                        </option>
                       }
                     </select>
                     @if (isFieldInvalid('roleId')) {
                       <span class="error-text">Role selection is required</span>
+                    }
+                    @if (!isEditMode()) {
+                      <small class="text-secondary">
+                        Farmer accounts need a full profile (land/ID/bank details) —
+                        create them from <a routerLink="/farmers">Farmer Registration</a> instead.
+                      </small>
                     }
                   </div>
 
@@ -359,7 +367,6 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
 })
 export class UserListComponent implements OnInit {
   private userService = inject(UserService);
-  private farmerService = inject(FarmerService);
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
 
@@ -575,35 +582,9 @@ export class UserListComponent implements OnInit {
     } else {
       this.userService.createUser(val).subscribe({
         next: (res) => {
-          const roleName = this.roles().find(r => r.roleId === val.roleId)?.roleName;
-          if (roleName === 'Farmer' && res?.userId) {
-            // A Farmer login needs a linked farmer profile - without it the farmer has
-            // no name/record in the farmer-service (e.g. their subsidy applications
-            // display as "Farmer #<id>"). Create a minimal Active profile here.
-            this.farmerService.createFarmerProfile({
-              userId: res.userId,
-              name: val.name,
-              phone: val.phone,
-              status: 'AC'
-            }).subscribe({
-              next: () => {
-                this.toastService.success('Farmer account and profile created successfully.');
-                this.closeFormModal();
-                this.loadUsers();
-              },
-              error: () => {
-                // The login account was created; surface that the profile step failed
-                // so an admin can complete it from the Farmer Registration page.
-                this.toastService.error('User created, but the farmer profile could not be created. Complete it from Farmer Registration.');
-                this.closeFormModal();
-                this.loadUsers();
-              }
-            });
-          } else {
-            this.toastService.success(res.message || 'User created successfully.');
-            this.closeFormModal();
-            this.loadUsers();
-          }
+          this.toastService.success(res.message || 'User created successfully.');
+          this.closeFormModal();
+          this.loadUsers();
         },
         error: (err) => {
           this.toastService.error(err.error?.message || 'Failed to create user account.');

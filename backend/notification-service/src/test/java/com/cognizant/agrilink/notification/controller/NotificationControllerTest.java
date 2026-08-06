@@ -30,7 +30,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationControllerTest {
@@ -65,7 +64,6 @@ class NotificationControllerTest {
 	}
 
 	@Test
-<<<<<<< HEAD
 	void getAllReturnsData() throws Exception {
 		when(notificationService.getByUserId(1)).thenReturn(List.of(notification));
 
@@ -73,32 +71,15 @@ class NotificationControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].message").value("Sowing reminder"));
 	}
-=======
-void getAllReturnsData() throws Exception {
-
-    when(notificationService.getByUserId(1))
-            .thenReturn(List.of(notification));
-
-    mockMvc.perform(
-            get("/notifications")
-                    .principal(new TestingAuthenticationToken(1, null))
-    )
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].message").value("Sowing reminder"));
-}
->>>>>>> 8a40742b6bf25ccdff3adf8b530f1a83ad574f5a
 
 	@Test
-void getByIdReturnsData() throws Exception {
-    when(notificationService.getById(1)).thenReturn(notification);
+	void getByIdReturnsData() throws Exception {
+		when(notificationService.getById(1)).thenReturn(notification);
 
-    mockMvc.perform(
-            get("/notifications/1")
-                    .principal(new TestingAuthenticationToken(1, null))
-    )
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.category").value("CropAdvisory"));
-}
+		mockMvc.perform(get("/notifications/1").principal(caller(1)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.category").value("CropAdvisory"));
+	}
 	@Test
 	void createReturnsMessageOnly() throws Exception {
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(notification);

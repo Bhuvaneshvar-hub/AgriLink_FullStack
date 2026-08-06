@@ -198,21 +198,9 @@ class RequestServiceExtendedTest {
 
 	@Test
 	void updateModifiesEachField() {
-<<<<<<< HEAD
 		Request existing = Request.builder().requestId(1).inputId(10).quantityRequested(50).status(RequestStatus.PE).build();
-=======
-		Request existing = Request.builder()
-				.requestId(1)
-				.status(RequestStatus.PE)
-				.inputId(10)
-				.quantityRequested(50)
-				.build();
->>>>>>> 8a40742b6bf25ccdff3adf8b530f1a83ad574f5a
 		when(requestRepository.findById(1)).thenReturn(Optional.of(existing));
 		when(requestRepository.save(any(Request.class))).thenAnswer(i -> i.getArgument(0));
-		Catalog catalog = Catalog.builder().inputId(10).availableStock(100).build();
-		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
-
 		Catalog catalog = Catalog.builder().inputId(10).availableStock(100).build();
 		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
 

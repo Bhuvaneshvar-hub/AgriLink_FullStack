@@ -52,11 +52,7 @@ class UserServiceTest {
     @Mock private PasswordEncoder       passwordEncoder;
     @Mock private JwtUtil               jwtUtil;
     @Mock private HttpServletRequest    request;
-<<<<<<< HEAD
     @Mock private NotificationClient    notificationClient;
-=======
-    @Mock private NotificationClient notificationClient;
->>>>>>> 8a40742b6bf25ccdff3adf8b530f1a83ad574f5a
 
     @InjectMocks private UserService userService;
 

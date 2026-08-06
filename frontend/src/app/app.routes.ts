@@ -104,7 +104,9 @@ export const routes: Routes = [
         path: 'produce',
         loadComponent: () => import('./pages/produce/produce.component').then(m => m.ProduceComponent),
         canActivate: [roleGuard],
-        data: { roles: ['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer', 'ExtensionOfficer'] }
+        // Produce Market is for Farmers (sell), ProcurementOfficer (buy) and Admin.
+        // An ExtensionOfficer has no role in produce trading.
+        data: { roles: ['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer'] }
       },
       {
         path: 'inputs',

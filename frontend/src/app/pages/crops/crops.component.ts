@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, HostListener, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators,
+         AbstractControl, ValidationErrors } from '@angular/forms';
 import { CropService } from '../../services/crop.service';
 import { FarmerService } from '../../services/farmer.service';
 import { AuthService } from '../../services/auth.service';
@@ -13,6 +14,30 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
 import { SEASONS, SEASON_SOWING_WINDOWS, isMonthInWindow } from '../../utils/seasons';
 import { notFutureDate, NAME_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
+
+/** Width of the inline plan-status menu; must match .status-menu's min-width. */
+const STATUS_MENU_WIDTH = 160;
+
+// ---- Crop catalog input bounds -------------------------------------------------
+/** A crop name: starts with a letter, then letters, spaces, hyphen or apostrophe. */
+const CROP_NAME_PATTERN = /^[A-Za-z][A-Za-z '-]{1,29}$/;
+const MAX_CROP_NAME_LENGTH = 30;
+/** A growing cycle is at least a week and at most one year. */
+const MIN_DURATION_DAYS = 7;
+const MAX_DURATION_DAYS = 365;
+/** Yield per acre in tons — generous upper bound, catches stray digits. */
+const MIN_YIELD_TONS = 0.1;
+const MAX_YIELD_TONS = 100;
+/** Area planted in acres. */
+const MIN_AREA_ACRES = 0.01;
+const MAX_AREA_ACRES = 10000;
+
+/** Rejects fractional values for fields that are only meaningful as integers. */
+function wholeNumber(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (value === null || value === '' || value === undefined) return null;
+  return Number.isInteger(Number(value)) ? null : { wholeNumber: true };
+}
 
 @Component({
   selector: 'app-crops',
@@ -29,16 +54,19 @@ import { INDIAN_STATES } from '../../utils/indian-states';
 
       <!-- Tab Navigation -->
       <div class="tabs-container mb-3">
-        <button class="tab-btn" [class.active]="activeTab() === 'catalog'" (click)="setTab('catalog')">
+        <button class="tab-btn" [class.active]="activeTab() === 'catalog'" (click)="setTab('catalog')"
+                title="Master list of supported crops">
           <i class="material-icons-round">list_alt</i>
           <span>Crop Catalog</span>
         </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'plans'" (click)="setTab('plans')">
+        <button class="tab-btn" [class.active]="activeTab() === 'plans'" (click)="setTab('plans')"
+                title="Seasonal sowing and harvesting schedules">
           <i class="material-icons-round">calendar_today</i>
           <span>Crop Plans</span>
         </button>
         @if (canViewObservations()) {
-          <button class="tab-btn" [class.active]="activeTab() === 'observations'" (click)="setTab('observations')">
+          <button class="tab-btn" [class.active]="activeTab() === 'observations'" (click)="setTab('observations')"
+                  title="Field inspection and growth stage logs">
             <i class="material-icons-round">visibility</i>
             <span>Growth Observation</span>
           </button>
@@ -61,19 +89,16 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               <h3>Crop Catalog Database</h3>
               <div class="header-actions">
                 @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
-                  <button class="btn btn-export" (click)="exportCatalog('excel')">
-                    <i class="material-icons-round icon-xls">grid_on</i>
-                    <span>Export XLS</span>
-                  </button>
-                  <button class="btn btn-export" (click)="exportCatalog('pdf')">
-                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
-                    <span>Export PDF</span>
+                  <button class="btn btn-export btn-export-icon" (click)="exportCatalog('excel')"
+                          title="Export to XLS" aria-label="Export to XLS">
+                    <i class="material-icons-round icon-xls">table_chart</i>
                   </button>
                 }
                 @if (isAdmin()) {
-                  <button class="btn btn-primary" (click)="openCatalogModal()">
+                  <button class="btn btn-primary" (click)="openCatalogModal()"
+                          title="Add a new crop to the catalog">
                     <i class="material-icons-round">add_circle</i>
-                    <span>Add Crop</span>
+                    <span>Catalog</span>
                   </button>
                 }
               </div>
@@ -97,19 +122,29 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                         <th>Crop Name</th>
                         <th>Category</th>
                         <th>Season</th>
-                        <th>Typical Duration</th>
-                        <th>Expected Yield (in Tons)</th>
+                        <th class="sortable" (click)="sortCatalogBy('typicalDurationDays')"
+                            title="Sort by typical duration (click again to reverse)">
+                          <span>Typical Duration</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="catalogSortField() === 'typicalDurationDays'">{{ sortIcon(catalogSortField() === 'typicalDurationDays', catalogSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortCatalogBy('expectedYieldPerAcre')"
+                            title="Sort by expected yield (click again to reverse)">
+                          <span>Expected Yield (in Tons)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="catalogSortField() === 'expectedYieldPerAcre'">{{ sortIcon(catalogSortField() === 'expectedYieldPerAcre', catalogSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (crop of paginatedCatalog(); track crop.cropId) {
                         <tr>
-                          <td><strong>{{ crop.cropName }}</strong></td>
-                          <td>{{ crop.category }}</td>
-                          <td>{{ crop.season }}</td>
-                          <td>{{ crop.typicalDurationDays }} Days</td>
-                          <td>{{ crop.expectedYieldPerAcre }}</td>
+                          <td class="cell-name"><strong>{{ crop.cropName }}</strong></td>
+                          <td class="cell-nowrap">{{ crop.category }}</td>
+                          <td class="cell-nowrap">{{ crop.season }}</td>
+                          <td class="cell-nowrap">{{ crop.typicalDurationDays }} Days</td>
+                          <td class="cell-nowrap">{{ crop.expectedYieldPerAcre }}</td>
                           <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewCatalogDetails(crop)">
@@ -146,30 +181,25 @@ import { INDIAN_STATES } from '../../utils/indian-states';
         @if (activeTab() === 'plans') {
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center">
-              <h3>{{ isFarmer() ? 'My Crop Plans' : 'Crop Seeding & Harvesting Plans' }}</h3>
+              <h3>Crop Seeding &amp; Harvesting Plans</h3>
               <div class="header-actions">
                 @if (isAdminOrOfficer() && cropPlans().length > 0) {
-                  <button class="btn btn-export" (click)="exportPlans('excel')">
-                    <i class="material-icons-round icon-xls">grid_on</i>
-                    <span>Export XLS</span>
-                  </button>
-                  <button class="btn btn-export" (click)="exportPlans('pdf')">
-                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
-                    <span>Export PDF</span>
+                  <button class="btn btn-export btn-export-icon" (click)="exportPlans('excel')"
+                          title="Export to XLS" aria-label="Export to XLS">
+                    <i class="material-icons-round icon-xls">table_chart</i>
                   </button>
                 }
                 @if (isFarmer()) {
-                  <button class="btn btn-primary" (click)="openPlanModal()">
+                  <button class="btn btn-primary" (click)="openPlanModal()"
+                          title="Create a new crop plan">
                     <i class="material-icons-round">add_circle</i>
-                    <span>Create Plan</span>
+                    <span>Plan</span>
                   </button>
                 }
               </div>
             </div>
             <p class="text-secondary mb-3">
-              {{ isFarmer()
-                ? 'Your seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.'
-                : 'Seasonal planting schedules of farmers — which crop is sown on which land, and when it is expected to be harvested.' }}
+              Seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.
             </p>
 
             @if (cropPlans().length === 0) {
@@ -185,7 +215,8 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="search-field">
                     <input type="text" id="planSearch" [(ngModel)]="planSearch"
                       (ngModelChange)="onPlanSearchChange()"
-                      [placeholder]="isFarmer() ? 'Search by crop, status or season...' : 'Search by farmer, crop, status or season...'" />
+                      [placeholder]="isFarmer() ? 'Search by crop, status or season...' : 'Search by farmer, crop, status or season...'"
+                      title="Filter the crop plans below" />
                     <i class="material-icons-round search-icon">search</i>
                   </div>
                 </div>
@@ -206,9 +237,18 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                         @if (!isFarmer()) { <th>Farmer</th> }
                         <th>Crop Type</th>
                         <th>Season</th>
-                        <th>Year</th>
-                        <th>Sowing Date</th>
-                        <th>Estimated Harvest</th>
+                        <th class="sortable" (click)="sortPlansBy('sowingDate')"
+                            title="Sort by sowing date (click again to reverse)">
+                          <span>Sowing Date</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="planSortField() === 'sowingDate'">{{ sortIcon(planSortField() === 'sowingDate', planSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortPlansBy('expectedHarvestDate')"
+                            title="Sort by estimated harvest date (click again to reverse)">
+                          <span>Estimated Harvest</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="planSortField() === 'expectedHarvestDate'">{{ sortIcon(planSortField() === 'expectedHarvestDate', planSortAsc()) }}</i>
+                        </th>
                         <th>Area (in Acres)</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -217,18 +257,18 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                     <tbody>
                       @for (plan of paginatedPlans(); track plan.planId) {
                         <tr>
-                          @if (!isFarmer()) { <td><strong>{{ getFarmerName(plan.farmerId) }}</strong></td> }
-                          <td>{{ getCropName(plan.cropId) }}</td>
-                          <td>{{ plan.season }}</td>
-                          <td>{{ plan.year }}</td>
-                          <td>{{ plan.sowingDate | date:'mediumDate' }}</td>
-                          <td>{{ plan.expectedHarvestDate | date:'mediumDate' }}</td>
-                          <td>{{ plan.areaPlanted }}</td>
+                          @if (!isFarmer()) { <td class="cell-name"><strong>{{ getFarmerName(plan.farmerId) }}</strong></td> }
+                          <td class="cell-nowrap">{{ getCropName(plan.cropId) }}</td>
+                          <td class="cell-nowrap">{{ plan.season }}</td>
+                          <td class="cell-nowrap">{{ plan.sowingDate | date:'mediumDate' }}</td>
+                          <td class="cell-nowrap">{{ plan.expectedHarvestDate | date:'mediumDate' }}</td>
+                          <td class="cell-nowrap">{{ plan.areaPlanted }}</td>
                           <td>
                             @if (canEditPlanStatus()) {
                               <div class="status-editor">
                                 <button type="button" class="badge status-badge" [ngClass]="getPlanStatusClass(plan.status)"
-                                  (click)="toggleStatusMenu(plan, $event)" [disabled]="statusSaving() === plan.planId">
+                                  (click)="toggleStatusMenu(plan, $event)" [disabled]="statusSaving() === plan.planId"
+                                  title="Click to change this plan's status">
                                   @if (statusSaving() === plan.planId) {
                                     <span class="spinner-tiny"></span>
                                   }
@@ -237,7 +277,8 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                                 </button>
                                 @if (openStatusPlanId() === plan.planId) {
                                   <div class="status-menu-backdrop" (click)="closeStatusMenu()"></div>
-                                  <div class="status-menu">
+                                  <div class="status-menu"
+                                    [style.top.px]="statusMenuTop()" [style.left.px]="statusMenuLeft()">
                                     @for (s of planStatuses; track s) {
                                       <button type="button" class="status-option" (click)="changePlanStatus(plan, s)">
                                         <span class="badge" [ngClass]="getPlanStatusClass(s)">{{ getPlanStatusLabel(s) }}</span>
@@ -302,18 +343,15 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               @if (isAdminOrOfficer()) {
                 <div class="header-actions">
                   @if (growthObservations().length > 0) {
-                    <button class="btn btn-export" (click)="exportObservations('excel')">
-                      <i class="material-icons-round icon-xls">grid_on</i>
-                      <span>Export XLS</span>
-                    </button>
-                    <button class="btn btn-export" (click)="exportObservations('pdf')">
-                      <i class="material-icons-round icon-pdf">picture_as_pdf</i>
-                      <span>Export PDF</span>
+                    <button class="btn btn-export btn-export-icon" (click)="exportObservations('excel')"
+                            title="Export to XLS" aria-label="Export to XLS">
+                      <i class="material-icons-round icon-xls">table_chart</i>
                     </button>
                   }
-                  <button class="btn btn-primary" (click)="openAddObservationModal()">
+                  <button class="btn btn-primary" (click)="openAddObservationModal()"
+                          title="Log a new growth observation">
                     <i class="material-icons-round">add_circle</i>
-                    <span>Log Growth Observation</span>
+                    <span>Observation</span>
                   </button>
                 </div>
               }
@@ -332,7 +370,8 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="search-field">
                     <input type="text" id="obsSearch" [(ngModel)]="obsSearch"
                       (ngModelChange)="onObsSearchChange()"
-                      placeholder="Search by farmer, crop, stage, remarks or flag..." />
+                      placeholder="Search by farmer, crop, stage, remarks or flag..."
+                      title="Filter the observations below" />
                     <i class="material-icons-round search-icon">search</i>
                   </div>
                 </div>
@@ -362,9 +401,9 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                     <tbody>
                       @for (obs of paginatedObservations(); track obs.observationId) {
                         <tr>
-                          <td><strong>{{ getFarmerNameForPlan(obs.planId) }}</strong></td>
-                          <td>{{ getCropNameForPlan(obs.planId) }}</td>
-                          <td>{{ obs.observationDate | date:'mediumDate' }}</td>
+                          <td class="cell-name"><strong>{{ getFarmerNameForPlan(obs.planId) }}</strong></td>
+                          <td class="cell-nowrap">{{ getCropNameForPlan(obs.planId) }}</td>
+                          <td class="cell-nowrap">{{ obs.observationDate | date:'mediumDate' }}</td>
                           <td>
                             <span class="badge" [ngClass]="getStageClass(obs.stage)">
                               {{ getStageLabel(obs.stage) }}
@@ -375,7 +414,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                               {{ obs.pestOrDiseaseFlag ? 'DANGER: Disease/Pest' : 'Healthy / Clear' }}
                             </span>
                           </td>
-                          <td>{{ obs.remarks }}</td>
+                          <td class="cell-remarks">{{ obs.remarks }}</td>
                           <td>
                             <app-action-menu>
                               <button class="menu-item" (click)="viewObservationDetails(obs)">
@@ -416,7 +455,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>{{ isEditMode() ? 'Edit Crop Catalog Item' : 'Add New Crop to Catalog' }}</h3>
-              <button class="close-btn" (click)="closeCatalogModal()">
+              <button class="close-btn" (click)="closeCatalogModal()" title="Close" aria-label="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -424,12 +463,17 @@ import { INDIAN_STATES } from '../../utils/indian-states';
               <div class="modal-body">
                 <div class="form-group">
                   <label for="cName">Crop Name</label>
-                  <input type="text" id="cName" formControlName="cropName" placeholder="e.g. Basmati Rice" />
+                  <input type="text" id="cName" formControlName="cropName" placeholder="e.g. Basmati Rice"
+                         [attr.maxlength]="MAX_CROP_NAME_LENGTH" autocomplete="off"
+                         title="2-30 characters, letters only (no digits)" />
+                  @if (showError(catalogForm, 'cropName')) {
+                    <p class="field-error">{{ cropNameError() }}</p>
+                  }
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cCategory">Category</label>
-                    <select id="cCategory" formControlName="category">
+                    <select id="cCategory" formControlName="category" title="Pick the crop's category">
                       <option value="">Select Category</option>
                       <option value="Cereal">Cereal</option>
                       <option value="Pulse">Pulse</option>
@@ -440,38 +484,51 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                       <option value="Fruit">Fruit</option>
                       <option value="Spice">Spice</option>
                     </select>
+                    @if (showError(catalogForm, 'category')) {
+                      <p class="field-error">Select a category.</p>
+                    }
                   </div>
                   <div class="form-group">
                     <label for="cSeason">Season</label>
-                    <select id="cSeason" formControlName="season">
+                    <select id="cSeason" formControlName="season" title="Pick the growing season">
                       <option value="">Select Season</option>
                       @for (s of seasons; track s) {
                         <option [value]="s">{{ s }}</option>
                       }
                     </select>
+                    @if (showError(catalogForm, 'season')) {
+                      <p class="field-error">Select a season.</p>
+                    }
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="cDuration">Typical Duration (Days)</label>
-                    <input type="number" id="cDuration" formControlName="typicalDurationDays" placeholder="e.g. 120" />
+                    <input type="number" id="cDuration" formControlName="typicalDurationDays" placeholder="e.g. 120"
+                           [min]="MIN_DURATION_DAYS" [max]="MAX_DURATION_DAYS" step="1"
+                           title="Whole number of days, between 7 and 365" />
+                    @if (showError(catalogForm, 'typicalDurationDays')) {
+                      <p class="field-error">{{ durationError() }}</p>
+                    }
                   </div>
                   <div class="form-group">
                     <label for="cYield">Exp. Yield per Acre (Tons)</label>
-                    <input type="number" step="0.1" id="cYield" formControlName="expectedYieldPerAcre" placeholder="e.g. 2.5" />
+                    <input type="number" step="0.1" id="cYield" formControlName="expectedYieldPerAcre" placeholder="e.g. 2.5"
+                           [min]="MIN_YIELD_TONS" [max]="MAX_YIELD_TONS"
+                           title="Between 0.1 and 100 tons per acre" />
+                    @if (showError(catalogForm, 'expectedYieldPerAcre')) {
+                      <p class="field-error">{{ yieldError() }}</p>
+                    }
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="cStatus">Status</label>
-                  <select id="cStatus" formControlName="status">
-                    <option value="" disabled>Select Status</option>
-                    <option value="AC">Active</option>
-                    <option value="IN">Inactive</option>
-                  </select>
-                </div>
+                <!-- Status is not shown: a catalogued crop is always created
+                     Active, so the form sets it automatically on save. -->
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="catalogForm.invalid">Save</button>
+                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="catalogForm.invalid"
+                        title="Save" aria-label="Save">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -484,7 +541,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>{{ isEditMode() ? 'Edit Crop Plan' : 'Create Crop Plan Schedule' }}</h3>
-              <button class="close-btn" (click)="closePlanModal()">
+              <button class="close-btn" (click)="closePlanModal()" title="Close" aria-label="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -526,7 +583,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 <div class="form-group">
                   <label for="pCrop">Crop Type</label>
                   <select id="pCrop" formControlName="cropId">
-                    <option value="" disabled>Select crop type</option>
+                    <option value="">Select crop type</option>
                     @for (crop of cropsForPlanSeason(); track crop.cropId) {
                       <option [value]="crop.cropId">{{ crop.cropName }} ({{ crop.season }})</option>
                     }
@@ -538,11 +595,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   }
                 </div>
 
-                <div class="form-group">
-                  <label for="pYear">Year</label>
-                  <input type="number" id="pYear" formControlName="year" [min]="2000" [max]="maxPlanYear" />
-                </div>
-
+                <!-- No Year field: it is taken from the sowing date below. -->
                 <div class="form-row">
                   <div class="form-group">
                     <label for="pSowing">Sowing Date</label>
@@ -570,7 +623,12 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 <div class="form-row">
                   <div class="form-group">
                     <label for="pArea">Area Planted (in Acres)</label>
-                    <input type="number" step="0.01" id="pArea" formControlName="areaPlanted" />
+                    <input type="number" step="0.01" id="pArea" formControlName="areaPlanted"
+                           [min]="MIN_AREA_ACRES" [max]="MAX_AREA_ACRES"
+                           title="Between 0.01 and 10000 acres" />
+                    @if (showError(planForm, 'areaPlanted')) {
+                      <p class="field-error">{{ areaError() }}</p>
+                    }
                     @if (areaExceedsHolding()) {
                       <p class="season-window-warning" style="color: var(--danger);">
                         <i class="material-icons-round">error_outline</i>
@@ -581,7 +639,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="pStatus">Status</label>
                     <select id="pStatus" formControlName="status">
-                      <option value="" disabled>Select Status</option>
+                      <option value="">Select Status</option>
                       <option value="PLANNED">Planned</option>
                       <option value="SOWING">Sowing</option>
                       <option value="GROWING">Growing</option>
@@ -592,7 +650,10 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="planForm.invalid">Save</button>
+                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="planForm.invalid"
+                        title="Save" aria-label="Save">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -605,7 +666,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>Log Growth Inspection Observation</h3>
-              <button class="close-btn" (click)="closeObservationModal()">
+              <button class="close-btn" (click)="closeObservationModal()" title="Close" aria-label="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -647,7 +708,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="oStage">Growth Stage Flow</label>
                     <select id="oStage" formControlName="stage">
-                      <option value="" disabled>Select Stage</option>
+                      <option value="">Select Stage</option>
                       <option value="GERMINATION">Germination</option>
                       <option value="VEGETATIVE">Vegetative</option>
                       <option value="FLOWERING">Flowering</option>
@@ -674,7 +735,10 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="observationForm.invalid">Log Observation</button>
+                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="observationForm.invalid"
+                        title="Log Observation" aria-label="Log Observation">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -687,7 +751,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>{{ isEditMode() ? 'Edit Farmer Identity Details' : 'Register Farmer Identity Profile' }}</h3>
-              <button class="close-btn" (click)="closeProfileModal()">
+              <button class="close-btn" (click)="closeProfileModal()" title="Close" aria-label="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -705,7 +769,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <div class="form-group">
                     <label for="fGender">Gender</label>
                     <select id="fGender" formControlName="gender">
-                      <option value="" disabled>Select Gender</option>
+                      <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -747,7 +811,10 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Save Profile</button>
+                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="profileForm.invalid"
+                        title="Save Profile" aria-label="Save Profile">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -760,7 +827,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>{{ isEditMode() ? 'Edit Land Details' : 'Register Land Holding' }}</h3>
-              <button class="close-btn" (click)="closeHoldingModal()">
+              <button class="close-btn" (click)="closeHoldingModal()" title="Close" aria-label="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -770,7 +837,7 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                   <label for="lFarmer">Assign to Profile</label>
                   <select id="lFarmer" formControlName="farmerId">
                     <option value="">Select Profile</option>
-                    @for (prof of farmerProfiles(); track prof.farmerId) {
+                    @for (prof of plannableFarmerProfiles(); track prof.farmerId) {
                       <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
@@ -818,7 +885,10 @@ import { INDIAN_STATES } from '../../utils/indian-states';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="holdingForm.invalid">Register</button>
+                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="holdingForm.invalid"
+                        title="Register" aria-label="Register">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -903,6 +973,20 @@ import { INDIAN_STATES } from '../../utils/indian-states';
     .tab-content {
       animation: fadeIn var(--transition-normal);
     }
+    /* Icon-only submit button in modal footers — the tooltip/aria-label carries
+       the action name ("Save", "Register", ...). */
+    .btn-save-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.6rem 1.4rem;
+      border-radius: 0.6rem;
+      gap: 0;
+    }
+    .btn-save-icon .material-icons-round {
+      font-size: 22px;
+      line-height: 1;
+    }
     .btn-small {
       padding: 0.4rem 0.8rem !important;
       font-size: 0.8rem !important;
@@ -949,6 +1033,44 @@ import { INDIAN_STATES } from '../../utils/indian-states';
     }
     .close-btn:hover {
       color: var(--text-primary);
+    }
+    /* Inline validation message under a field */
+    .field-error {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin: 0.3rem 0 0;
+      font-size: 0.78rem;
+      color: var(--danger);
+    }
+    /* Column behaviour: short values stay on one line, only Remarks wraps —
+       so the table reads as tidy columns instead of ragged two-line cells. */
+    td.cell-nowrap { white-space: nowrap; }
+    td.cell-name {
+      white-space: nowrap;
+      min-width: 140px;
+    }
+    td.cell-remarks {
+      min-width: 220px;
+      white-space: normal;
+      color: var(--text-secondary);
+    }
+    /* Sortable column headers */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th.sortable:hover { color: var(--primary-color); }
+    .sort-icon {
+      font-size: 15px;
+      vertical-align: middle;
+      margin-left: 0.15rem;
+      opacity: 0.45;
+    }
+    .sort-icon.active {
+      opacity: 1;
+      color: var(--primary-color);
     }
     .criteria-cell {
       max-width: 150px;
@@ -1013,11 +1135,11 @@ import { INDIAN_STATES } from '../../utils/indian-states';
       inset: 0;
       z-index: 20;
     }
+    /* Fixed (not absolute) so the panel is never clipped by the table's
+       horizontal overflow — top/left are measured from the toggle button. */
     .status-menu {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0;
-      z-index: 21;
+      position: fixed;
+      z-index: 1200;
       background: var(--surface, #fff);
       border: 1px solid var(--border-color);
       border-radius: 0.5rem;
@@ -1099,6 +1221,15 @@ import { INDIAN_STATES } from '../../utils/indian-states';
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
     .btn-export .material-icons-round { font-size: 20px; }
+    /* Icon-only export button — square, no label. The tooltip/aria-label names
+       the format. */
+    .btn-export-icon {
+      padding: 0.5rem;
+      width: 38px;
+      height: 38px;
+      justify-content: center;
+      gap: 0;
+    }
     .icon-xls { color: #16a34a; }
     .icon-pdf { color: #ef4444; }
     /* Pest/disease flag toggle card */
@@ -1173,6 +1304,22 @@ export class CropsComponent implements OnInit {
   // the current or next growing year but not arbitrarily far into the future.
   readonly maxPlanYear = new Date().getFullYear() + 1;
 
+  // Input bounds, exposed so the template can set min/max and quote them in
+  // the error messages (single source of truth with the validators).
+  readonly MAX_CROP_NAME_LENGTH = MAX_CROP_NAME_LENGTH;
+  readonly MIN_DURATION_DAYS = MIN_DURATION_DAYS;
+  readonly MAX_DURATION_DAYS = MAX_DURATION_DAYS;
+  readonly MIN_YIELD_TONS = MIN_YIELD_TONS;
+  readonly MAX_YIELD_TONS = MAX_YIELD_TONS;
+  readonly MIN_AREA_ACRES = MIN_AREA_ACRES;
+  readonly MAX_AREA_ACRES = MAX_AREA_ACRES;
+
+  // Column sorting state for the catalog and plan tables (null = default order).
+  catalogSortField = signal<string | null>(null);
+  catalogSortAsc = signal<boolean>(true);
+  planSortField = signal<string | null>(null);
+  planSortAsc = signal<boolean>(true);
+
   // Crop plan lifecycle statuses, used by the inline status editor.
   readonly planStatuses = ['PLANNED', 'SOWING', 'GROWING', 'HARVESTED', 'FAILED'];
 
@@ -1180,6 +1327,10 @@ export class CropsComponent implements OnInit {
   // plan is currently being saved (shows a spinner and blocks re-clicks).
   openStatusPlanId = signal<number | null>(null);
   statusSaving = signal<number | null>(null);
+
+  // Viewport coordinates of the open status menu (it is fixed-positioned).
+  statusMenuTop = signal<number>(0);
+  statusMenuLeft = signal<number>(0);
 
   // States
   activeTab = signal<'catalog' | 'plans' | 'observations' | 'profiles'>('catalog');
@@ -1262,12 +1413,16 @@ export class CropsComponent implements OnInit {
 
   private initForms() {
     this.catalogForm = this.fb.group({
-      cropName: ['', Validators.required],
+      cropName: ['', [Validators.required, Validators.pattern(CROP_NAME_PATTERN),
+                      Validators.maxLength(MAX_CROP_NAME_LENGTH)]],
       category: ['', Validators.required],
       season: ['', Validators.required],
-      typicalDurationDays: [90, [Validators.required, Validators.min(1)]],
-      expectedYieldPerAcre: [1.0, [Validators.required, Validators.min(0.01)]],
-      status: ['', Validators.required]
+      typicalDurationDays: [90, [Validators.required, Validators.min(MIN_DURATION_DAYS),
+                                 Validators.max(MAX_DURATION_DAYS), wholeNumber]],
+      expectedYieldPerAcre: [1.0, [Validators.required, Validators.min(MIN_YIELD_TONS),
+                                   Validators.max(MAX_YIELD_TONS)]],
+      // Not shown in the form — every catalogued crop is created Active.
+      status: ['AC', Validators.required]
     });
 
     this.planForm = this.fb.group({
@@ -1278,8 +1433,19 @@ export class CropsComponent implements OnInit {
       year: [new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(new Date().getFullYear() + 1)]],
       sowingDate: ['', Validators.required],
       expectedHarvestDate: ['', Validators.required],
-      areaPlanted: [0.5, [Validators.required, Validators.min(0.01)]],
+      areaPlanted: [0.5, [Validators.required, Validators.min(MIN_AREA_ACRES),
+                          Validators.max(MAX_AREA_ACRES)]],
       status: ['', Validators.required]
+    });
+
+    // The Year field is not shown — the backend still requires it, so keep it in
+    // step with the sowing date the user picks.
+    this.planForm.get('sowingDate')!.valueChanges.subscribe(date => {
+      if (!date) return;
+      const year = new Date(date).getFullYear();
+      if (!isNaN(year)) {
+        this.planForm.get('year')!.setValue(year, { emitEvent: false });
+      }
     });
 
     // Two-way sync between Season and Crop Type on the plan form.
@@ -1430,7 +1596,10 @@ export class CropsComponent implements OnInit {
     return list.slice(start, start + size);
   }
 
-  paginatedCatalog(): any[] { return this.page(this.cropCatalogs(), this.catalogPage, this.catalogPageSize); }
+  paginatedCatalog(): any[] {
+    const sorted = this.applySort(this.cropCatalogs(), this.catalogSortField(), this.catalogSortAsc());
+    return this.page(sorted, this.catalogPage, this.catalogPageSize);
+  }
   onCatalogPageChange(p: number) { this.catalogPage = p; }
   onCatalogPageSizeChange(s: number) { this.catalogPageSize = s; this.catalogPage = 0; }
 
@@ -1484,7 +1653,10 @@ export class CropsComponent implements OnInit {
     );
   }
 
-  paginatedPlans(): any[] { return this.page(this.filteredPlans(), this.planPage, this.planPageSize); }
+  paginatedPlans(): any[] {
+    const sorted = this.applySort(this.filteredPlans(), this.planSortField(), this.planSortAsc());
+    return this.page(sorted, this.planPage, this.planPageSize);
+  }
 
   // Crop Type options for the plan form: Active catalog crops, narrowed by the
   // season chips when any are selected (the currently-selected crop is always
@@ -1564,6 +1736,88 @@ export class CropsComponent implements OnInit {
   getFarmerName(farmerId: number): string {
     const prof = this.farmerProfiles().find(f => f.farmerId == farmerId);
     return prof ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
+  }
+
+  // ================= FORM VALIDATION FEEDBACK =================
+  /** True once the user has interacted with a control that is now invalid. */
+  showError(form: FormGroup, controlName: string): boolean {
+    const control = form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  cropNameError(): string {
+    const errors = this.catalogForm.get('cropName')?.errors || {};
+    if (errors['required']) return 'Crop name is required.';
+    if (errors['maxlength']) return `Use ${MAX_CROP_NAME_LENGTH} characters or fewer.`;
+    return `Use 2-${MAX_CROP_NAME_LENGTH} letters only — no digits or special characters.`;
+  }
+
+  durationError(): string {
+    const errors = this.catalogForm.get('typicalDurationDays')?.errors || {};
+    if (errors['required']) return 'Typical duration is required.';
+    if (errors['wholeNumber']) return 'Enter a whole number of days.';
+    return `Enter a duration between ${MIN_DURATION_DAYS} and ${MAX_DURATION_DAYS} days.`;
+  }
+
+  yieldError(): string {
+    const errors = this.catalogForm.get('expectedYieldPerAcre')?.errors || {};
+    if (errors['required']) return 'Expected yield is required.';
+    return `Enter a yield between ${MIN_YIELD_TONS} and ${MAX_YIELD_TONS} tons per acre.`;
+  }
+
+  areaError(): string {
+    const errors = this.planForm.get('areaPlanted')?.errors || {};
+    if (errors['required']) return 'Area planted is required.';
+    return `Enter an area between ${MIN_AREA_ACRES} and ${MAX_AREA_ACRES} acres.`;
+  }
+
+  // ================= COLUMN SORTING =================
+  // Click a sortable header to sort ascending; click again for descending.
+  sortCatalogBy(field: string) {
+    this.toggleSort(this.catalogSortField, this.catalogSortAsc, field);
+    this.catalogPage = 0;
+  }
+
+  sortPlansBy(field: string) {
+    this.toggleSort(this.planSortField, this.planSortAsc, field);
+    this.planPage = 0;
+  }
+
+  private toggleSort(fieldSig: WritableSignal<string | null>,
+                     ascSig: WritableSignal<boolean>, field: string) {
+    if (fieldSig() === field) {
+      ascSig.set(!ascSig());
+    } else {
+      fieldSig.set(field);
+      ascSig.set(true);
+    }
+  }
+
+  /** Header arrow: neutral when the column isn't the one being sorted on. */
+  sortIcon(isActive: boolean, asc: boolean): string {
+    if (!isActive) return 'unfold_more';
+    return asc ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  /** Sorts by a field, comparing dates chronologically and numbers numerically. */
+  private applySort(list: any[], field: string | null, asc: boolean): any[] {
+    if (!field) return list;
+    const direction = asc ? 1 : -1;
+    return [...list].sort((a, b) => {
+      const va = a[field];
+      const vb = b[field];
+      // Blanks always sink to the bottom, whichever direction is active.
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (field.toLowerCase().includes('date')) {
+        return (new Date(va).getTime() - new Date(vb).getTime()) * direction;
+      }
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return (va - vb) * direction;
+      }
+      return String(va).localeCompare(String(vb)) * direction;
+    });
   }
 
   // Farmer-profile ids owned by the logged-in user.
@@ -1721,7 +1975,30 @@ export class CropsComponent implements OnInit {
   toggleStatusMenu(plan: any, event: Event) {
     event.stopPropagation();
     if (this.statusSaving() === plan.planId) return;
-    this.openStatusPlanId.set(this.openStatusPlanId() === plan.planId ? null : plan.planId);
+    if (this.openStatusPlanId() === plan.planId) {
+      this.closeStatusMenu();
+      return;
+    }
+    // Measure the toggle button and position the fixed panel under it, clamped
+    // to the viewport so it stays visible however far the table is scrolled.
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - STATUS_MENU_WIDTH - 8));
+    this.statusMenuLeft.set(left);
+    this.statusMenuTop.set(rect.bottom + 4);
+    this.openStatusPlanId.set(plan.planId);
+  }
+
+  // Close the status menu when the page or a container scrolls (the panel is
+  // fixed, so it would otherwise detach from its row).
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  onViewportChange() {
+    this.closeStatusMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.closeStatusMenu();
   }
 
   closeStatusMenu() {
@@ -1809,7 +2086,6 @@ export class CropsComponent implements OnInit {
       { label: 'Crop Type', value: this.getCropName(plan.cropId) },
       { label: 'Category', value: crop?.category || '—' },
       { label: 'Season', value: plan.season },
-      { label: 'Year', value: plan.year },
       { label: 'Sowing Date', value: this.fmtDate(plan.sowingDate) },
       { label: 'Estimated Harvest Date', value: this.fmtDate(plan.expectedHarvestDate) },
       { label: 'Estimated Duration', value: crop?.typicalDurationDays ? crop.typicalDurationDays + ' Days' : '—' },
@@ -1868,7 +2144,18 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.catalogForm.reset({ status: '', typicalDurationDays: 90, expectedYieldPerAcre: 1.0 });
+      // Reset every control explicitly. Omitting a control makes Angular reset it
+      // to null, which no <option> maps to — the select then renders blank instead
+      // of its "Select ..." placeholder, so the box can look filled while the
+      // control is still empty (invalid).
+      this.catalogForm.reset({
+        cropName: '',
+        category: '',
+        season: '',
+        status: 'AC',
+        typicalDurationDays: 90,
+        expectedYieldPerAcre: 1.0
+      });
     }
     this.showCatalogModal.set(true);
   }
@@ -1935,14 +2222,26 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedPlan.set(null);
+      const ownProfiles = this.plannableFarmerProfiles();
+      const defaultFarmerId = ownProfiles.length > 0 ? ownProfiles[0].farmerId : '';
+      const ownHoldings = defaultFarmerId
+        ? this.landHoldings().filter(h => h.farmerId == defaultFarmerId)
+        : [];
+      const defaultHoldingId = ownHoldings.length > 0 ? ownHoldings[0].holdingId : '';
       this.planForm.reset({
         status: '',
         year: new Date().getFullYear(),
         areaPlanted: 0.5,
         cropId: '',
         season: '',
-        farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
-        holdingId: this.landHoldings().length > 0 ? this.landHoldings()[0].holdingId : ''
+        sowingDate: '',
+        expectedHarvestDate: '',
+        // Default to the logged-in user's OWN profile and one of its holdings.
+        // Defaulting from the unscoped lists preselected whichever profile was
+        // registered most recently — someone else's — and the land dropdown then
+        // came up empty, because no holding of theirs belongs to that farmer.
+        farmerId: defaultFarmerId,
+        holdingId: defaultHoldingId
       });
       this.selectedSeasons.set([]);
     }
@@ -2092,13 +2391,12 @@ export class CropsComponent implements OnInit {
       this.toast.error('No crop plans to export.');
       return;
     }
-    const columns = ['Farmer', 'Farmer ID', 'Crop Type', 'Season', 'Year', 'Sowing Date', 'Estimated Harvest', 'Area (Acres)', 'Status'];
+    const columns = ['Farmer', 'Farmer ID', 'Crop Type', 'Season', 'Sowing Date', 'Estimated Harvest', 'Area (Acres)', 'Status'];
     const rows = plans.map(p => [
       this.getFarmerName(p.farmerId),
       '#' + p.farmerId,
       this.getCropName(p.cropId),
       p.season,
-      p.year,
       this.fmtDate(p.sowingDate),
       this.fmtDate(p.expectedHarvestDate),
       p.areaPlanted,
@@ -2152,7 +2450,10 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
-      this.profileForm.reset({ gender: '' });
+      this.profileForm.reset({
+        name: '', dateOfBirth: '', gender: '', nationalIdNumber: '',
+        village: '', district: '', state: '', phone: '', bankAccountNumber: ''
+      });
     }
     this.showProfileModal.set(true);
   }
@@ -2198,9 +2499,14 @@ export class CropsComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
+      const ownProfiles = this.plannableFarmerProfiles();
       this.holdingForm.reset({
-        farmerId: this.farmerProfiles().length > 0 ? this.farmerProfiles()[0].farmerId : '',
-        areaAcres: 1.0
+        farmerId: ownProfiles.length > 0 ? ownProfiles[0].farmerId : '',
+        surveyNumber: '',
+        areaAcres: 1.0,
+        soilType: '',
+        irrigationSource: '',
+        ownershipType: ''
       });
     }
     this.showHoldingModal.set(true);

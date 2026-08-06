@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
+import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -83,14 +84,44 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Name</th>
+                        <th class="sortable" (click)="sortProfilesBy('name')"
+                            title="Sort by name (click again to reverse)">
+                          <span>Name</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'name'">{{ sortIcon(profilesSortField() === 'name', profilesSortAsc()) }}</i>
+                        </th>
                         <th>Gender</th>
-                        <th>Date of Birth</th>
+                        <th class="sortable" (click)="sortProfilesBy('dateOfBirth')"
+                            title="Sort by date of birth (click again to reverse)">
+                          <span>Date of Birth</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'dateOfBirth'">{{ sortIcon(profilesSortField() === 'dateOfBirth', profilesSortAsc()) }}</i>
+                        </th>
                         <th>National ID</th>
-                        <th>Village</th>
-                        <th>District</th>
-                        <th>Phone</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="sortProfilesBy('village')"
+                            title="Sort by village (click again to reverse)">
+                          <span>Village</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'village'">{{ sortIcon(profilesSortField() === 'village', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('district')"
+                            title="Sort by district (click again to reverse)">
+                          <span>District</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'district'">{{ sortIcon(profilesSortField() === 'district', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('phone')"
+                            title="Sort by phone (click again to reverse)">
+                          <span>Phone</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'phone'">{{ sortIcon(profilesSortField() === 'phone', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('status')"
+                            title="Sort by status (click again to reverse)">
+                          <span>Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'status'">{{ sortIcon(profilesSortField() === 'status', profilesSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -195,12 +226,42 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <thead>
                       <tr>
                         <th>Farmer</th>
-                        <th>Survey Number</th>
-                        <th>Area (in Acres)</th>
-                        <th>Soil Type</th>
-                        <th>Irrigation</th>
-                        <th>Ownership</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="sortHoldingsBy('surveyNumber')"
+                            title="Sort by survey number (click again to reverse)">
+                          <span>Survey Number</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'surveyNumber'">{{ sortIcon(holdingsSortField() === 'surveyNumber', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('areaAcres')"
+                            title="Sort by area (click again to reverse)">
+                          <span>Area (in Acres)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'areaAcres'">{{ sortIcon(holdingsSortField() === 'areaAcres', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('soilType')"
+                            title="Sort by soil type (click again to reverse)">
+                          <span>Soil Type</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'soilType'">{{ sortIcon(holdingsSortField() === 'soilType', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('irrigationSource')"
+                            title="Sort by irrigation source (click again to reverse)">
+                          <span>Irrigation</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'irrigationSource'">{{ sortIcon(holdingsSortField() === 'irrigationSource', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('ownershipType')"
+                            title="Sort by ownership (click again to reverse)">
+                          <span>Ownership</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'ownershipType'">{{ sortIcon(holdingsSortField() === 'ownershipType', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('status')"
+                            title="Sort by status (click again to reverse)">
+                          <span>Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'status'">{{ sortIcon(holdingsSortField() === 'status', holdingsSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -298,11 +359,36 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <tr>
                         <th>Farmer</th>
                         <th>Survey No.</th>
-                        <th>Crop</th>
-                        <th>Season</th>
-                        <th>Year</th>
-                        <th>Area (Acres)</th>
-                        <th>Yield (Qtl)</th>
+                        <th class="sortable" (click)="sortHistoryBy('cropName')"
+                            title="Sort by crop (click again to reverse)">
+                          <span>Crop</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'cropName'">{{ sortIcon(historySortField() === 'cropName', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('season')"
+                            title="Sort by season (click again to reverse)">
+                          <span>Season</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'season'">{{ sortIcon(historySortField() === 'season', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('cropYear')"
+                            title="Sort by year (click again to reverse)">
+                          <span>Year</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'cropYear'">{{ sortIcon(historySortField() === 'cropYear', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('areaAcres')"
+                            title="Sort by area (click again to reverse)">
+                          <span>Area (Acres)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'areaAcres'">{{ sortIcon(historySortField() === 'areaAcres', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('yieldQuintals')"
+                            title="Sort by yield (click again to reverse)">
+                          <span>Yield (Qtl)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'yieldQuintals'">{{ sortIcon(historySortField() === 'yieldQuintals', historySortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -777,6 +863,17 @@ export class FarmersComponent implements OnInit {
   historyPage = 0;
   historyPageSize = 10;
 
+  // Column sorting state for each table (null = default order).
+  profilesSortField = signal<string | null>(null);
+  profilesSortAsc = signal<boolean>(true);
+  holdingsSortField = signal<string | null>(null);
+  holdingsSortAsc = signal<boolean>(true);
+  historySortField = signal<string | null>(null);
+  historySortAsc = signal<boolean>(true);
+
+  // Exposed so the template can call it directly on sortable header icons.
+  readonly sortIcon = sortIcon;
+
   // Forms
   profileForm!: FormGroup;
   holdingForm!: FormGroup;
@@ -1034,12 +1131,18 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedProfiles(): any[] {
+    const sorted = applySort(this.filteredProfiles(), this.profilesSortField(), this.profilesSortAsc());
     const start = this.profilePage * this.profilePageSize;
-    return this.filteredProfiles().slice(start, start + this.profilePageSize);
+    return sorted.slice(start, start + this.profilePageSize);
   }
 
   onProfilePageChange(page: number) { this.profilePage = page; }
   onProfilePageSizeChange(size: number) { this.profilePageSize = size; this.profilePage = 0; }
+
+  sortProfilesBy(field: string) {
+    toggleSort(this.profilesSortField, this.profilesSortAsc, field);
+    this.profilePage = 0;
+  }
 
   applyHoldingFilters() {
     const q = this.holdingSearch.trim().toLowerCase();
@@ -1059,12 +1162,18 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedHoldings(): any[] {
+    const sorted = applySort(this.filteredHoldings(), this.holdingsSortField(), this.holdingsSortAsc());
     const start = this.holdingPage * this.holdingPageSize;
-    return this.filteredHoldings().slice(start, start + this.holdingPageSize);
+    return sorted.slice(start, start + this.holdingPageSize);
   }
 
   onHoldingPageChange(page: number) { this.holdingPage = page; }
   onHoldingPageSizeChange(size: number) { this.holdingPageSize = size; this.holdingPage = 0; }
+
+  sortHoldingsBy(field: string) {
+    toggleSort(this.holdingsSortField, this.holdingsSortAsc, field);
+    this.holdingPage = 0;
+  }
 
   applyHistoryFilters() {
     const q = this.historySearch.trim().toLowerCase();
@@ -1084,12 +1193,18 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedHistories(): any[] {
+    const sorted = applySort(this.filteredHistories(), this.historySortField(), this.historySortAsc());
     const start = this.historyPage * this.historyPageSize;
-    return this.filteredHistories().slice(start, start + this.historyPageSize);
+    return sorted.slice(start, start + this.historyPageSize);
   }
 
   onHistoryPageChange(page: number) { this.historyPage = page; }
   onHistoryPageSizeChange(size: number) { this.historyPageSize = size; this.historyPage = 0; }
+
+  sortHistoryBy(field: string) {
+    toggleSort(this.historySortField, this.historySortAsc, field);
+    this.historyPage = 0;
+  }
 
   // ===== Farmer Profile CRUD =====
   openProfileModal(profile?: any) {

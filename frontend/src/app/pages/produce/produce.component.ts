@@ -10,6 +10,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
+import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 
 @Component({
   selector: 'app-produce',
@@ -69,12 +70,37 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Crop Type</th>
-                        <th>Harvest Date</th>
-                        <th>Quantity (Kg)</th>
+                        <th class="sortable" (click)="sortListingsBy('cropName')"
+                            title="Sort by crop type (click again to reverse)">
+                          <span>Crop Type</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="listingSortField() === 'cropName'">{{ sortIcon(listingSortField() === 'cropName', listingSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortListingsBy('harvestDate')"
+                            title="Sort by harvest date (click again to reverse)">
+                          <span>Harvest Date</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="listingSortField() === 'harvestDate'">{{ sortIcon(listingSortField() === 'harvestDate', listingSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortListingsBy('quantityKg')"
+                            title="Sort by quantity (click again to reverse)">
+                          <span>Quantity (Kg)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="listingSortField() === 'quantityKg'">{{ sortIcon(listingSortField() === 'quantityKg', listingSortAsc()) }}</i>
+                        </th>
                         <th>Quality Grade</th>
-                        <th>Price/Kg (₹)</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="sortListingsBy('askingPricePerKg')"
+                            title="Sort by price per Kg (click again to reverse)">
+                          <span>Price/Kg (₹)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="listingSortField() === 'askingPricePerKg'">{{ sortIcon(listingSortField() === 'askingPricePerKg', listingSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortListingsBy('status')"
+                            title="Sort by status (click again to reverse)">
+                          <span>Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="listingSortField() === 'status'">{{ sortIcon(listingSortField() === 'status', listingSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -153,11 +179,36 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Quantity Sold</th>
-                        <th>Agreed Price/Kg</th>
-                        <th>Total Amount</th>
-                        <th>Sale Date</th>
-                        <th>Payment Status</th>
+                        <th class="sortable" (click)="sortSalesBy('quantitySoldKg')"
+                            title="Sort by quantity sold (click again to reverse)">
+                          <span>Quantity Sold</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="saleSortField() === 'quantitySoldKg'">{{ sortIcon(saleSortField() === 'quantitySoldKg', saleSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortSalesBy('agreedPricePerKg')"
+                            title="Sort by agreed price (click again to reverse)">
+                          <span>Agreed Price/Kg</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="saleSortField() === 'agreedPricePerKg'">{{ sortIcon(saleSortField() === 'agreedPricePerKg', saleSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortSalesBy('totalAmount')"
+                            title="Sort by total amount (click again to reverse)">
+                          <span>Total Amount</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="saleSortField() === 'totalAmount'">{{ sortIcon(saleSortField() === 'totalAmount', saleSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortSalesBy('saleDate')"
+                            title="Sort by sale date (click again to reverse)">
+                          <span>Sale Date</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="saleSortField() === 'saleDate'">{{ sortIcon(saleSortField() === 'saleDate', saleSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortSalesBy('paymentStatus')"
+                            title="Sort by payment status (click again to reverse)">
+                          <span>Payment Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="saleSortField() === 'paymentStatus'">{{ sortIcon(saleSortField() === 'paymentStatus', saleSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -492,6 +543,15 @@ export class ProduceComponent implements OnInit {
   listingPage = 0;   listingPageSize = 5;
   salePage = 0;      salePageSize = 5;
 
+  // Column sorting state for the listings and sales tables (null = default order).
+  listingSortField = signal<string | null>(null);
+  listingSortAsc = signal<boolean>(true);
+  saleSortField = signal<string | null>(null);
+  saleSortAsc = signal<boolean>(true);
+
+  // Exposed for the template.
+  readonly sortIcon = sortIcon;
+
   // Selection
   selectedListing = signal<any | null>(null);
   selectedSale = signal<any | null>(null);
@@ -548,13 +608,24 @@ export class ProduceComponent implements OnInit {
     return (list || []).slice(start, start + size);
   }
 
-  paginatedListings(): any[] { return this.page(this.listings(), this.listingPage, this.listingPageSize); }
+  paginatedListings(): any[] {
+    // Crop name isn't a direct field on the listing — attach it so sorting by
+    // "Crop Type" reflects what's actually displayed in the column.
+    const withCropName = this.listings().map(l => ({ ...l, cropName: this.getCropName(l.cropId) }));
+    const sorted = applySort(withCropName, this.listingSortField(), this.listingSortAsc());
+    return this.page(sorted, this.listingPage, this.listingPageSize);
+  }
   onListingPageChange(p: number) { this.listingPage = p; }
   onListingPageSizeChange(s: number) { this.listingPageSize = s; this.listingPage = 0; }
+  sortListingsBy(field: string) { toggleSort(this.listingSortField, this.listingSortAsc, field); this.listingPage = 0; }
 
-  paginatedSales(): any[] { return this.page(this.sales(), this.salePage, this.salePageSize); }
+  paginatedSales(): any[] {
+    const sorted = applySort(this.sales(), this.saleSortField(), this.saleSortAsc());
+    return this.page(sorted, this.salePage, this.salePageSize);
+  }
   onSalePageChange(p: number) { this.salePage = p; }
   onSalePageSizeChange(s: number) { this.salePageSize = s; this.salePage = 0; }
+  sortSalesBy(field: string) { toggleSort(this.saleSortField, this.saleSortAsc, field); this.salePage = 0; }
 
   private initForms() {
     this.listingForm = this.fb.group({

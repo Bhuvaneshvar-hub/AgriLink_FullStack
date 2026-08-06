@@ -10,6 +10,7 @@ import { ConfirmationModalComponent } from '../../../components/confirmation-mod
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
 import { exportTableToExcel } from '../../../utils/export-excel.util';
+import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util';
 
 @Component({
   selector: 'app-user-list',
@@ -89,11 +90,23 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
+                  <th class="sortable" (click)="sortBy('name')" title="Sort by Name">
+                    <span>Name</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'name'">{{ sortIcon(sortField() === 'name', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('email')" title="Sort by Email">
+                    <span>Email</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'email'">{{ sortIcon(sortField() === 'email', sortAsc()) }}</i>
+                  </th>
                   <th>Phone</th>
-                  <th>Role</th>
-                  <th>Region ID</th>
+                  <th class="sortable" (click)="sortBy('roleName')" title="Sort by Role">
+                    <span>Role</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'roleName'">{{ sortIcon(sortField() === 'roleName', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('regionId')" title="Sort by Region ID">
+                    <span>Region ID</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'regionId'">{{ sortIcon(sortField() === 'regionId', sortAsc()) }}</i>
+                  </th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -378,6 +391,11 @@ export class UserListComponent implements OnInit {
   currentPage = 0;
   pageSize = 10;
 
+  // Sorting
+  sortField = signal<string | null>(null);
+  sortAsc = signal(true);
+  sortIcon = sortIcon;
+
   // Forms
   userForm!: FormGroup;
   resetForm!: FormGroup;
@@ -440,9 +458,15 @@ export class UserListComponent implements OnInit {
   }
 
   paginatedUsers(): any[] {
+    const sorted = applySort(this.filteredUsers(), this.sortField(), this.sortAsc());
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-    return this.filteredUsers().slice(start, end);
+    return sorted.slice(start, end);
+  }
+
+  sortBy(field: string): void {
+    toggleSort(this.sortField, this.sortAsc, field);
+    this.currentPage = 0;
   }
 
   onPageChange(page: number): void {

@@ -25,6 +25,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -42,6 +45,11 @@ class NotificationControllerTest {
 
 	private Notification notification;
 
+	private static Authentication caller(Integer userId) {
+		return new UsernamePasswordAuthenticationToken(
+				userId, null, List.of(new SimpleGrantedAuthority("ROLE_Farmer")));
+	}
+
 	@BeforeEach
 	void setUp() {
 		mockMvc = MockMvcBuilders.standaloneSetup(notificationController).build();
@@ -57,9 +65,9 @@ class NotificationControllerTest {
 
 	@Test
 	void getAllReturnsData() throws Exception {
-		when(notificationService.getAll()).thenReturn(List.of(notification));
+		when(notificationService.getByUserId(1)).thenReturn(List.of(notification));
 
-		mockMvc.perform(get("/notifications"))
+		mockMvc.perform(get("/notifications").principal(caller(1)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].message").value("Sowing reminder"));
 	}

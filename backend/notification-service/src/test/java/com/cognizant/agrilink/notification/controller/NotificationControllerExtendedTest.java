@@ -34,11 +34,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationControllerExtendedTest {
+
+	private static Authentication caller(Integer userId) {
+		return new UsernamePasswordAuthenticationToken(
+				userId, null, List.of(new SimpleGrantedAuthority("ROLE_Farmer")));
+	}
 
 	@Mock
 	private NotificationService notificationService;
@@ -78,21 +86,21 @@ class NotificationControllerExtendedTest {
 
 	@Test
 	void getAllReturnsEmptyList() throws Exception {
-		when(notificationService.getAll()).thenReturn(new ArrayList<>());
+		when(notificationService.getByUserId(11)).thenReturn(new ArrayList<>());
 
-		mockMvc.perform(get("/notifications"))
+		mockMvc.perform(get("/notifications").principal(caller(11)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$").isArray())
 				.andExpect(jsonPath("$.length()").value(0));
-		verify(notificationService).getAll();
+		verify(notificationService).getByUserId(11);
 	}
 
 	@Test
 	void getAllReturnsFullDataForSingleRecord() throws Exception {
 		Notification n = build(1, 11, "Sowing reminder", NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15));
-		when(notificationService.getAll()).thenReturn(List.of(n));
+		when(notificationService.getByUserId(11)).thenReturn(List.of(n));
 
-		mockMvc.perform(get("/notifications"))
+		mockMvc.perform(get("/notifications").principal(caller(11)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].notificationId").value(1))
 				.andExpect(jsonPath("$[0].userId").value(11))
@@ -100,7 +108,7 @@ class NotificationControllerExtendedTest {
 				.andExpect(jsonPath("$[0].category").value("CropAdvisory"))
 				.andExpect(jsonPath("$[0].status").value("UN"))
 				.andExpect(jsonPath("$[0].createdDate").value("2026-06-15"));
-		verify(notificationService).getAll();
+		verify(notificationService).getByUserId(11);
 	}
 
 	@ParameterizedTest
@@ -108,14 +116,14 @@ class NotificationControllerExtendedTest {
 	void getAllReturnsExpectedListSize(int size) throws Exception {
 		List<Notification> list = new ArrayList<>();
 		for (int i = 0; i < size; i++) {
-			list.add(build(i + 1, i, "msg" + i, NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15)));
+			list.add(build(i + 1, 7, "msg" + i, NotificationCategory.CropAdvisory, NotificationStatus.UN, LocalDate.of(2026, 6, 15)));
 		}
-		when(notificationService.getAll()).thenReturn(list);
+		when(notificationService.getByUserId(7)).thenReturn(list);
 
-		mockMvc.perform(get("/notifications"))
+		mockMvc.perform(get("/notifications").principal(caller(7)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(size));
-		verify(notificationService).getAll();
+		verify(notificationService).getByUserId(7);
 	}
 
 	@ParameterizedTest
@@ -141,9 +149,9 @@ class NotificationControllerExtendedTest {
 	void getAllReturnsFullDataParameterized(Integer id, Integer userId, String message, NotificationCategory category,
 			NotificationStatus status, String createdDate) throws Exception {
 		Notification n = build(id, userId, message, category, status, LocalDate.parse(createdDate));
-		when(notificationService.getAll()).thenReturn(List.of(n));
+		when(notificationService.getByUserId(userId)).thenReturn(List.of(n));
 
-		mockMvc.perform(get("/notifications"))
+		mockMvc.perform(get("/notifications").principal(caller(userId)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].notificationId").value(id))
 				.andExpect(jsonPath("$[0].userId").value(userId))
@@ -151,7 +159,7 @@ class NotificationControllerExtendedTest {
 				.andExpect(jsonPath("$[0].category").value(category.name()))
 				.andExpect(jsonPath("$[0].status").value(status.name()))
 				.andExpect(jsonPath("$[0].createdDate").value(createdDate));
-		verify(notificationService).getAll();
+		verify(notificationService).getByUserId(userId);
 	}
 
 	@ParameterizedTest

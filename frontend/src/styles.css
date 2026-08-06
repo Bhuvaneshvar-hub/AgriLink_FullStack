@@ -624,3 +624,23 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px var(--primary-glow);
 }
+
+/* Sortable table column headers — shared by every data table app-wide. */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th.sortable:hover {
+  color: var(--primary-color);
+}
+.sort-icon {
+  font-size: 15px;
+  vertical-align: middle;
+  margin-left: 0.15rem;
+  opacity: 0.45;
+}
+.sort-icon.active {
+  opacity: 1;
+  color: var(--primary-color);
+}

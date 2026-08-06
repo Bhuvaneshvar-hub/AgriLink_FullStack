@@ -9,8 +9,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.input.dto.RequestDto;
+import com.cognizant.agrilink.input.entity.Catalog;
 import com.cognizant.agrilink.input.entity.Request;
 import com.cognizant.agrilink.input.enums.RequestStatus;
+import com.cognizant.agrilink.input.repository.CatalogRepository;
 import com.cognizant.agrilink.input.repository.RequestRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -33,6 +35,9 @@ class RequestServiceExtendedTest {
 
 	@Mock
 	private RequestRepository requestRepository;
+
+	@Mock
+	private CatalogRepository catalogRepository;
 
 	@InjectMocks
 	private RequestService requestService;
@@ -193,9 +198,11 @@ class RequestServiceExtendedTest {
 
 	@Test
 	void updateModifiesEachField() {
-		Request existing = Request.builder().requestId(1).status(RequestStatus.PE).build();
+		Request existing = Request.builder().requestId(1).inputId(10).quantityRequested(50).status(RequestStatus.PE).build();
 		when(requestRepository.findById(1)).thenReturn(Optional.of(existing));
 		when(requestRepository.save(any(Request.class))).thenAnswer(i -> i.getArgument(0));
+		Catalog catalog = Catalog.builder().inputId(10).availableStock(100).build();
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
 
 		RequestDto dto = buildDto();
 		dto.setStatus(RequestStatus.AP);

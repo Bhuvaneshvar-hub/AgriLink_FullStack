@@ -6,6 +6,7 @@ import { ToastService } from '../../../services/toast.service';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util';
 
 @Component({
   selector: 'app-user-pending-list',
@@ -56,11 +57,23 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
+                      <th class="sortable" (click)="sortUsersBy('name')" title="Sort by Name">
+                        <span>Name</span>
+                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'name'">{{ sortIcon(usersSortField() === 'name', usersSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortUsersBy('email')" title="Sort by Email">
+                        <span>Email</span>
+                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'email'">{{ sortIcon(usersSortField() === 'email', usersSortAsc()) }}</i>
+                      </th>
                       <th>Phone</th>
-                      <th>Requested Role</th>
-                      <th>Region ID</th>
+                      <th class="sortable" (click)="sortUsersBy('roleName')" title="Sort by Requested Role">
+                        <span>Requested Role</span>
+                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'roleName'">{{ sortIcon(usersSortField() === 'roleName', usersSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortUsersBy('regionId')" title="Sort by Region ID">
+                        <span>Region ID</span>
+                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'regionId'">{{ sortIcon(usersSortField() === 'regionId', usersSortAsc()) }}</i>
+                      </th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -116,11 +129,26 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <table>
                   <thead>
                     <tr>
-                      <th>Farmer</th>
-                      <th>Survey #</th>
-                      <th>Area (Acres)</th>
-                      <th>Soil</th>
-                      <th>Irrigation</th>
+                      <th class="sortable" (click)="sortHoldingsBy('farmerId')" title="Sort by Farmer">
+                        <span>Farmer</span>
+                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'farmerId'">{{ sortIcon(holdingsSortField() === 'farmerId', holdingsSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortHoldingsBy('surveyNumber')" title="Sort by Survey #">
+                        <span>Survey #</span>
+                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'surveyNumber'">{{ sortIcon(holdingsSortField() === 'surveyNumber', holdingsSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortHoldingsBy('areaAcres')" title="Sort by Area (Acres)">
+                        <span>Area (Acres)</span>
+                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'areaAcres'">{{ sortIcon(holdingsSortField() === 'areaAcres', holdingsSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortHoldingsBy('soilType')" title="Sort by Soil">
+                        <span>Soil</span>
+                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'soilType'">{{ sortIcon(holdingsSortField() === 'soilType', holdingsSortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortHoldingsBy('irrigationSource')" title="Sort by Irrigation">
+                        <span>Irrigation</span>
+                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'irrigationSource'">{{ sortIcon(holdingsSortField() === 'irrigationSource', holdingsSortAsc()) }}</i>
+                      </th>
                       <th>Ownership</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -254,6 +282,8 @@ export class UserPendingListComponent implements OnInit {
   private farmerService = inject(FarmerService);
   private toastService = inject(ToastService);
 
+  readonly sortIcon = sortIcon;
+
   // States
   users = signal<any[]>([]);
   pendingHoldings = signal<any[]>([]);
@@ -271,6 +301,12 @@ export class UserPendingListComponent implements OnInit {
   pageSize = 10;
   holdingsPage = 0;
   holdingsPageSize = 10;
+
+  // Sorting
+  usersSortField = signal<string | null>(null);
+  usersSortAsc = signal(true);
+  holdingsSortField = signal<string | null>(null);
+  holdingsSortAsc = signal(true);
 
   ngOnInit(): void {
     this.loadAll();
@@ -308,10 +344,16 @@ export class UserPendingListComponent implements OnInit {
     return this.farmerNames.get(farmerId) || 'Unknown Farmer';
   }
 
+  sortUsersBy(field: string): void {
+    toggleSort(this.usersSortField, this.usersSortAsc, field);
+    this.currentPage = 0;
+  }
+
   paginatedUsers(): any[] {
+    const sorted = applySort(this.users(), this.usersSortField(), this.usersSortAsc());
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-    return this.users().slice(start, end);
+    return sorted.slice(start, end);
   }
 
   onPageChange(page: number): void {
@@ -323,10 +365,16 @@ export class UserPendingListComponent implements OnInit {
     this.currentPage = 0;
   }
 
+  sortHoldingsBy(field: string): void {
+    toggleSort(this.holdingsSortField, this.holdingsSortAsc, field);
+    this.holdingsPage = 0;
+  }
+
   paginatedHoldings(): any[] {
+    const sorted = applySort(this.pendingHoldings(), this.holdingsSortField(), this.holdingsSortAsc());
     const start = this.holdingsPage * this.holdingsPageSize;
     const end = start + this.holdingsPageSize;
-    return this.pendingHoldings().slice(start, end);
+    return sorted.slice(start, end);
   }
 
   onHoldingsPageChange(page: number): void {

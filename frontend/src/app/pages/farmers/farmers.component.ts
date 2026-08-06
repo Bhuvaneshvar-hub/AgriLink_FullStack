@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
+import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -83,14 +84,44 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th>Name</th>
+                        <th class="sortable" (click)="sortProfilesBy('name')"
+                            title="Sort by name (click again to reverse)">
+                          <span>Name</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'name'">{{ sortIcon(profilesSortField() === 'name', profilesSortAsc()) }}</i>
+                        </th>
                         <th>Gender</th>
-                        <th>Date of Birth</th>
+                        <th class="sortable" (click)="sortProfilesBy('dateOfBirth')"
+                            title="Sort by date of birth (click again to reverse)">
+                          <span>Date of Birth</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'dateOfBirth'">{{ sortIcon(profilesSortField() === 'dateOfBirth', profilesSortAsc()) }}</i>
+                        </th>
                         <th>National ID</th>
-                        <th>Village</th>
-                        <th>District</th>
-                        <th>Phone</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="sortProfilesBy('village')"
+                            title="Sort by village (click again to reverse)">
+                          <span>Village</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'village'">{{ sortIcon(profilesSortField() === 'village', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('district')"
+                            title="Sort by district (click again to reverse)">
+                          <span>District</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'district'">{{ sortIcon(profilesSortField() === 'district', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('phone')"
+                            title="Sort by phone (click again to reverse)">
+                          <span>Phone</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'phone'">{{ sortIcon(profilesSortField() === 'phone', profilesSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortProfilesBy('status')"
+                            title="Sort by status (click again to reverse)">
+                          <span>Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="profilesSortField() === 'status'">{{ sortIcon(profilesSortField() === 'status', profilesSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -195,12 +226,42 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <thead>
                       <tr>
                         <th>Farmer</th>
-                        <th>Survey Number</th>
-                        <th>Area (in Acres)</th>
-                        <th>Soil Type</th>
-                        <th>Irrigation</th>
-                        <th>Ownership</th>
-                        <th>Status</th>
+                        <th class="sortable" (click)="sortHoldingsBy('surveyNumber')"
+                            title="Sort by survey number (click again to reverse)">
+                          <span>Survey Number</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'surveyNumber'">{{ sortIcon(holdingsSortField() === 'surveyNumber', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('areaAcres')"
+                            title="Sort by area (click again to reverse)">
+                          <span>Area (in Acres)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'areaAcres'">{{ sortIcon(holdingsSortField() === 'areaAcres', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('soilType')"
+                            title="Sort by soil type (click again to reverse)">
+                          <span>Soil Type</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'soilType'">{{ sortIcon(holdingsSortField() === 'soilType', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('irrigationSource')"
+                            title="Sort by irrigation source (click again to reverse)">
+                          <span>Irrigation</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'irrigationSource'">{{ sortIcon(holdingsSortField() === 'irrigationSource', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('ownershipType')"
+                            title="Sort by ownership (click again to reverse)">
+                          <span>Ownership</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'ownershipType'">{{ sortIcon(holdingsSortField() === 'ownershipType', holdingsSortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHoldingsBy('status')"
+                            title="Sort by status (click again to reverse)">
+                          <span>Status</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="holdingsSortField() === 'status'">{{ sortIcon(holdingsSortField() === 'status', holdingsSortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -298,11 +359,36 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <tr>
                         <th>Farmer</th>
                         <th>Survey No.</th>
-                        <th>Crop</th>
-                        <th>Season</th>
-                        <th>Year</th>
-                        <th>Area (Acres)</th>
-                        <th>Yield (Qtl)</th>
+                        <th class="sortable" (click)="sortHistoryBy('cropName')"
+                            title="Sort by crop (click again to reverse)">
+                          <span>Crop</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'cropName'">{{ sortIcon(historySortField() === 'cropName', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('season')"
+                            title="Sort by season (click again to reverse)">
+                          <span>Season</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'season'">{{ sortIcon(historySortField() === 'season', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('cropYear')"
+                            title="Sort by year (click again to reverse)">
+                          <span>Year</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'cropYear'">{{ sortIcon(historySortField() === 'cropYear', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('areaAcres')"
+                            title="Sort by area (click again to reverse)">
+                          <span>Area (Acres)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'areaAcres'">{{ sortIcon(historySortField() === 'areaAcres', historySortAsc()) }}</i>
+                        </th>
+                        <th class="sortable" (click)="sortHistoryBy('yieldQuintals')"
+                            title="Sort by yield (click again to reverse)">
+                          <span>Yield (Qtl)</span>
+                          <i class="material-icons-round sort-icon"
+                             [class.active]="historySortField() === 'yieldQuintals'">{{ sortIcon(historySortField() === 'yieldQuintals', historySortAsc()) }}</i>
+                        </th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -350,117 +436,155 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
       <!-- ============ FARMER PROFILE MODAL ============ -->
       @if (showProfileModal()) {
         <div class="modal-overlay" (click)="closeProfileModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-content profile-wizard" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>{{ isEditMode() ? 'Edit Farmer Identity Details' : 'Register Farmer Identity Profile' }}</h3>
               <button class="close-btn" (click)="closeProfileModal()">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
+
+            @if (!isEditMode()) {
+              <div class="step-indicator">
+                <div class="step-dot" [class.active]="currentProfileStep() === 1" [class.done]="currentProfileStep() > 1">
+                  <span>1</span>
+                </div>
+                <span class="step-label" [class.active]="currentProfileStep() === 1">Account Details</span>
+                <div class="step-line" [class.done]="currentProfileStep() > 1"></div>
+                <div class="step-dot" [class.active]="currentProfileStep() === 2">
+                  <span>2</span>
+                </div>
+                <span class="step-label" [class.active]="currentProfileStep() === 2">Farmer &amp; Land Details</span>
+              </div>
+            }
+
             <form [formGroup]="profileForm" (ngSubmit)="submitProfileForm()">
               <div class="modal-body">
-                <div class="form-group">
-                  <label for="fName">Full Name</label>
-                  <input type="text" id="fName" formControlName="name" />
-                  @if (pInvalid('name')) {
-                    <span class="field-error">
-                      {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
-                    </span>
-                  }
-                </div>
-                <div class="form-row">
+                @if (showProfileStep(1)) {
                   <div class="form-group">
-                    <label for="fDob">Date of Birth</label>
-                    <input type="date" id="fDob" formControlName="dateOfBirth" />
-                    @if (pInvalid('dateOfBirth')) {
+                    <label for="fName">Full Name</label>
+                    <input type="text" id="fName" formControlName="name" />
+                    @if (pInvalid('name')) {
                       <span class="field-error">
-                        {{ profileForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
+                        {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
                       </span>
                     }
                   </div>
-                  <div class="form-group">
-                    <label for="fGender">Gender</label>
-                    <select id="fGender" formControlName="gender">
-                      <option value="" disabled>Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fNationalId">National ID / Aadhar Number</label>
-                    <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" />
-                    @if (pInvalid('nationalIdNumber')) { <span class="field-error">Enter a valid ID (6–20 letters/digits)</span> }
-                  </div>
-                  <div class="form-group">
-                    <label for="fPhone">Phone Number</label>
-                    <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits" />
-                    @if (pInvalid('phone')) { <span class="field-error">Phone must be exactly 10 digits</span> }
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fVillage">Village</label>
-                    <input type="text" id="fVillage" formControlName="village" />
-                    @if (pInvalid('village')) { <span class="field-error">Village is required</span> }
-                  </div>
-                  <div class="form-group">
-                    <label for="fDistrict">District</label>
-                    <input type="text" id="fDistrict" formControlName="district" />
-                    @if (pInvalid('district')) { <span class="field-error">District is required</span> }
-                  </div>
-                  <div class="form-group">
-                    <label for="fState">State</label>
-                    <select id="fState" formControlName="state">
-                      <option value="">Select State</option>
-                      @for (st of indianStates; track st) {
-                        <option [value]="st">{{ st }}</option>
-                      }
-                    </select>
-                    @if (pInvalid('state')) { <span class="field-error">State is required</span> }
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fBank">Bank Account Number</label>
-                    <input type="text" id="fBank" formControlName="bankAccountNumber" placeholder="6–20 digits" />
-                    @if (pInvalid('bankAccountNumber')) { <span class="field-error">Enter a valid account number (6–20 digits)</span> }
-                  </div>
-                  <div class="form-group">
-                    <label for="fStatus">Status</label>
-                    <select id="fStatus" formControlName="status">
-                      <option value="" disabled>Select Status</option>
-                      <option value="AC">Active (AC)</option>
-                      <option value="IN">Inactive (IN)</option>
-                      <option value="VE">Verified (VE)</option>
-                    </select>
-                  </div>
-                </div>
 
-                @if (!isEditMode()) {
+                  @if (!isEditMode()) {
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="fEmail">Login Email</label>
+                        <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
+                        @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
+                        @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
+                      </div>
+                      <div class="form-group">
+                        <label for="fPassword">Login Password</label>
+                        <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
+                        @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
+                      </div>
+                    </div>
+                  }
+
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="fEmail">Login Email</label>
-                      <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
-                      @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
-                      @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
+                      <label for="fPhone">Phone Number</label>
+                      <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits" />
+                      @if (pInvalid('phone')) { <span class="field-error">Phone must be exactly 10 digits</span> }
+                    </div>
+                    @if (!isEditMode()) {
+                      <div class="form-group">
+                        <label for="fRegionId">Region ID</label>
+                        <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (showProfileStep(2)) {
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="fDob">Date of Birth</label>
+                      <input type="date" id="fDob" formControlName="dateOfBirth" />
+                      @if (pInvalid('dateOfBirth')) {
+                        <span class="field-error">
+                          {{ profileForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
+                        </span>
+                      }
                     </div>
                     <div class="form-group">
-                      <label for="fPassword">Login Password</label>
-                      <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
-                      @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
+                      <label for="fGender">Gender</label>
+                      <select id="fGender" formControlName="gender">
+                        <option value="" disabled>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="fNationalId">National ID / Aadhar Number</label>
+                      <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" />
+                      @if (pInvalid('nationalIdNumber')) { <span class="field-error">Enter a valid ID (6–20 letters/digits)</span> }
                     </div>
                     <div class="form-group">
-                      <label for="fRegionId">Region ID</label>
-                      <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
+                      <label for="fBank">Bank Account Number</label>
+                      <input type="text" id="fBank" formControlName="bankAccountNumber" placeholder="6–20 digits" />
+                      @if (pInvalid('bankAccountNumber')) { <span class="field-error">Enter a valid account number (6–20 digits)</span> }
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="fVillage">Village</label>
+                      <input type="text" id="fVillage" formControlName="village" />
+                      @if (pInvalid('village')) { <span class="field-error">Village is required</span> }
+                    </div>
+                    <div class="form-group">
+                      <label for="fDistrict">District</label>
+                      <input type="text" id="fDistrict" formControlName="district" />
+                      @if (pInvalid('district')) { <span class="field-error">District is required</span> }
+                    </div>
+                    <div class="form-group">
+                      <label for="fState">State</label>
+                      <select id="fState" formControlName="state">
+                        <option value="">Select State</option>
+                        @for (st of indianStates; track st) {
+                          <option [value]="st">{{ st }}</option>
+                        }
+                      </select>
+                      @if (pInvalid('state')) { <span class="field-error">State is required</span> }
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="fStatus">Status</label>
+                      <select id="fStatus" formControlName="status">
+                        <option value="" disabled>Select Status</option>
+                        <option value="AC">Active (AC)</option>
+                        <option value="IN">Inactive (IN)</option>
+                        <option value="VE">Verified (VE)</option>
+                      </select>
                     </div>
                   </div>
                 }
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Profile</button>
+                @if (!isEditMode() && currentProfileStep() === 1) {
+                  <button type="button" class="btn btn-primary" (click)="profileGoNext()">
+                    <span>Next</span>
+                    <i class="material-icons-round">arrow_forward</i>
+                  </button>
+                } @else {
+                  @if (!isEditMode()) {
+                    <button type="button" class="btn btn-secondary" (click)="profileGoBack()">
+                      <i class="material-icons-round">arrow_back</i>
+                      <span>Back</span>
+                    </button>
+                  }
+                  <button type="submit" class="btn btn-primary">Save Profile</button>
+                }
               </div>
             </form>
           </div>
@@ -680,6 +804,65 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
       font-size: 0.75rem;
       color: var(--danger);
     }
+    /* Profile registration wizard (mirrors the self-registration step indicator) */
+    .profile-wizard .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.9rem 1.5rem 0;
+    }
+    .profile-wizard .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background-color: var(--bg-dark);
+      border: 2px solid var(--border-color);
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+    .profile-wizard .step-dot.active,
+    .profile-wizard .step-dot.done {
+      border-color: var(--primary-color);
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+    .profile-wizard .step-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .profile-wizard .step-label.active {
+      color: var(--primary-color);
+    }
+    .profile-wizard .step-line {
+      width: 24px;
+      height: 2px;
+      background-color: var(--border-color);
+    }
+    .profile-wizard .step-line.done {
+      background-color: var(--primary-color);
+    }
+    .profile-wizard .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+    .profile-wizard .modal-footer .btn-secondary {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-right: auto;
+    }
+    .profile-wizard .btn i {
+      font-size: 16px;
+    }
     .farmers-page {
       display: flex;
       flex-direction: column;
@@ -754,6 +937,9 @@ export class FarmersComponent implements OnInit {
 
   // Modal states
   showProfileModal = signal<boolean>(false);
+  currentProfileStep = signal<1 | 2>(1);
+  submittedProfileStep1 = signal<boolean>(false);
+  private readonly PROFILE_STEP1_FIELDS = ['name', 'email', 'password', 'phone', 'regionId'];
   showHoldingModal = signal<boolean>(false);
   showHistoryModal = signal<boolean>(false);
   showDeleteProfileConfirm = signal<boolean>(false);
@@ -776,6 +962,17 @@ export class FarmersComponent implements OnInit {
   holdingPageSize = 10;
   historyPage = 0;
   historyPageSize = 10;
+
+  // Column sorting state for each table (null = default order).
+  profilesSortField = signal<string | null>(null);
+  profilesSortAsc = signal<boolean>(true);
+  holdingsSortField = signal<string | null>(null);
+  holdingsSortAsc = signal<boolean>(true);
+  historySortField = signal<string | null>(null);
+  historySortAsc = signal<boolean>(true);
+
+  // Exposed so the template can call it directly on sortable header icons.
+  readonly sortIcon = sortIcon;
 
   // Forms
   profileForm!: FormGroup;
@@ -1034,12 +1231,18 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedProfiles(): any[] {
+    const sorted = applySort(this.filteredProfiles(), this.profilesSortField(), this.profilesSortAsc());
     const start = this.profilePage * this.profilePageSize;
-    return this.filteredProfiles().slice(start, start + this.profilePageSize);
+    return sorted.slice(start, start + this.profilePageSize);
   }
 
   onProfilePageChange(page: number) { this.profilePage = page; }
   onProfilePageSizeChange(size: number) { this.profilePageSize = size; this.profilePage = 0; }
+
+  sortProfilesBy(field: string) {
+    toggleSort(this.profilesSortField, this.profilesSortAsc, field);
+    this.profilePage = 0;
+  }
 
   applyHoldingFilters() {
     const q = this.holdingSearch.trim().toLowerCase();
@@ -1059,12 +1262,18 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedHoldings(): any[] {
+    const sorted = applySort(this.filteredHoldings(), this.holdingsSortField(), this.holdingsSortAsc());
     const start = this.holdingPage * this.holdingPageSize;
-    return this.filteredHoldings().slice(start, start + this.holdingPageSize);
+    return sorted.slice(start, start + this.holdingPageSize);
   }
 
   onHoldingPageChange(page: number) { this.holdingPage = page; }
   onHoldingPageSizeChange(size: number) { this.holdingPageSize = size; this.holdingPage = 0; }
+
+  sortHoldingsBy(field: string) {
+    toggleSort(this.holdingsSortField, this.holdingsSortAsc, field);
+    this.holdingPage = 0;
+  }
 
   applyHistoryFilters() {
     const q = this.historySearch.trim().toLowerCase();
@@ -1084,16 +1293,24 @@ export class FarmersComponent implements OnInit {
   }
 
   paginatedHistories(): any[] {
+    const sorted = applySort(this.filteredHistories(), this.historySortField(), this.historySortAsc());
     const start = this.historyPage * this.historyPageSize;
-    return this.filteredHistories().slice(start, start + this.historyPageSize);
+    return sorted.slice(start, start + this.historyPageSize);
   }
 
   onHistoryPageChange(page: number) { this.historyPage = page; }
   onHistoryPageSizeChange(size: number) { this.historyPageSize = size; this.historyPage = 0; }
 
+  sortHistoryBy(field: string) {
+    toggleSort(this.historySortField, this.historySortAsc, field);
+    this.historyPage = 0;
+  }
+
   // ===== Farmer Profile CRUD =====
   openProfileModal(profile?: any) {
     this.submittedProfile.set(false);
+    this.submittedProfileStep1.set(false);
+    this.currentProfileStep.set(1);
     const emailCtrl = this.profileForm.get('email');
     const pwdCtrl = this.profileForm.get('password');
     if (profile) {
@@ -1121,10 +1338,33 @@ export class FarmersComponent implements OnInit {
 
   closeProfileModal() { this.showProfileModal.set(false); this.submittedProfile.set(false); }
 
-  // Shows a field's error once the user has interacted with it or tried to submit.
+  // Whether a given wizard step's fields should render. Editing shows both steps at
+  // once (no account fields to gate behind a step); registering steps through them.
+  showProfileStep(step: 1 | 2): boolean {
+    return this.isEditMode() || this.currentProfileStep() === step;
+  }
+
+  profileGoNext(): void {
+    this.submittedProfileStep1.set(true);
+    const invalid = this.PROFILE_STEP1_FIELDS.some(f => this.profileForm.get(f)?.invalid);
+    if (invalid) return;
+    this.currentProfileStep.set(2);
+  }
+
+  profileGoBack(): void {
+    this.currentProfileStep.set(1);
+  }
+
+  // Shows a field's error once the user has interacted with it or tried to submit
+  // that field's step (step 1 fields gate on submittedProfileStep1, others on the
+  // final submittedProfile — editing shows everything at once, so it always uses submittedProfile).
   pInvalid(field: string): boolean {
     const c = this.profileForm.get(field);
-    return !!(c && c.invalid && (c.touched || this.submittedProfile()));
+    if (!c) return false;
+    const submitted = (!this.isEditMode() && this.PROFILE_STEP1_FIELDS.includes(field))
+      ? this.submittedProfileStep1()
+      : this.submittedProfile();
+    return c.invalid && (c.touched || submitted);
   }
 
   hInvalid(field: string): boolean {

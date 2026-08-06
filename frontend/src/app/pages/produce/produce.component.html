@@ -82,7 +82,12 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Crop Type</th>
+                    <th class="sortable" (click)="sortListingsBy('cropName')"
+                        title="Sort by crop type (click again to reverse)">
+                      <span>Crop Type</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="listingSortField() === 'cropName'">{{ sortIcon(listingSortField() === 'cropName', listingSortAsc()) }}</i>
+                    </th>
                     <th class="sortable" (click)="sortListingsBy('harvestDate')"
                         title="Sort by harvest date (click again to reverse)">
                       <span>Harvest Date</span>
@@ -102,7 +107,12 @@
                       <i class="material-icons-round sort-icon"
                          [class.active]="listingSortField() === 'askingPricePerKg'">{{ sortIcon(listingSortField() === 'askingPricePerKg', listingSortAsc()) }}</i>
                     </th>
-                    <th>Status</th>
+                    <th class="sortable" (click)="sortListingsBy('status')"
+                        title="Sort by status (click again to reverse)">
+                      <span>Status</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="listingSortField() === 'status'">{{ sortIcon(listingSortField() === 'status', listingSortAsc()) }}</i>
+                    </th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -217,16 +227,36 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Quantity Sold</th>
-                    <th>Agreed Price/Kg</th>
-                    <th>Total Amount</th>
+                    <th class="sortable" (click)="sortSalesBy('quantitySoldKg')"
+                        title="Sort by quantity sold (click again to reverse)">
+                      <span>Quantity Sold</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="saleSortField() === 'quantitySoldKg'">{{ sortIcon(saleSortField() === 'quantitySoldKg', saleSortAsc()) }}</i>
+                    </th>
+                    <th class="sortable" (click)="sortSalesBy('agreedPricePerKg')"
+                        title="Sort by agreed price per Kg (click again to reverse)">
+                      <span>Agreed Price/Kg</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="saleSortField() === 'agreedPricePerKg'">{{ sortIcon(saleSortField() === 'agreedPricePerKg', saleSortAsc()) }}</i>
+                    </th>
+                    <th class="sortable" (click)="sortSalesBy('totalAmount')"
+                        title="Sort by total amount (click again to reverse)">
+                      <span>Total Amount</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="saleSortField() === 'totalAmount'">{{ sortIcon(saleSortField() === 'totalAmount', saleSortAsc()) }}</i>
+                    </th>
                     <th class="sortable" (click)="sortSalesBy('saleDate')"
                         title="Sort by sale date (click again to reverse)">
                       <span>Sale Date</span>
                       <i class="material-icons-round sort-icon"
                          [class.active]="saleSortField() === 'saleDate'">{{ sortIcon(saleSortField() === 'saleDate', saleSortAsc()) }}</i>
                     </th>
-                    <th>Payment Status</th>
+                    <th class="sortable" (click)="sortSalesBy('paymentStatus')"
+                        title="Sort by payment status (click again to reverse)">
+                      <span>Payment Status</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="saleSortField() === 'paymentStatus'">{{ sortIcon(saleSortField() === 'paymentStatus', saleSortAsc()) }}</i>
+                    </th>
                     <th>Farmer Confirmation</th>
                     <th>Actions</th>
                   </tr>

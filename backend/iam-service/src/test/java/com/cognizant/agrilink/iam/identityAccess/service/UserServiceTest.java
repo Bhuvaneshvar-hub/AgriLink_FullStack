@@ -17,6 +17,7 @@ import com.cognizant.agrilink.iam.identityAccess.repository.AuditLogRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserDetailsRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserRoleRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserSessionRepository;
+import com.cognizant.agrilink.iam.notification.NotificationClient;
 import com.cognizant.agrilink.iam.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.cognizant.agrilink.iam.notification.NotificationClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -50,6 +52,7 @@ class UserServiceTest {
     @Mock private PasswordEncoder       passwordEncoder;
     @Mock private JwtUtil               jwtUtil;
     @Mock private HttpServletRequest    request;
+    @Mock private NotificationClient    notificationClient;
 
     @InjectMocks private UserService userService;
 

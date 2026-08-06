@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
@@ -89,7 +89,7 @@ import { NotificationService } from '../../services/notification.service';
         }
 
         @if (authService.hasRole(['AgriLinkAdmin'])) {
-          <a routerLink="/farmers" class="hero-card hero-amber">
+          <a routerLink="/farmers" class="hero-card hero-amber" (click)="goToFarmers()">
             <div class="hero-card-top">
               <span class="hero-chip">Needs Review</span>
               <i class="material-icons-round">terrain</i>
@@ -188,7 +188,8 @@ import { NotificationService } from '../../services/notification.service';
                 </div>
                 <div class="sparkline">
                   @for (day of stat.days; track day.label) {
-                    <div class="sparkline-bar-wrap" [title]="day.label + ': ' + day.count">
+                    <div class="sparkline-bar-wrap">
+                      <span class="sparkline-tooltip">{{ day.label }}: {{ day.count }}</span>
                       <div class="sparkline-bar" [style.height.%]="day.percent"></div>
                     </div>
                   }
@@ -514,27 +515,25 @@ import { NotificationService } from '../../services/notification.service';
     .hero-card {
       border-radius: 1rem;
       padding: 1.5rem;
-      color: #ffffff;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
       text-decoration: none;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
       min-height: 150px;
-      box-shadow: var(--shadow-lg);
-      transition: transform var(--transition-normal);
+      box-shadow: var(--shadow-md);
+      transition: transform var(--transition-normal), box-shadow var(--transition-normal);
     }
     a.hero-card:hover {
       transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
     }
-    .hero-amber {
-      background: linear-gradient(135deg, #b45309 0%, var(--warning) 100%);
-    }
-    .hero-blue {
-      background: linear-gradient(135deg, #1d4ed8 0%, var(--secondary-color) 100%);
-    }
-    .hero-teal {
-      background: linear-gradient(135deg, #0e7490 0%, var(--info) 100%);
-    }
+    /* Accent color per card status: amber = needs review, blue = awaiting action, teal = live/positive */
+    .hero-amber { --hero-accent: var(--warning); }
+    .hero-blue { --hero-accent: var(--secondary-color); }
+    .hero-teal { --hero-accent: var(--info); }
     .hero-card-top {
       display: flex;
       justify-content: space-between;
@@ -542,14 +541,15 @@ import { NotificationService } from '../../services/notification.service';
     }
     .hero-card-top i {
       font-size: 22px;
-      opacity: 0.85;
+      color: var(--hero-accent);
     }
     .hero-chip {
-      background: rgba(255, 255, 255, 0.18);
+      background: color-mix(in srgb, var(--hero-accent) 15%, transparent);
+      color: var(--hero-accent);
       padding: 0.2rem 0.65rem;
       border-radius: 9999px;
       font-size: 0.7rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -562,22 +562,23 @@ import { NotificationService } from '../../services/notification.service';
       font-size: 2.25rem;
       font-weight: 700;
       font-family: var(--font-title);
+      color: var(--hero-accent);
     }
     .hero-sub {
       font-size: 0.85rem;
-      opacity: 0.9;
+      color: var(--text-secondary);
     }
     .hero-footer {
       margin-top: auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: 1px solid var(--border-color);
       padding-top: 0.65rem;
       font-size: 0.8rem;
     }
     .hero-footer-label {
-      opacity: 0.75;
+      color: var(--text-secondary);
     }
     .hero-footer-value {
       font-weight: 700;
@@ -669,20 +670,54 @@ import { NotificationService } from '../../services/notification.service';
       height: 48px;
     }
     .sparkline-bar-wrap {
+      position: relative;
       flex: 1;
       height: 100%;
       display: flex;
       align-items: flex-end;
       background-color: var(--bg-dark);
       border-radius: 4px;
-      overflow: hidden;
+      cursor: default;
     }
     .sparkline-bar {
       width: 100%;
       min-height: 3px;
       border-radius: 4px;
       background-color: var(--primary-color);
-      transition: height var(--transition-normal);
+      transition: height var(--transition-normal), background-color var(--transition-fast);
+    }
+    .sparkline-tooltip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background-color: var(--sidebar-bg);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: 0.35rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      z-index: 5;
+    }
+    .sparkline-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--sidebar-bg);
+    }
+    .sparkline-bar-wrap:hover .sparkline-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .sparkline-bar-wrap:hover .sparkline-bar {
+      background-color: var(--primary-dark, #15803d);
     }
     .mini-caption {
       display: block;
@@ -866,6 +901,7 @@ import { NotificationService } from '../../services/notification.service';
 })
 export class DashboardComponent implements OnInit {
   public authService = inject(AuthService);
+  private router = inject(Router);
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
   private farmerService = inject(FarmerService);
@@ -948,6 +984,10 @@ export class DashboardComponent implements OnInit {
 
   get currentUser() {
     return this.authService.currentUserValue;
+  }
+
+  goToFarmers() {
+    this.router.navigate(['/farmers']);
   }
 
   // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.) —

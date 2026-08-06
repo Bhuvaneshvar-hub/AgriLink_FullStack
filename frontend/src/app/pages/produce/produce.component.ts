@@ -11,6 +11,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
+import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 
 // ---- Produce listing input bounds ----------------------------------------------
 /** Harvest weight offered for sale, in Kg. Upper bound catches stray digits. */
@@ -50,6 +51,15 @@ export class ProduceComponent implements OnInit {
   // Pagination state
   listingPage = 0;   listingPageSize = 5;
   salePage = 0;      salePageSize = 5;
+
+  // Column sorting state. Both tables open on their date column, newest first.
+  listingSortField = signal<string | null>('harvestDate');
+  listingSortAsc = signal<boolean>(false);
+  saleSortField = signal<string | null>('saleDate');
+  saleSortAsc = signal<boolean>(false);
+
+  // Exposed for the template.
+  readonly sortIcon = sortIcon;
 
   // Selection
   selectedListing = signal<any | null>(null);
@@ -128,6 +138,8 @@ export class ProduceComponent implements OnInit {
     return (list || []).slice(start, start + size);
   }
 
+  // sortedListings()/sortedSales() apply the search filter and the active column
+  // sort; pagination then slices whatever survived both.
   paginatedListings(): any[] { return this.page(this.sortedListings(), this.listingPage, this.listingPageSize); }
   onListingPageChange(p: number) { this.listingPage = p; }
   onListingPageSizeChange(s: number) { this.listingPageSize = s; this.listingPage = 0; }
@@ -152,8 +164,8 @@ export class ProduceComponent implements OnInit {
 
   /**
    * Everything about a listing a user could plausibly search by, flattened into one
-   * lowercase string — id, farmer, crop, harvest date, both quantities, grade, price
-   * and the status label — so "tomato", "grade a", "sold" and "1500" all match.
+   * lowercase string â€” id, farmer, crop, harvest date, both quantities, grade, price
+   * and the status label â€” so "tomato", "grade a", "sold" and "1500" all match.
    */
   private listingSearchText(item: any): string {
     return [
@@ -182,8 +194,8 @@ export class ProduceComponent implements OnInit {
 
   /**
    * Everything about a sale that a user could plausibly search by, flattened into
-   * one lowercase string. A farmer confirming a payment rarely knows the sale id —
-   * they know it was "10 Kg of tomato" or "the one still awaiting confirmation" —
+   * one lowercase string. A farmer confirming a payment rarely knows the sale id â€”
+   * they know it was "10 Kg of tomato" or "the one still awaiting confirmation" â€”
    * so ids, crop, farmer, buyer, amounts, date and both status labels all match.
    */
   private saleSearchText(sale: any): string {
@@ -202,26 +214,24 @@ export class ProduceComponent implements OnInit {
   }
 
   // ================= COLUMN SORTING =================
-  // Newest/highest first by default: listings on harvest date, sales on sale date.
-  // Clicking a sortable header re-sorts descending; clicking it again flips to
-  // ascending.
-  listingSortField = signal<string>('harvestDate');
-  listingSortAsc = signal<boolean>(false);
-  saleSortField = signal<string>('saleDate');
-  saleSortAsc = signal<boolean>(false);
-
+  // Comparison and the header arrow come from the shared table-sort util, so this
+  // table sorts identically to every other module's.
+  //
+  // Direction is the one deliberate difference: the shared toggleSort opens a new
+  // column ascending, whereas this module was specified to default to descending -
+  // newest harvest and newest sale first - so toggleSortDesc mirrors it inverted.
   sortListingsBy(field: string) {
-    this.toggleSort(this.listingSortField, this.listingSortAsc, field);
+    this.toggleSortDesc(this.listingSortField, this.listingSortAsc, field);
     this.listingPage = 0;
   }
 
   sortSalesBy(field: string) {
-    this.toggleSort(this.saleSortField, this.saleSortAsc, field);
+    this.toggleSortDesc(this.saleSortField, this.saleSortAsc, field);
     this.salePage = 0;
   }
 
-  private toggleSort(fieldSig: WritableSignal<string>,
-                     ascSig: WritableSignal<boolean>, field: string) {
+  private toggleSortDesc(fieldSig: WritableSignal<string | null>,
+                         ascSig: WritableSignal<boolean>, field: string) {
     if (fieldSig() === field) {
       ascSig.set(!ascSig());
     } else {
@@ -230,49 +240,23 @@ export class ProduceComponent implements OnInit {
     }
   }
 
-  /** Header arrow: neutral when the column isn't the one being sorted on. */
-  sortIcon(isActive: boolean, asc: boolean): string {
-    if (!isActive) return 'unfold_more';
-    return asc ? 'arrow_upward' : 'arrow_downward';
-  }
-
-  /** Listings after the search box and the active column sort. */
+  /**
+   * Listings after the search box and the active column sort. Crop name and
+   * available quantity are derived rather than stored fields, so both are attached
+   * to each row before sorting - otherwise those columns would sort on nothing.
+   */
   sortedListings(): any[] {
-    return this.applySort(this.filteredListings(), this.listingSortField(), this.listingSortAsc());
+    const rows = this.filteredListings().map(item => ({
+      ...item,
+      cropName: this.getCropName(item.cropId),
+      availableQuantityKg: this.availableQty(item)
+    }));
+    return applySort(rows, this.listingSortField(), this.listingSortAsc());
   }
 
   /** Sales after the search box and the active column sort. */
   sortedSales(): any[] {
-    return this.applySort(this.filteredSales(), this.saleSortField(), this.saleSortAsc());
-  }
-
-  /**
-   * Sorts by a field, comparing dates chronologically and numbers numerically.
-   * Available quantity is derived rather than a plain property, so it resolves
-   * through {@link availableQty}.
-   */
-  private applySort(list: any[], field: string | null, asc: boolean): any[] {
-    if (!field) return list;
-    const direction = asc ? 1 : -1;
-    const valueOf = (row: any) =>
-      field === 'availableQuantityKg' ? this.availableQty(row) : row[field];
-    return [...list].sort((a, b) => {
-      const va = valueOf(a);
-      const vb = valueOf(b);
-      // Blanks always sink to the bottom, whichever direction is active.
-      if (va == null && vb == null) return 0;
-      if (va == null) return 1;
-      if (vb == null) return -1;
-      if (field.toLowerCase().includes('date')) {
-        return (new Date(va).getTime() - new Date(vb).getTime()) * direction;
-      }
-      const na = Number(va);
-      const nb = Number(vb);
-      if (!isNaN(na) && !isNaN(nb)) {
-        return (na - nb) * direction;
-      }
-      return String(va).localeCompare(String(vb)) * direction;
-    });
+    return applySort(this.filteredSales(), this.saleSortField(), this.saleSortAsc());
   }
 
   private initForms() {
@@ -364,14 +348,14 @@ export class ProduceComponent implements OnInit {
   }
 
   private fmtDate(d: any): string {
-    if (!d) return '—';
+    if (!d) return 'â€”';
     const date = new Date(d);
     return isNaN(date.getTime()) ? String(d) : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   private fmtMoney(v: any): string {
     const n = Number(v);
-    return isNaN(n) ? String(v) : '₹' + n.toFixed(2);
+    return isNaN(n) ? String(v) : 'â‚¹' + n.toFixed(2);
   }
 
   viewListingDetails(item: any) {
@@ -402,7 +386,7 @@ export class ProduceComponent implements OnInit {
       { label: 'Sale Date', value: this.fmtDate(sale.saleDate) },
       { label: 'Payment Status', value: this.getPaymentStatusLabel(sale.paymentStatus) },
       { label: 'Farmer Confirmed Receipt', value: this.getFarmerConfirmationLabel(sale) },
-      { label: 'Confirmed On', value: sale.farmerConfirmedDate ? this.fmtDate(sale.farmerConfirmedDate) : '—' }
+      { label: 'Confirmed On', value: sale.farmerConfirmedDate ? this.fmtDate(sale.farmerConfirmedDate) : 'â€”' }
     ]);
     this.showDetailModal.set(true);
   }
@@ -479,7 +463,7 @@ export class ProduceComponent implements OnInit {
       'Total Amount', 'Sale Date', 'Payment Status', 'Farmer Confirmation'];
     const rows = items.map(sale => [
       sale.saleId,
-      '#' + sale.listingId + ' — ' + this.getCropNameForListing(sale.listingId),
+      '#' + sale.listingId + ' â€” ' + this.getCropNameForListing(sale.listingId),
       '#' + sale.buyerId,
       sale.quantitySoldKg,
       this.fmtMoney(sale.agreedPricePerKg),
@@ -512,7 +496,7 @@ export class ProduceComponent implements OnInit {
   askingPriceError(): string {
     const errors = this.listingForm.get('askingPricePerKg')?.errors || {};
     if (errors['required']) return 'Asking price is required.';
-    return `Enter a price between ₹${MIN_PRICE_PER_KG} and ₹${MAX_PRICE_PER_KG} per Kg.`;
+    return `Enter a price between â‚¹${MIN_PRICE_PER_KG} and â‚¹${MAX_PRICE_PER_KG} per Kg.`;
   }
 
   // ================= PRODUCE LISTINGS CRUD =================

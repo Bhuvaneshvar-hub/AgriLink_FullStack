@@ -1,7 +1,7 @@
 <div class="produce-page">
   <div class="page-header d-flex justify-content-between align-items-center mb-3">
     <div>
-      <h1>Produce Market &amp; Sales Log</h1>
+      <h1>Produce Sales and Market Log</h1>
       <p class="text-secondary">Register harvested yield for sale, inspect listed produce, and record transactions.</p>
     </div>
   </div>
@@ -30,22 +30,21 @@
     @if (activeTab() === 'listings') {
       <div class="tab-content">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h3>Available Marketplace Produce</h3>
+          <div>
+            <h3>Available Marketplace Produce</h3>
+            <p class="text-secondary">Harvested produce listed for sale, with the quantity still available on each listing.</p>
+          </div>
           <div class="header-actions">
-            @if (isAdmin() && listings().length > 0) {
-              <button class="btn btn-export btn-export-icon" (click)="exportListings('excel')"
+            @if (canExport() && listings().length > 0) {
+              <button class="btn btn-export btn-export-icon" (click)="exportListings()"
                       title="Export to XLS" aria-label="Export to XLS">
                 <i class="material-icons-round icon-xls">grid_on</i>
-              </button>
-              <button class="btn btn-export btn-export-icon" (click)="exportListings('pdf')"
-                      title="Export to PDF" aria-label="Export to PDF">
-                <i class="material-icons-round icon-pdf">picture_as_pdf</i>
               </button>
             }
             @if (canManageListing()) {
               <button class="btn btn-primary" (click)="openListingModal()">
                 <i class="material-icons-round">add_circle</i>
-                <span>New</span>
+                <span>Listing</span>
               </button>
             }
           </div>
@@ -58,16 +57,51 @@
             <p>There are no listings for sale currently.</p>
           </div>
         } @else {
+          <div class="card filters-card mb-3">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="listingSearch">Search</label>
+              <div class="search-field">
+                <input type="text" id="listingSearch" [(ngModel)]="listingSearch"
+                  (ngModelChange)="onListingSearchChange()"
+                  placeholder="Search by crop type, harvest date, quantity, quality grade, price or status..."
+                  title="Filter the produce listings below" />
+                <i class="material-icons-round search-icon">search</i>
+              </div>
+            </div>
+          </div>
+
+          @if (filteredListings().length === 0) {
+            <div class="empty-state card">
+              <i class="material-icons-round">search_off</i>
+              <h3>No Matching Listings</h3>
+              <p>No produce listings match "{{ listingSearch }}".</p>
+            </div>
+          } @else {
           <div class="table-container">
             <div class="table-responsive">
               <table>
                 <thead>
                   <tr>
                     <th>Crop Type</th>
-                    <th>Harvest Date</th>
-                    <th>Available Quantity (Kg)</th>
+                    <th class="sortable" (click)="sortListingsBy('harvestDate')"
+                        title="Sort by harvest date (click again to reverse)">
+                      <span>Harvest Date</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="listingSortField() === 'harvestDate'">{{ sortIcon(listingSortField() === 'harvestDate', listingSortAsc()) }}</i>
+                    </th>
+                    <th class="sortable" (click)="sortListingsBy('availableQuantityKg')"
+                        title="Sort by available quantity (click again to reverse)">
+                      <span>Available / Total (Kg)</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="listingSortField() === 'availableQuantityKg'">{{ sortIcon(listingSortField() === 'availableQuantityKg', listingSortAsc()) }}</i>
+                    </th>
                     <th>Quality Grade</th>
-                    <th>Price/Kg (₹)</th>
+                    <th class="sortable" (click)="sortListingsBy('askingPricePerKg')"
+                        title="Sort by price per Kg (click again to reverse)">
+                      <span>Price/Kg (₹)</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="listingSortField() === 'askingPricePerKg'">{{ sortIcon(listingSortField() === 'askingPricePerKg', listingSortAsc()) }}</i>
+                    </th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -75,13 +109,11 @@
                 <tbody>
                   @for (item of paginatedListings(); track item.listingId) {
                     <tr>
-                      <td>{{ getCropName(item.cropId) }}</td>
+                      <td class="cell-name"><strong>{{ getCropName(item.cropId) }}</strong></td>
                       <td>{{ item.harvestDate | date:'mediumDate' }}</td>
-                      <td>
-                        {{ availableQty(item) }} Kg
-                        @if (availableQty(item) !== item.quantityKg) {
-                          <span class="text-secondary qty-listed">of {{ item.quantityKg }} listed</span>
-                        }
+                      <td class="cell-nowrap"
+                          [title]="availableQty(item) + ' Kg still available of ' + item.quantityKg + ' Kg listed'">
+                        <strong>{{ availableQty(item) }}</strong><span class="qty-total">/{{ item.quantityKg }} Kg</span>
                       </td>
                       <td>
                         <span class="badge badge-info">{{ item.qualityGrade }}</span>
@@ -125,11 +157,12 @@
             <app-pagination
               [currentPage]="listingPage"
               [pageSize]="listingPageSize"
-              [totalElements]="listings().length"
+              [totalElements]="filteredListings().length"
               (pageChange)="onListingPageChange($event)"
               (pageSizeChange)="onListingPageSizeChange($event)">
             </app-pagination>
           </div>
+          }
         }
       </div>
     }
@@ -143,25 +176,10 @@
             <p class="text-secondary">Audit transactions, recorded buyer details, and payment settlements.</p>
           </div>
           <div class="header-actions">
-            @if (sales().length > 0) {
-              <div class="search-box">
-                <i class="material-icons-round">search</i>
-                <input
-                  type="text"
-                  placeholder="Search sales..."
-                  [(ngModel)]="saleSearch"
-                  (ngModelChange)="onSaleSearchChange()"
-                  aria-label="Search sales" />
-              </div>
-            }
-            @if (isAdmin() && sales().length > 0) {
-              <button class="btn btn-export btn-export-icon" (click)="exportSales('excel')"
+            @if (canExport() && sales().length > 0) {
+              <button class="btn btn-export btn-export-icon" (click)="exportSales()"
                       title="Export to XLS" aria-label="Export to XLS">
                 <i class="material-icons-round icon-xls">grid_on</i>
-              </button>
-              <button class="btn btn-export btn-export-icon" (click)="exportSales('pdf')"
-                      title="Export to PDF" aria-label="Export to PDF">
-                <i class="material-icons-round icon-pdf">picture_as_pdf</i>
               </button>
             }
           </div>
@@ -173,13 +191,27 @@
             <h3>No Transactions Found</h3>
             <p>No purchases have been recorded yet.</p>
           </div>
-        } @else if (filteredSales().length === 0) {
-          <div class="empty-state card">
-            <i class="material-icons-round">search_off</i>
-            <h3>No Matching Transactions</h3>
-            <p>No sale matches "{{ saleSearch }}".</p>
-          </div>
         } @else {
+          <div class="card filters-card mb-3">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="saleSearch">Search</label>
+              <div class="search-field">
+                <input type="text" id="saleSearch" [(ngModel)]="saleSearch"
+                  (ngModelChange)="onSaleSearchChange()"
+                  placeholder="Search by quantity sold, agreed price, total amount, sale date, payment status or farmer confirmation..."
+                  title="Filter the sales transactions below" />
+                <i class="material-icons-round search-icon">search</i>
+              </div>
+            </div>
+          </div>
+
+          @if (filteredSales().length === 0) {
+            <div class="empty-state card">
+              <i class="material-icons-round">search_off</i>
+              <h3>No Matching Transactions</h3>
+              <p>No sale matches "{{ saleSearch }}".</p>
+            </div>
+          } @else {
           <div class="table-container">
             <div class="table-responsive">
               <table>
@@ -188,7 +220,12 @@
                     <th>Quantity Sold</th>
                     <th>Agreed Price/Kg</th>
                     <th>Total Amount</th>
-                    <th>Sale Date</th>
+                    <th class="sortable" (click)="sortSalesBy('saleDate')"
+                        title="Sort by sale date (click again to reverse)">
+                      <span>Sale Date</span>
+                      <i class="material-icons-round sort-icon"
+                         [class.active]="saleSortField() === 'saleDate'">{{ sortIcon(saleSortField() === 'saleDate', saleSortAsc()) }}</i>
+                    </th>
                     <th>Payment Status</th>
                     <th>Farmer Confirmation</th>
                     <th>Actions</th>
@@ -212,13 +249,20 @@
                       </td>
                       <td>
                         @if (sale.paymentStatus !== 'PD') {
-                          <span class="text-secondary">—</span>
+                          <span class="badge badge-secondary"
+                                title="Nothing for the farmer to confirm yet — the buyer has not settled this payment">
+                            Awaiting Payment
+                          </span>
                         } @else if (isFarmerConfirmed(sale)) {
-                          <span class="badge badge-success">
+                          <span class="badge badge-success"
+                                title="The selling farmer has confirmed the money reached them">
                             Received@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
                           </span>
                         } @else {
-                          <span class="badge badge-warning">Awaiting Farmer</span>
+                          <span class="badge badge-warning"
+                                title="Marked Paid by the buyer — waiting for the farmer to confirm they received it">
+                            Awaiting Farmer
+                          </span>
                         }
                       </td>
                       <td>
@@ -256,6 +300,7 @@
               (pageSizeChange)="onSalePageSizeChange($event)">
             </app-pagination>
           </div>
+          }
         }
       </div>
     }
@@ -315,24 +360,38 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="lQty">Total Quantity (Kg)</label>
-                <input type="number" id="lQty" formControlName="quantityKg" />
+                <input type="number" id="lQty" formControlName="quantityKg" placeholder="e.g. 500"
+                       [min]="MIN_QUANTITY_KG" [max]="MAX_QUANTITY_KG" step="0.1"
+                       title="Harvest weight offered for sale, between 1 and 100000 Kg" />
+                @if (showError(listingForm, 'quantityKg')) {
+                  <p class="field-error">{{ quantityError() }}</p>
+                }
               </div>
               <div class="form-group">
                 <label for="lPrice">Asking Price (₹/Kg)</label>
-                <input type="number" step="0.01" id="lPrice" formControlName="askingPricePerKg" />
+                <input type="number" step="0.01" id="lPrice" formControlName="askingPricePerKg" placeholder="e.g. 25.50"
+                       [min]="MIN_PRICE_PER_KG" [max]="MAX_PRICE_PER_KG"
+                       title="Price per Kg, between ₹1 and ₹10000" />
+                @if (showError(listingForm, 'askingPricePerKg')) {
+                  <p class="field-error">{{ askingPriceError() }}</p>
+                }
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="lStatus">Status</label>
-              <select id="lStatus" formControlName="status">
-                <option value="" disabled>Select Status</option>
-                <option value="AV">AV (Available)</option>
-                <option value="PB">PB (PartiallyBooked)</option>
-                <option value="SO">SO (Sold)</option>
-                <option value="WD">WD (Withdrawn)</option>
-              </select>
-            </div>
+            <!-- A new listing is published as Available; the status is only editable
+                 afterwards, and produce-service keeps it in step with recorded sales. -->
+            @if (isEditMode()) {
+              <div class="form-group">
+                <label for="lStatus">Status</label>
+                <select id="lStatus" formControlName="status">
+                  <option value="" disabled>Select Status</option>
+                  <option value="AV">AV (Available)</option>
+                  <option value="PB">PB (PartiallyBooked)</option>
+                  <option value="SO">SO (Sold)</option>
+                  <option value="WD">WD (Withdrawn)</option>
+                </select>
+              </div>
+            }
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save" aria-label="Save">
@@ -361,7 +420,7 @@
 
             <div class="form-row mt-3">
               <div class="form-group">
-                <label for="sQty">Available Quantity (Kg)</label>
+                <label for="sQty">Buying Quantity (Kg)</label>
                 <input
                   type="number"
                   id="sQty"

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, WritableSignal, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProduceService } from '../../services/produce.service';
@@ -11,6 +11,14 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../components/detail-modal/detail-modal.component';
+
+// ---- Produce listing input bounds ----------------------------------------------
+/** Harvest weight offered for sale, in Kg. Upper bound catches stray digits. */
+const MIN_QUANTITY_KG = 1;
+const MAX_QUANTITY_KG = 100000;
+/** Asking price per Kg, in rupees. */
+const MIN_PRICE_PER_KG = 1;
+const MAX_PRICE_PER_KG = 10000;
 
 @Component({
   selector: 'app-produce',
@@ -62,6 +70,12 @@ export class ProduceComponent implements OnInit {
    */
   readonly minOfferPercent = 90;
 
+  // Listing input bounds, exposed so the inputs carry native min/max too.
+  readonly MIN_QUANTITY_KG = MIN_QUANTITY_KG;
+  readonly MAX_QUANTITY_KG = MAX_QUANTITY_KG;
+  readonly MIN_PRICE_PER_KG = MIN_PRICE_PER_KG;
+  readonly MAX_PRICE_PER_KG = MAX_PRICE_PER_KG;
+
   // Detail (view) modal
   showDetailModal = signal<boolean>(false);
   detailTitle = signal<string>('');
@@ -87,9 +101,10 @@ export class ProduceComponent implements OnInit {
     return this.authService.hasRole(['AgriLinkAdmin', 'ProcurementOfficer']);
   }
 
-  // Exporting the marketplace and sales ledger is an AgriLinkAdmin-only capability.
-  isAdmin(): boolean {
-    return this.authService.hasRole(['AgriLinkAdmin']);
+  // The marketplace and sales ledger export to Excel for the admin and the
+  // procurement officer, who both need the figures offline for price discovery.
+  canExport(): boolean {
+    return this.authService.hasRole(['AgriLinkAdmin', 'ProcurementOfficer']);
   }
 
   // Only the Procurement Officer buys produce (records sales); the admin does not.
@@ -113,18 +128,48 @@ export class ProduceComponent implements OnInit {
     return (list || []).slice(start, start + size);
   }
 
-  paginatedListings(): any[] { return this.page(this.listings(), this.listingPage, this.listingPageSize); }
+  paginatedListings(): any[] { return this.page(this.sortedListings(), this.listingPage, this.listingPageSize); }
   onListingPageChange(p: number) { this.listingPage = p; }
   onListingPageSizeChange(s: number) { this.listingPageSize = s; this.listingPage = 0; }
 
-  paginatedSales(): any[] { return this.page(this.filteredSales(), this.salePage, this.salePageSize); }
+  paginatedSales(): any[] { return this.page(this.sortedSales(), this.salePage, this.salePageSize); }
   onSalePageChange(p: number) { this.salePage = p; }
   onSalePageSizeChange(s: number) { this.salePageSize = s; this.salePage = 0; }
 
-  // ================= SALES SEARCH =================
-  saleSearch = '';
+  // ================= LISTINGS SEARCH =================
+  listingSearch = '';
   // Reset to the first page whenever the query changes, so the matches are visible
   // instead of stranded on a page number that no longer exists.
+  onListingSearchChange() { this.listingPage = 0; }
+
+  /** Listings narrowed by the search box. */
+  filteredListings(): any[] {
+    const list = this.listings();
+    const q = this.listingSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(item => this.listingSearchText(item).includes(q));
+  }
+
+  /**
+   * Everything about a listing a user could plausibly search by, flattened into one
+   * lowercase string — id, farmer, crop, harvest date, both quantities, grade, price
+   * and the status label — so "tomato", "grade a", "sold" and "1500" all match.
+   */
+  private listingSearchText(item: any): string {
+    return [
+      item.listingId, '#' + item.listingId,
+      this.getFarmerName(item.farmerId),
+      this.getCropName(item.cropId),
+      this.fmtDate(item.harvestDate),
+      this.availableQty(item), item.quantityKg,
+      item.qualityGrade, 'grade ' + item.qualityGrade,
+      item.askingPricePerKg, this.fmtMoney(item.askingPricePerKg),
+      item.status, this.getListingStatusLabel(item.status)
+    ].join(' ').toLowerCase();
+  }
+
+  // ================= SALES SEARCH =================
+  saleSearch = '';
   onSaleSearchChange() { this.salePage = 0; }
 
   /** Sales narrowed by the search box. */
@@ -156,14 +201,90 @@ export class ProduceComponent implements OnInit {
     ].join(' ').toLowerCase();
   }
 
+  // ================= COLUMN SORTING =================
+  // Newest/highest first by default: listings on harvest date, sales on sale date.
+  // Clicking a sortable header re-sorts descending; clicking it again flips to
+  // ascending.
+  listingSortField = signal<string>('harvestDate');
+  listingSortAsc = signal<boolean>(false);
+  saleSortField = signal<string>('saleDate');
+  saleSortAsc = signal<boolean>(false);
+
+  sortListingsBy(field: string) {
+    this.toggleSort(this.listingSortField, this.listingSortAsc, field);
+    this.listingPage = 0;
+  }
+
+  sortSalesBy(field: string) {
+    this.toggleSort(this.saleSortField, this.saleSortAsc, field);
+    this.salePage = 0;
+  }
+
+  private toggleSort(fieldSig: WritableSignal<string>,
+                     ascSig: WritableSignal<boolean>, field: string) {
+    if (fieldSig() === field) {
+      ascSig.set(!ascSig());
+    } else {
+      fieldSig.set(field);
+      ascSig.set(false);
+    }
+  }
+
+  /** Header arrow: neutral when the column isn't the one being sorted on. */
+  sortIcon(isActive: boolean, asc: boolean): string {
+    if (!isActive) return 'unfold_more';
+    return asc ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  /** Listings after the search box and the active column sort. */
+  sortedListings(): any[] {
+    return this.applySort(this.filteredListings(), this.listingSortField(), this.listingSortAsc());
+  }
+
+  /** Sales after the search box and the active column sort. */
+  sortedSales(): any[] {
+    return this.applySort(this.filteredSales(), this.saleSortField(), this.saleSortAsc());
+  }
+
+  /**
+   * Sorts by a field, comparing dates chronologically and numbers numerically.
+   * Available quantity is derived rather than a plain property, so it resolves
+   * through {@link availableQty}.
+   */
+  private applySort(list: any[], field: string | null, asc: boolean): any[] {
+    if (!field) return list;
+    const direction = asc ? 1 : -1;
+    const valueOf = (row: any) =>
+      field === 'availableQuantityKg' ? this.availableQty(row) : row[field];
+    return [...list].sort((a, b) => {
+      const va = valueOf(a);
+      const vb = valueOf(b);
+      // Blanks always sink to the bottom, whichever direction is active.
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (field.toLowerCase().includes('date')) {
+        return (new Date(va).getTime() - new Date(vb).getTime()) * direction;
+      }
+      const na = Number(va);
+      const nb = Number(vb);
+      if (!isNaN(na) && !isNaN(nb)) {
+        return (na - nb) * direction;
+      }
+      return String(va).localeCompare(String(vb)) * direction;
+    });
+  }
+
   private initForms() {
     this.listingForm = this.fb.group({
       farmerId: ['', Validators.required],
       cropId: ['', Validators.required],
       harvestDate: ['', Validators.required],
-      quantityKg: [50, [Validators.required, Validators.min(0.1)]],
+      quantityKg: [50, [Validators.required, Validators.min(MIN_QUANTITY_KG),
+                        Validators.max(MAX_QUANTITY_KG)]],
       qualityGrade: ['', Validators.required],
-      askingPricePerKg: [1.5, [Validators.required, Validators.min(0.01)]],
+      askingPricePerKg: [1.5, [Validators.required, Validators.min(MIN_PRICE_PER_KG),
+                               Validators.max(MAX_PRICE_PER_KG)]],
       status: ['', Validators.required]
     });
 
@@ -193,10 +314,8 @@ export class ProduceComponent implements OnInit {
         // Load listings
         this.produceService.getAllProduceListings().subscribe({
           next: (list) => {
-            // Show most recently harvested produce first.
-            const sorted = [...(list || [])].sort((a, b) =>
-              new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
-            this.listings.set(sorted);
+            // Display order is owned by the column sort (harvest date, newest first).
+            this.listings.set(list || []);
             this.listingPage = 0;
           }
         });
@@ -288,10 +407,13 @@ export class ProduceComponent implements OnInit {
     this.showDetailModal.set(true);
   }
 
-  /** Human-readable state of the farmer's secondary payment check. */
+  /**
+   * Human-readable state of the farmer's secondary payment check, matching the
+   * three badges in the table: awaiting payment -> awaiting farmer -> received.
+   */
   getFarmerConfirmationLabel(sale: any): string {
-    if (sale?.paymentStatus !== 'PD') return 'Not applicable (payment not settled)';
-    return this.isFarmerConfirmed(sale) ? 'Yes' : 'No (awaiting farmer confirmation)';
+    if (sale?.paymentStatus !== 'PD') return 'Awaiting Payment (not settled yet)';
+    return this.isFarmerConfirmed(sale) ? 'Received' : 'Awaiting Farmer';
   }
 
   getCropNameForListing(listingId: number): string {
@@ -319,11 +441,12 @@ export class ProduceComponent implements OnInit {
     }
   }
 
-  // ================= EXPORTS (AgriLinkAdmin) =================
-  // Exports cover the whole record set, not just the page currently on screen.
-  exportListings(format: 'excel' | 'pdf') {
-    if (!this.isAdmin()) return;
-    const items = this.listings();
+  // ================= EXPORTS =================
+  // Exports cover every record the search is currently showing, not just the
+  // page on screen.
+  exportListings() {
+    if (!this.canExport()) return;
+    const items = this.sortedListings();
     if (items.length === 0) {
       this.toast.error('No produce listings to export.');
       return;
@@ -341,13 +464,13 @@ export class ProduceComponent implements OnInit {
       this.fmtMoney(item.askingPricePerKg),
       this.getListingStatusLabel(item.status)
     ]);
-    this.doExport(format, columns, rows, 'produce-listings', 'Available Marketplace Produce');
+    this.doExport(columns, rows, 'produce-listings', 'Available Marketplace Produce');
   }
 
-  exportSales(format: 'excel' | 'pdf') {
-    if (!this.isAdmin()) return;
+  exportSales() {
+    if (!this.canExport()) return;
     // Export what the search box is currently showing, matching the crops module.
-    const items = this.filteredSales();
+    const items = this.sortedSales();
     if (items.length === 0) {
       this.toast.error('No sales transactions to export.');
       return;
@@ -365,28 +488,41 @@ export class ProduceComponent implements OnInit {
       this.getPaymentStatusLabel(sale.paymentStatus),
       this.getFarmerConfirmationLabel(sale)
     ]);
-    this.doExport(format, columns, rows, 'produce-sales', 'Produce Sales & Transactions Log');
+    this.doExport(columns, rows, 'produce-sales', 'Produce Sales & Transactions Log');
   }
 
-  private doExport(format: 'excel' | 'pdf', columns: string[], rows: (string | number)[][], fileName: string, title: string) {
-    if (format === 'excel') {
-      this.exportService.exportToExcel(columns, rows, fileName, title);
-      this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
-    } else {
-      const opened = this.exportService.exportToPdf(columns, rows, fileName, title);
-      if (opened) {
-        this.toast.success('Opened PDF print view. Choose "Save as PDF" to download.');
-      } else {
-        this.toast.error('Please allow pop-ups to export as PDF.');
-      }
-    }
+  private doExport(columns: string[], rows: (string | number)[][], fileName: string, title: string) {
+    this.exportService.exportToExcel(columns, rows, fileName, title);
+    this.toast.success(`Exported ${rows.length} record(s) to Excel.`);
+  }
+
+  // ================= FORM VALIDATION FEEDBACK =================
+  /** True once the user has interacted with a control that is now invalid. */
+  showError(form: FormGroup, controlName: string): boolean {
+    const control = form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  quantityError(): string {
+    const errors = this.listingForm.get('quantityKg')?.errors || {};
+    if (errors['required']) return 'Total quantity is required.';
+    return `Enter a quantity between ${MIN_QUANTITY_KG} and ${MAX_QUANTITY_KG} Kg.`;
+  }
+
+  askingPriceError(): string {
+    const errors = this.listingForm.get('askingPricePerKg')?.errors || {};
+    if (errors['required']) return 'Asking price is required.';
+    return `Enter a price between ₹${MIN_PRICE_PER_KG} and ₹${MAX_PRICE_PER_KG} per Kg.`;
   }
 
   // ================= PRODUCE LISTINGS CRUD =================
   openListingModal(item?: any) {
+    const statusControl = this.listingForm.get('status');
     if (item) {
       this.isEditMode.set(true);
       this.selectedListing.set(item);
+      statusControl?.setValidators([Validators.required]);
+      statusControl?.updateValueAndValidity({ emitEvent: false });
       this.listingForm.patchValue({
         ...item,
         harvestDate: item.harvestDate ? item.harvestDate.split('T')[0] : ''
@@ -394,6 +530,10 @@ export class ProduceComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedListing.set(null);
+      // A new listing has no status to choose: produce-service opens it as Available
+      // and maintains it from there as sales are recorded.
+      statusControl?.clearValidators();
+      statusControl?.updateValueAndValidity({ emitEvent: false });
       this.listingForm.reset({
         status: '',
         qualityGrade: '',
@@ -411,7 +551,7 @@ export class ProduceComponent implements OnInit {
 
   submitListingForm() {
     if (this.listingForm.invalid) return;
-    const body = this.listingForm.value;
+    const body: any = { ...this.listingForm.value };
 
     if (this.isEditMode()) {
       const id = this.selectedListing().listingId;
@@ -424,6 +564,9 @@ export class ProduceComponent implements OnInit {
         error: (err) => this.toast.error(err.error?.message || 'Error updating listing')
       });
     } else {
+      // Send no status at all rather than a blank one: produce-service falls back to
+      // Available, and a blank would fail to deserialize into the status enum.
+      delete body.status;
       this.produceService.createProduceListing(body).subscribe({
         next: (res) => {
           this.toast.success(res.message || 'Produce listed for sale');

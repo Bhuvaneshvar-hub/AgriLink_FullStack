@@ -3,6 +3,7 @@
   flex-direction: column;
   width: 100%;
 }
+
 .tabs-container {
   display: flex;
   gap: 0.5rem;
@@ -78,38 +79,34 @@
   gap: 0;
 }
 .icon-xls { color: #16a34a; }
-.icon-pdf { color: #ef4444; }
-/* Sales search box */
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
+/* Sortable column headers — the arrow reads neutral until the column is the one
+   being sorted on, then points in the active direction. */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
 }
-.search-box i {
-  position: absolute;
-  left: 0.6rem;
-  font-size: 18px;
+th.sortable:hover { color: var(--primary-color); }
+.sort-icon {
+  font-size: 15px;
+  vertical-align: middle;
+  margin-left: 0.15rem;
+  opacity: 0.45;
+}
+.sort-icon.active {
+  opacity: 1;
+  color: var(--primary-color);
+}
+/* Column behaviour, matching the crops tables: short values stay on one line, and
+   the leading name column reserves enough width to read as a tidy column. */
+td.cell-nowrap { white-space: nowrap; }
+td.cell-name {
+  white-space: nowrap;
+  min-width: 140px;
+}
+/* "45/50 Kg" — the available figure leads, the listed total trails in muted grey. */
+.qty-total {
   color: var(--text-secondary);
-  pointer-events: none;
-}
-.search-box input {
-  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  min-width: 220px;
-  background: var(--surface, #ffffff);
-  color: var(--text-primary);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.search-box input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
-}
-.qty-listed {
-  display: block;
-  font-size: 0.75rem;
 }
 .field-hint {
   display: block;
@@ -117,11 +114,14 @@
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
+/* Inline validation message under a field */
 .field-error {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: var(--danger-color, #c62828);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
 }
 .derived-value {
   font-size: 1.25rem;

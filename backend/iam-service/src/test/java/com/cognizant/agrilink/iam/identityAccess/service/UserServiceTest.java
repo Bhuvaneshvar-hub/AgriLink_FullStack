@@ -30,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.cognizant.agrilink.iam.notification.NotificationClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,7 +52,11 @@ class UserServiceTest {
     @Mock private PasswordEncoder       passwordEncoder;
     @Mock private JwtUtil               jwtUtil;
     @Mock private HttpServletRequest    request;
+<<<<<<< HEAD
     @Mock private NotificationClient    notificationClient;
+=======
+    @Mock private NotificationClient notificationClient;
+>>>>>>> 8a40742b6bf25ccdff3adf8b530f1a83ad574f5a
 
     @InjectMocks private UserService userService;
 

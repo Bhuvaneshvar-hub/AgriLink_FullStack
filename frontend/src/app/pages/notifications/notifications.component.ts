@@ -26,6 +26,7 @@ import { FarmerService } from '../../services/farmer.service';
             <span> Alert</span>
           </button>
         }
+        
       </div>
 
       <!-- Filters -->
@@ -37,7 +38,6 @@ import { FarmerService } from '../../services/farmer.service';
               <option value="">All Notifications</option>
               <option value="UN">Unread Alerts</option>
               <option value="RD">Read Alerts</option>
-              <option value="DI">Dismissed Alerts</option>
             </select>
           </div>
           <div class="form-group">
@@ -576,6 +576,8 @@ export class NotificationsComponent implements OnInit {
       list = list.filter(n => n.status !== 'DI');
     }
 
+    // No free-text search; dismissed alerts remain excluded by default.
+
     // Filter by category (exact match against the fixed category set)
     if (this.categoryFilter) {
       list = list.filter(n => n.category === this.categoryFilter);
@@ -697,6 +699,8 @@ export class NotificationsComponent implements OnInit {
       error: () => { this.farmerOptions.set([]); this.isLoadingFarmers.set(false); }
     });
   }
+
+  
 
   // getAllUsers() is Admin-only server-side — only called when the picker for a
   // non-Farmer role is actually shown (which itself only happens for AgriLinkAdmin).

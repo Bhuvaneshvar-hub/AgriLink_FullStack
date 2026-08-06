@@ -73,6 +73,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Hide native scrollbars but preserve scrolling */
+html, body, .main-content, .table-responsive {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* WebKit browsers (Chrome, Safari, newer Edge) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.main-content::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-title);
   font-weight: 600;

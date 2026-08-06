@@ -411,7 +411,7 @@ import { NotificationService } from '../../services/notification.service';
               </a>
             }
 
-            @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer'])) {
+            @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer', 'ProcurementOfficer'])) {
               <a routerLink="/inputs" class="action-link">
                 <i class="material-icons-round">shopping_bag</i>
                 <span>Input Operations</span>

@@ -112,7 +112,7 @@ export const routes: Routes = [
         path: 'inputs',
         loadComponent: () => import('./pages/inputs/inputs.component').then(m => m.InputsComponent),
         canActivate: [roleGuard],
-        data: { roles: ['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer'] }
+        data: { roles: ['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer', 'ProcurementOfficer'] }
       },
       {
         path: 'notifications',

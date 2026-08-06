@@ -163,6 +163,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
+                        <th>Farmer</th>
                         <th>Input Item</th>
                         <th>Qty Requested</th>
                         <th>Total Price</th>
@@ -178,6 +179,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (req of sortedRequests(); track req.requestId) {
                         <tr>
+                          <td>{{ getFarmerName(req.farmerId) }}</td>
                           <td>{{ getInputName(req.inputId) }}</td>
                           <td>{{ req.quantityRequested }}</td>
                           <td><strong>{{ req.actualPrice | currency:'INR':'symbol-narrow' }}</strong></td>
@@ -556,10 +558,13 @@ export class InputsComponent implements OnInit {
     return this.authService.hasRole(['Farmer']);
   }
 
+  // Approving / rejecting farmer requests.
   isAdminOrOfficer(): boolean {
     return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer']);
   }
 
+  // Catalog CRUD, which the Extension Officer is not entitled to
+  // (mirrors input-service SecurityConfig for POST/PUT/DELETE /catalogs).
   isCatalogManager(): boolean {
     return this.authService.hasRole(['AgriLinkAdmin', 'ProcurementOfficer']);
   }
@@ -654,6 +659,11 @@ export class InputsComponent implements OnInit {
       { label: 'Status', value: item.status === 'AC' ? 'Active' : 'Inactive' }
     ]);
     this.showDetailModal.set(true);
+  }
+
+  getFarmerName(farmerId: number): string {
+    const prof = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return prof && prof.name ? `${prof.name}(#${farmerId})` : `Farmer #${farmerId}`;
   }
 
   viewRequestDetails(req: any) {
@@ -865,6 +875,8 @@ export class InputsComponent implements OnInit {
     this.inputService.updateInputRequest(req.requestId, body).subscribe({
       next: (res) => {
         this.toast.success(res.message || `Request status changed to ${status}`);
+        // Approving deducts the quantity from catalog stock server-side, so the
+        // catalog has to be re-read along with the requests.
         this.loadAllData();
       },
       error: (err) => this.toast.error(err.error?.message || 'Error updating status')

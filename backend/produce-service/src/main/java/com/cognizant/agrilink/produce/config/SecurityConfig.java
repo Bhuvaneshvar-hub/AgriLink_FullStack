@@ -47,6 +47,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/produce-sales", "/produce-sales/**")
                     .hasAnyRole("Farmer", "ExtensionOfficer", "ProcurementOfficer",
                                 "SubsidyAdmin", "ComplianceAnalyst", "AgriLinkAdmin")
+                // The selling farmer confirms they received a payment the buyer marked
+                // Paid; ownership of the sale is enforced in the controller.
+                .requestMatchers(HttpMethod.POST, "/produce-sales/*/farmer-confirmation")
+                    .hasAnyRole("Farmer", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.POST, "/produce-sales")
                     .hasAnyRole("ProcurementOfficer", "AgriLinkAdmin")
                 .requestMatchers(HttpMethod.PUT, "/produce-sales/**")

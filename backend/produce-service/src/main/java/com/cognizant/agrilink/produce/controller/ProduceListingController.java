@@ -5,6 +5,7 @@ import com.cognizant.agrilink.produce.dto.MessageResponse;
 import com.cognizant.agrilink.produce.dto.ProduceListingDto;
 import com.cognizant.agrilink.produce.entity.ProduceListing;
 import com.cognizant.agrilink.produce.service.ProduceListingService;
+import com.cognizant.agrilink.produce.service.ProduceSaleService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -27,22 +28,27 @@ public class ProduceListingController {
 	private static final String ROLE_FARMER = "ROLE_Farmer";
 
 	private final ProduceListingService produceListingService;
+	private final ProduceSaleService produceSaleService;
 	private final FarmerClient farmerClient;
 
 	public ProduceListingController(ProduceListingService produceListingService,
-			FarmerClient farmerClient) {
+			ProduceSaleService produceSaleService, FarmerClient farmerClient) {
 		this.produceListingService = produceListingService;
+		this.produceSaleService = produceSaleService;
 		this.farmerClient = farmerClient;
 	}
 
 	// A Farmer only ever sees listings tied to their own farmer profile(s);
 	// officers/analysts/admin browse all (buyer matching, price discovery, oversight).
+	// Every listing carries the quantity still available (listed minus already sold),
+	// so all roles read remaining stock rather than the original harvest amount.
 	@GetMapping
 	public ResponseEntity<List<ProduceListing>> getAll(Authentication authentication, HttpServletRequest request) {
-		if (isFarmer(authentication)) {
-			return ResponseEntity.ok(produceListingService.getByFarmerIds(ownedFarmerIds(request)));
-		}
-		return ResponseEntity.ok(produceListingService.getAll());
+		List<ProduceListing> listings = isFarmer(authentication)
+				? produceListingService.getByFarmerIds(ownedFarmerIds(request))
+				: produceListingService.getAll();
+		produceSaleService.applyAvailableQuantity(listings);
+		return ResponseEntity.ok(listings);
 	}
 
 	@GetMapping("/{id}")
@@ -52,6 +58,7 @@ public class ProduceListingController {
 		if (isFarmer(authentication) && !ownedFarmerIds(request).contains(listing.getFarmerId())) {
 			throw new AccessDeniedException("You can only view your own produce listings");
 		}
+		produceSaleService.applyAvailableQuantity(listing);
 		return ResponseEntity.ok(listing);
 	}
 

@@ -3,6 +3,8 @@ package com.cognizant.agrilink.input.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +44,22 @@ class RequestServiceExtendedTest {
 
 	@InjectMocks
 	private RequestService requestService;
+
+	/**
+	 * Approved/delivered requests deduct from catalog stock, so any case here that
+	 * touches those statuses needs a catalog to draw from. Stock is deliberately far
+	 * larger than the quantities used below — the stock arithmetic itself is asserted
+	 * in {@code RequestServiceTest}.
+	 */
+	@BeforeEach
+	void stubCatalogLookup() {
+		lenient().when(catalogRepository.findById(anyInt()))
+				.thenAnswer(invocation -> Optional.of(Catalog.builder()
+						.inputId(invocation.getArgument(0))
+						.name("Stub Supply")
+						.availableStock(1_000_000)
+						.build()));
+	}
 
 	private RequestDto buildDto() {
 		return RequestDto.builder()

@@ -52,10 +52,12 @@ export class ProduceComponent implements OnInit {
   listingPage = 0;   listingPageSize = 5;
   salePage = 0;      salePageSize = 5;
 
-  // Column sorting state. Both tables open on their date column, newest first.
-  listingSortField = signal<string | null>('harvestDate');
+  // Column sorting state. Listings open on the most recently added listing
+  // (highest listingId first), so a farmer sees what they just posted at the top.
+  listingSortField = signal<string | null>('listingId');
   listingSortAsc = signal<boolean>(false);
-  saleSortField = signal<string | null>('saleDate');
+  // Sales likewise open on the most recently recorded transaction (highest saleId).
+  saleSortField = signal<string | null>('saleId');
   saleSortAsc = signal<boolean>(false);
 
   // Exposed for the template.
@@ -72,13 +74,6 @@ export class ProduceComponent implements OnInit {
   showDeleteSaleConfirm = signal<boolean>(false);
   showMarkPaidConfirm = signal<boolean>(false);
   showReceiptConfirm = signal<boolean>(false);
-
-  /**
-   * Floor a buyer's offer may not go below, as a percentage of the farmer's asking
-   * price. Mirrors ProduceSaleService.MIN_OFFER_PERCENT_OF_ASKING, which rejects
-   * anything lower server-side.
-   */
-  readonly minOfferPercent = 90;
 
   // Listing input bounds, exposed so the inputs carry native min/max too.
   readonly MIN_QUANTITY_KG = MIN_QUANTITY_KG;
@@ -164,8 +159,8 @@ export class ProduceComponent implements OnInit {
 
   /**
    * Everything about a listing a user could plausibly search by, flattened into one
-   * lowercase string â€” id, farmer, crop, harvest date, both quantities, grade, price
-   * and the status label â€” so "tomato", "grade a", "sold" and "1500" all match.
+   * lowercase string — id, farmer, crop, harvest date, both quantities, grade, price
+   * and the status label — so "tomato", "grade a", "sold" and "1500" all match.
    */
   private listingSearchText(item: any): string {
     return [
@@ -194,8 +189,8 @@ export class ProduceComponent implements OnInit {
 
   /**
    * Everything about a sale that a user could plausibly search by, flattened into
-   * one lowercase string. A farmer confirming a payment rarely knows the sale id â€”
-   * they know it was "10 Kg of tomato" or "the one still awaiting confirmation" â€”
+   * one lowercase string. A farmer confirming a payment rarely knows the sale id —
+   * they know it was "10 Kg of tomato" or "the one still awaiting confirmation" —
    * so ids, crop, farmer, buyer, amounts, date and both status labels all match.
    */
   private saleSearchText(sale: any): string {
@@ -276,8 +271,9 @@ export class ProduceComponent implements OnInit {
     // rupee figure; the agreed price per Kg is derived from it.
     this.saleForm = this.fb.group({
       quantitySoldKg: [0, [Validators.required, Validators.min(0.1)]],
-      offerPercent: [100, [Validators.required, Validators.min(this.minOfferPercent)]],
-      paymentStatus: ['', Validators.required]
+      // Not shown in the form — a new sale is always Pending until the farmer
+      // confirms receipt, which is what settles it as Paid.
+      paymentStatus: ['PE', Validators.required]
     });
   }
 
@@ -348,14 +344,14 @@ export class ProduceComponent implements OnInit {
   }
 
   private fmtDate(d: any): string {
-    if (!d) return 'â€”';
+    if (!d) return '—';
     const date = new Date(d);
     return isNaN(date.getTime()) ? String(d) : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   private fmtMoney(v: any): string {
     const n = Number(v);
-    return isNaN(n) ? String(v) : 'â‚¹' + n.toFixed(2);
+    return isNaN(n) ? String(v) : '₹' + n.toFixed(2);
   }
 
   viewListingDetails(item: any) {
@@ -386,7 +382,7 @@ export class ProduceComponent implements OnInit {
       { label: 'Sale Date', value: this.fmtDate(sale.saleDate) },
       { label: 'Payment Status', value: this.getPaymentStatusLabel(sale.paymentStatus) },
       { label: 'Farmer Confirmed Receipt', value: this.getFarmerConfirmationLabel(sale) },
-      { label: 'Confirmed On', value: sale.farmerConfirmedDate ? this.fmtDate(sale.farmerConfirmedDate) : 'â€”' }
+      { label: 'Confirmed On', value: sale.farmerConfirmedDate ? this.fmtDate(sale.farmerConfirmedDate) : '—' }
     ]);
     this.showDetailModal.set(true);
   }
@@ -400,6 +396,12 @@ export class ProduceComponent implements OnInit {
     return this.isFarmerConfirmed(sale) ? 'Received' : 'Awaiting Farmer';
   }
 
+  /** The selling farmer behind a sale, resolved through the sale's listing. */
+  getFarmerNameForSale(sale: any): string {
+    const listing = this.listings().find(l => l.listingId == sale?.listingId);
+    return listing ? this.getFarmerName(listing.farmerId) : '—';
+  }
+
   getCropNameForListing(listingId: number): string {
     const list = this.listings().find(l => l.listingId == listingId);
     if (!list) return 'Unknown Produce';
@@ -409,7 +411,9 @@ export class ProduceComponent implements OnInit {
   getListingStatusLabel(status: string): string {
     switch (status) {
       case 'AV': return 'Available';
-      case 'PB': return 'PartiallyBooked';
+      // A partially booked listing still has stock to sell, so it reads as
+      // Available. The "Available / Total (Kg)" column already shows the split.
+      case 'PB': return 'Available';
       case 'SO': return 'Sold';
       case 'WD': return 'Withdrawn';
       default: return status;
@@ -463,7 +467,7 @@ export class ProduceComponent implements OnInit {
       'Total Amount', 'Sale Date', 'Payment Status', 'Farmer Confirmation'];
     const rows = items.map(sale => [
       sale.saleId,
-      '#' + sale.listingId + ' â€” ' + this.getCropNameForListing(sale.listingId),
+      '#' + sale.listingId + ' — ' + this.getCropNameForListing(sale.listingId),
       '#' + sale.buyerId,
       sale.quantitySoldKg,
       this.fmtMoney(sale.agreedPricePerKg),
@@ -496,7 +500,7 @@ export class ProduceComponent implements OnInit {
   askingPriceError(): string {
     const errors = this.listingForm.get('askingPricePerKg')?.errors || {};
     if (errors['required']) return 'Asking price is required.';
-    return `Enter a price between â‚¹${MIN_PRICE_PER_KG} and â‚¹${MAX_PRICE_PER_KG} per Kg.`;
+    return `Enter a price between ₹${MIN_PRICE_PER_KG} and ₹${MAX_PRICE_PER_KG} per Kg.`;
   }
 
   // ================= PRODUCE LISTINGS CRUD =================
@@ -591,8 +595,7 @@ export class ProduceComponent implements OnInit {
 
     this.saleForm.reset({
       quantitySoldKg: available,
-      offerPercent: 100,
-      paymentStatus: ''
+      paymentStatus: 'PE'
     });
     this.calculateTotal();
     this.showBuyModal.set(true);
@@ -603,16 +606,12 @@ export class ProduceComponent implements OnInit {
   }
 
   /** Lowest price per Kg the buyer may agree to on the selected listing. */
-  minAgreedPrice(): number {
-    const asking = Number(this.selectedListing()?.askingPricePerKg) || 0;
-    return asking * this.minOfferPercent / 100;
-  }
-
-  /** Agreed price per Kg derived from the offered percentage of the asking price. */
+  /**
+   * The sale price per Kg — simply the price the farmer listed the produce at.
+   * There is no negotiation step: a Procurement Officer buys at the farmer's price.
+   */
   agreedPricePerKg(): number {
-    const asking = Number(this.selectedListing()?.askingPricePerKg) || 0;
-    const percent = Number(this.saleForm.get('offerPercent')?.value) || 0;
-    return Math.round(asking * percent) / 100;
+    return Number(this.selectedListing()?.askingPricePerKg) || 0;
   }
 
   calculateTotal() {
@@ -635,11 +634,9 @@ export class ProduceComponent implements OnInit {
       return;
     }
 
+    // Always the farmer's listed price, so it can never fall under the server's
+    // minimum-offer rule — no client-side floor check is needed.
     const agreedPricePerKg = this.agreedPricePerKg();
-    if (agreedPricePerKg < this.minAgreedPrice()) {
-      this.toast.error(`Agreed price must be at least ${this.minOfferPercent}% of the asking price`);
-      return;
-    }
 
     const body = {
       quantitySoldKg: qty,
@@ -668,9 +665,13 @@ export class ProduceComponent implements OnInit {
     return sale?.farmerPaymentConfirmed === true;
   }
 
-  /** A Farmer may acknowledge receipt only on their own settled, unconfirmed sales. */
+  /**
+   * A Farmer confirms receipt on any of their own sales that isn't confirmed yet —
+   * that confirmation is what settles the sale as Paid, so it must be available
+   * while the payment is still Pending.
+   */
   canConfirmReceipt(sale: any): boolean {
-    return this.isFarmer() && sale?.paymentStatus === 'PD' && !this.isFarmerConfirmed(sale);
+    return this.isFarmer() && !this.isFarmerConfirmed(sale);
   }
 
   confirmMarkPaid(sale: any) {

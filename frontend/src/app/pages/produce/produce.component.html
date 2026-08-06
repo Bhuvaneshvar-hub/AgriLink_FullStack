@@ -82,12 +82,8 @@
               <table>
                 <thead>
                   <tr>
-                    <th class="sortable" (click)="sortListingsBy('cropName')"
-                        title="Sort by crop type (click again to reverse)">
-                      <span>Crop Type</span>
-                      <i class="material-icons-round sort-icon"
-                         [class.active]="listingSortField() === 'cropName'">{{ sortIcon(listingSortField() === 'cropName', listingSortAsc()) }}</i>
-                    </th>
+                    @if (!isFarmer()) { <th>Farmer</th> }
+                    <th>Crop Type</th>
                     <th class="sortable" (click)="sortListingsBy('harvestDate')"
                         title="Sort by harvest date (click again to reverse)">
                       <span>Harvest Date</span>
@@ -96,31 +92,29 @@
                     </th>
                     <th class="sortable" (click)="sortListingsBy('availableQuantityKg')"
                         title="Sort by available quantity (click again to reverse)">
-                      <span>Available / Total (Kg)</span>
+                      <span>Available / Total</span>
                       <i class="material-icons-round sort-icon"
                          [class.active]="listingSortField() === 'availableQuantityKg'">{{ sortIcon(listingSortField() === 'availableQuantityKg', listingSortAsc()) }}</i>
                     </th>
                     <th>Quality Grade</th>
                     <th class="sortable" (click)="sortListingsBy('askingPricePerKg')"
                         title="Sort by price per Kg (click again to reverse)">
-                      <span>Price/Kg (₹)</span>
+                      <span>Price/Kg</span>
                       <i class="material-icons-round sort-icon"
                          [class.active]="listingSortField() === 'askingPricePerKg'">{{ sortIcon(listingSortField() === 'askingPricePerKg', listingSortAsc()) }}</i>
                     </th>
-                    <th class="sortable" (click)="sortListingsBy('status')"
-                        title="Sort by status (click again to reverse)">
-                      <span>Status</span>
-                      <i class="material-icons-round sort-icon"
-                         [class.active]="listingSortField() === 'status'">{{ sortIcon(listingSortField() === 'status', listingSortAsc()) }}</i>
-                    </th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (item of paginatedListings(); track item.listingId) {
                     <tr>
-                      <td class="cell-name"><strong>{{ getCropName(item.cropId) }}</strong></td>
-                      <td>{{ item.harvestDate | date:'mediumDate' }}</td>
+                      @if (!isFarmer()) {
+                        <td class="cell-name"><strong>{{ getFarmerName(item.farmerId) }}</strong></td>
+                      }
+                      <td class="cell-nowrap">{{ getCropName(item.cropId) }}</td>
+                      <td class="cell-nowrap">{{ item.harvestDate | date:'mediumDate' }}</td>
                       <td class="cell-nowrap"
                           [title]="availableQty(item) + ' Kg still available of ' + item.quantityKg + ' Kg listed'">
                         <strong>{{ availableQty(item) }}</strong><span class="qty-total">/{{ item.quantityKg }} Kg</span>
@@ -131,8 +125,7 @@
                       <td>{{ item.askingPricePerKg | currency:'INR':'symbol-narrow' }}</td>
                       <td>
                         <span class="badge" [ngClass]="{
-                          'badge-success': item.status === 'AV',
-                          'badge-info': item.status === 'PB',
+                          'badge-success': item.status === 'AV' || item.status === 'PB',
                           'badge-secondary': item.status === 'WD',
                           'badge-warning': item.status === 'SO'
                         }">
@@ -208,7 +201,7 @@
               <div class="search-field">
                 <input type="text" id="saleSearch" [(ngModel)]="saleSearch"
                   (ngModelChange)="onSaleSearchChange()"
-                  placeholder="Search by quantity sold, agreed price, total amount, sale date, payment status or farmer confirmation..."
+                  placeholder="Search by farmer, crop, quantity sold, total amount, sale date or payment status..."
                   title="Filter the sales transactions below" />
                 <i class="material-icons-round search-icon">search</i>
               </div>
@@ -227,17 +220,13 @@
               <table>
                 <thead>
                   <tr>
+                    @if (!isFarmer()) { <th>Farmer</th> }
+                    <th>Crop Type</th>
                     <th class="sortable" (click)="sortSalesBy('quantitySoldKg')"
                         title="Sort by quantity sold (click again to reverse)">
                       <span>Quantity Sold</span>
                       <i class="material-icons-round sort-icon"
                          [class.active]="saleSortField() === 'quantitySoldKg'">{{ sortIcon(saleSortField() === 'quantitySoldKg', saleSortAsc()) }}</i>
-                    </th>
-                    <th class="sortable" (click)="sortSalesBy('agreedPricePerKg')"
-                        title="Sort by agreed price per Kg (click again to reverse)">
-                      <span>Agreed Price/Kg</span>
-                      <i class="material-icons-round sort-icon"
-                         [class.active]="saleSortField() === 'agreedPricePerKg'">{{ sortIcon(saleSortField() === 'agreedPricePerKg', saleSortAsc()) }}</i>
                     </th>
                     <th class="sortable" (click)="sortSalesBy('totalAmount')"
                         title="Sort by total amount (click again to reverse)">
@@ -251,12 +240,7 @@
                       <i class="material-icons-round sort-icon"
                          [class.active]="saleSortField() === 'saleDate'">{{ sortIcon(saleSortField() === 'saleDate', saleSortAsc()) }}</i>
                     </th>
-                    <th class="sortable" (click)="sortSalesBy('paymentStatus')"
-                        title="Sort by payment status (click again to reverse)">
-                      <span>Payment Status</span>
-                      <i class="material-icons-round sort-icon"
-                         [class.active]="saleSortField() === 'paymentStatus'">{{ sortIcon(saleSortField() === 'paymentStatus', saleSortAsc()) }}</i>
-                    </th>
+                    <th>Payment Status</th>
                     <th>Farmer Confirmation</th>
                     <th>Actions</th>
                   </tr>
@@ -264,8 +248,11 @@
                 <tbody>
                   @for (sale of paginatedSales(); track sale.saleId) {
                     <tr>
-                      <td>{{ sale.quantitySoldKg }} Kg</td>
-                      <td>{{ sale.agreedPricePerKg | currency:'INR':'symbol-narrow' }}</td>
+                      @if (!isFarmer()) {
+                        <td class="cell-name"><strong>{{ getFarmerNameForSale(sale) }}</strong></td>
+                      }
+                      <td class="cell-nowrap">{{ getCropNameForListing(sale.listingId) }}</td>
+                      <td class="cell-nowrap">{{ sale.quantitySoldKg }} Kg</td>
                       <td><strong>{{ sale.totalAmount | currency:'INR':'symbol-narrow' }}</strong></td>
                       <td>{{ sale.saleDate | date:'mediumDate' }}</td>
                       <td>
@@ -278,19 +265,14 @@
                         </span>
                       </td>
                       <td>
-                        @if (sale.paymentStatus !== 'PD') {
-                          <span class="badge badge-secondary"
-                                title="Nothing for the farmer to confirm yet — the buyer has not settled this payment">
-                            Awaiting Payment
-                          </span>
-                        } @else if (isFarmerConfirmed(sale)) {
+                        @if (isFarmerConfirmed(sale)) {
                           <span class="badge badge-success"
-                                title="The selling farmer has confirmed the money reached them">
+                                title="The selling farmer has confirmed the money reached them, which settled this payment as Paid">
                             Received@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
                           </span>
                         } @else {
                           <span class="badge badge-warning"
-                                title="Marked Paid by the buyer — waiting for the farmer to confirm they received it">
+                                title="Waiting for the farmer to confirm they received the payment">
                             Awaiting Farmer
                           </span>
                         }
@@ -446,45 +428,27 @@
         <form [formGroup]="saleForm" (ngSubmit)="submitSaleForm()">
           <div class="modal-body">
             <p>Buying produce from Listing <strong>#{{ selectedListing()?.listingId }}</strong> ({{ getCropName(selectedListing()?.cropId) }}).</p>
-            <p class="text-secondary">Available Stock: <strong>{{ availableQty(selectedListing()) }} Kg</strong>. Asking Price: <strong>{{ selectedListing()?.askingPricePerKg | currency:'INR':'symbol-narrow' }}/Kg</strong>.</p>
+            <p class="text-secondary">Available Stock: <strong>{{ availableQty(selectedListing()) }} Kg</strong>.</p>
 
-            <div class="form-row mt-3">
-              <div class="form-group">
-                <label for="sQty">Buying Quantity (Kg)</label>
-                <input
-                  type="number"
-                  id="sQty"
-                  formControlName="quantitySoldKg"
-                  [max]="availableQty(selectedListing())"
-                  (input)="calculateTotal()" />
-                <small class="field-hint">Up to {{ availableQty(selectedListing()) }} Kg still available on this listing.</small>
-                @if (saleForm.get('quantitySoldKg')?.touched && saleForm.get('quantitySoldKg')?.invalid) {
-                  <small class="field-error">Enter between 0.1 and {{ availableQty(selectedListing()) }} Kg.</small>
-                }
-              </div>
-              <div class="form-group">
-                <label for="sPricePct">Agreed Price (% of Asking Price)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  id="sPricePct"
-                  formControlName="offerPercent"
-                  [min]="minOfferPercent"
-                  (input)="calculateTotal()" />
-                <small class="field-hint">
-                  Minimum {{ minOfferPercent }}% of the asking price
-                  ({{ minAgreedPrice() | currency:'INR':'symbol-narrow' }}/Kg).
-                </small>
-                @if (saleForm.get('offerPercent')?.touched && saleForm.get('offerPercent')?.invalid) {
-                  <small class="field-error">Offer cannot go below {{ minOfferPercent }}% of the asking price.</small>
-                }
-              </div>
+            <div class="form-group mt-3">
+              <label for="sQty">Buying Quantity (Kg)</label>
+              <input
+                type="number"
+                id="sQty"
+                formControlName="quantitySoldKg"
+                [max]="availableQty(selectedListing())"
+                (input)="calculateTotal()" />
+              <small class="field-hint">Up to {{ availableQty(selectedListing()) }} Kg still available on this listing.</small>
+              @if (saleForm.get('quantitySoldKg')?.touched && saleForm.get('quantitySoldKg')?.invalid) {
+                <small class="field-error">Enter between 0.1 and {{ availableQty(selectedListing()) }} Kg.</small>
+              }
             </div>
 
             <div class="form-row mt-3">
               <div class="form-group">
-                <label>Agreed Price (₹/Kg)</label>
+                <label>Price (₹/Kg)</label>
                 <div class="derived-value">{{ agreedPricePerKg() | currency:'INR':'symbol-narrow' }}</div>
+                <small class="field-hint">The price the farmer listed this produce at.</small>
               </div>
               <div class="form-group">
                 <label>Total Transaction Value (₹)</label>
@@ -494,15 +458,12 @@
               </div>
             </div>
 
-            <div class="form-group mt-3">
-              <label for="sStatus">Payment Settlement Status</label>
-              <select id="sStatus" formControlName="paymentStatus">
-                <option value="" disabled>Select Payment Status</option>
-                <option value="PE">PE (Pending)</option>
-                <option value="PD">PD (Paid)</option>
-              </select>
-              <small class="field-hint">Marking a payment Paid asks the farmer to confirm they received it.</small>
-            </div>
+            <!-- No payment status field: a transaction is always recorded as
+                 Pending and becomes Paid when the farmer confirms receipt. -->
+            <p class="field-hint mt-3">
+              This transaction is recorded as <strong>Pending</strong>. It is marked
+              <strong>Paid</strong> once the farmer confirms they received the payment.
+            </p>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary" [disabled]="saleForm.invalid">Record Sale</button>

@@ -86,18 +86,9 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
             <table>
               <thead>
                 <tr>
-                  <th class="sortable" (click)="sortBy('userId')" title="Sort by User Name (click again to reverse)">
-                    <span>User Name</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'userId'">{{ sortIcon(sortField() === 'userId', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('module')" title="Sort by Module (click again to reverse)">
-                    <span>Module</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'module'">{{ sortIcon(sortField() === 'module', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('action')" title="Sort by Action performed (click again to reverse)">
-                    <span>Action performed</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'action'">{{ sortIcon(sortField() === 'action', sortAsc()) }}</i>
-                  </th>
+                  <th>User Name</th>
+                  <th>Module</th>
+                  <th>Action performed</th>
                   <th>IP Address</th>
                   <th class="sortable" (click)="sortBy('timestamp')" title="Sort by Timestamp (click again to reverse)">
                     <span>Timestamp</span>

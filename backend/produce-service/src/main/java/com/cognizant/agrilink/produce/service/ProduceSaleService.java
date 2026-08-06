@@ -127,17 +127,15 @@ public class ProduceSaleService {
 	}
 
 	/**
-	 * Records the selling farmer's acknowledgement that the money actually arrived.
-	 * Only meaningful once the buyer has marked the sale Paid, and idempotent so a
-	 * repeated confirmation is harmless.
+	 * Records the selling farmer's acknowledgement that the money actually arrived,
+	 * which is what settles the sale: a transaction is created Pending and only the
+	 * farmer confirming receipt moves it to Paid. Idempotent, so a repeated
+	 * confirmation is harmless.
 	 */
 	public ProduceSale confirmFarmerPayment(Integer id) {
 		ProduceSale sale = getById(id);
-		if (sale.getPaymentStatus() != PaymentStatus.PD) {
-			throw new IllegalStateException(
-					"Receipt can only be confirmed after the buyer has marked this payment as Paid");
-		}
 		if (!Boolean.TRUE.equals(sale.getFarmerPaymentConfirmed())) {
+			sale.setPaymentStatus(PaymentStatus.PD);
 			sale.setFarmerPaymentConfirmed(true);
 			sale.setFarmerConfirmedDate(LocalDate.now());
 			return produceSaleRepository.save(sale);

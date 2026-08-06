@@ -104,22 +104,13 @@ function endAfterStartValidator(group: AbstractControl): ValidationErrors | null
             <table>
               <thead>
                 <tr>
-                  <th class="sortable" (click)="sortBy('schemeName')" title="Sort by Scheme Name">
-                    <span>Scheme Name</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'schemeName'">{{ sortIcon(sortField() === 'schemeName', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('category')" title="Sort by Category">
-                    <span>Category</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'category'">{{ sortIcon(sortField() === 'category', sortAsc()) }}</i>
-                  </th>
+                  <th>Scheme Name</th>
+                  <th>Category</th>
                   <th class="sortable" (click)="sortBy('benefitAmount')" title="Sort by Benefit Amount">
                     <span>Benefit Amount</span>
                     <i class="material-icons-round sort-icon" [class.active]="sortField() === 'benefitAmount'">{{ sortIcon(sortField() === 'benefitAmount', sortAsc()) }}</i>
                   </th>
-                  <th class="sortable" (click)="sortBy('fundingSource')" title="Sort by Funding Source">
-                    <span>Funding Source</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'fundingSource'">{{ sortIcon(sortField() === 'fundingSource', sortAsc()) }}</i>
-                  </th>
+                  <th>Funding Source</th>
                   <th>Eligibility Criteria</th>
                   <th class="sortable" (click)="sortBy('startDate')" title="Sort by Validity Period">
                     <span>Validity Period</span>

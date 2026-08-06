@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { UserService } from '../../services/user.service';
 import { FarmerService } from '../../services/farmer.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -111,10 +112,6 @@ import { FarmerService } from '../../services/farmer.service';
             </a>
           }
 
-          <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
-            <i class="material-icons-round">notifications</i>
-            <span>Alerts & Notifications</span>
-          </a>
         </nav>
       </aside>
 
@@ -134,6 +131,43 @@ import { FarmerService } from '../../services/farmer.service';
                 <span>Region ID: {{ currentUser?.regionId }}</span>
               </div>
             }
+
+            <div class="notif-menu">
+              <button class="notif-trigger" [class.active]="isNotifMenuOpen()" (click)="toggleNotifMenu($event)" aria-label="Notifications">
+                <i class="material-icons-round">notifications</i>
+                @if (unreadCount() > 0) {
+                  <span class="notif-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+                }
+              </button>
+              @if (isNotifMenuOpen()) {
+                <div class="notif-dropdown">
+                  <div class="notif-dropdown-header">
+                    <span>Notifications</span>
+                    @if (unreadCount() > 0) {
+                      <span class="notif-unread-chip">{{ unreadCount() }} new</span>
+                    }
+                  </div>
+                  <div class="notif-list">
+                    @if (isLoadingNotifs()) {
+                      <p class="notif-empty">Loading...</p>
+                    } @else if (recentNotifs().length === 0) {
+                      <p class="notif-empty">You're all caught up!</p>
+                    } @else {
+                      @for (note of recentNotifs(); track note.notificationId) {
+                        <button class="notif-row" [class.unread]="note.status === 'UN'" (click)="openNotification(note)">
+                          <i class="material-icons-round notif-row-icon">{{ notifIcon(note.category) }}</i>
+                          <span class="notif-row-text">{{ note.message }}</span>
+                          @if (note.status === 'UN') {
+                            <span class="notif-row-dot"></span>
+                          }
+                        </button>
+                      }
+                    }
+                  </div>
+                  <a routerLink="/notifications" class="notif-view-all" (click)="closeNotifMenu()">View All</a>
+                </div>
+              }
+            </div>
 
             <div class="profile-menu">
               <button class="profile-trigger" [class.active]="isProfileMenuOpen()" (click)="toggleProfileMenu($event)">
@@ -169,7 +203,12 @@ import { FarmerService } from '../../services/farmer.service';
     .main-wrapper {
       display: flex;
       min-height: 100vh;
-      width: 100vw;
+      /* 100%, not 100vw: 100vw includes the vertical scrollbar's width, which
+         made the layout permanently ~15px wider than the usable viewport and
+         produced a horizontal scrollbar on every page. */
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
       background-color: var(--bg-dark);
     }
     .sidebar {
@@ -297,7 +336,7 @@ import { FarmerService } from '../../services/farmer.service';
       min-width: 0;
     }
     .top-header {
-      height: 64px;
+      height: 50px;
       background-color: var(--bg-header);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-color);
@@ -343,6 +382,151 @@ import { FarmerService } from '../../services/farmer.service';
     .region-badge i {
       font-size: 16px;
     }
+    /* Top-right notification bell */
+    .notif-menu {
+      position: relative;
+    }
+    .notif-trigger {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 0.6rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .notif-trigger i {
+      font-size: 22px;
+    }
+    .notif-trigger:hover,
+    .notif-trigger.active {
+      background: var(--primary-light);
+      border-color: var(--border-color);
+      color: var(--primary-color);
+    }
+    .notif-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background-color: var(--danger, #dc2626);
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      border: 2px solid var(--bg-header);
+    }
+    .notif-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 340px;
+      max-width: 90vw;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.6rem;
+      box-shadow: var(--shadow-lg);
+      z-index: 200;
+      animation: fadeIn var(--transition-fast) ease-out;
+      overflow: hidden;
+    }
+    .notif-dropdown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+    .notif-unread-chip {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      background: var(--primary-light);
+      padding: 0.15rem 0.55rem;
+      border-radius: 9999px;
+    }
+    .notif-list {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .notif-empty {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .notif-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background var(--transition-fast);
+    }
+    .notif-row:last-child {
+      border-bottom: none;
+    }
+    .notif-row:hover {
+      background: var(--primary-light);
+    }
+    .notif-row.unread {
+      background: rgba(22, 163, 74, 0.05);
+    }
+    .notif-row-icon {
+      font-size: 18px;
+      color: var(--primary-color);
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .notif-row-text {
+      flex-grow: 1;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+    .notif-row-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      flex-shrink: 0;
+      margin-top: 0.3rem;
+    }
+    .notif-view-all {
+      display: block;
+      text-align: center;
+      padding: 0.65rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      text-decoration: none;
+      border-top: 1px solid var(--border-color);
+    }
+    .notif-view-all:hover {
+      background: var(--primary-light);
+    }
+
     /* Top-right profile dropdown */
     .profile-menu {
       position: relative;
@@ -450,9 +634,13 @@ import { FarmerService } from '../../services/farmer.service';
       .profile-text { display: none; }
     }
     .main-content-area {
-      padding: 2rem;
+      padding: 1.25rem;
       flex-grow: 1;
+      min-width: 0;
       overflow-y: auto;
+      /* Must be explicit: with overflow-y set, an unspecified overflow-x
+         computes to auto, which gave this pane its own horizontal scrollbar. */
+      overflow-x: hidden;
     }
 
     .mobile-toggle {
@@ -500,19 +688,98 @@ export class MainLayoutComponent implements OnInit {
   private router = inject(Router);
   private userService = inject(UserService);
   private farmerService = inject(FarmerService);
+  private notificationService = inject(NotificationService);
 
   isSidebarOpen = signal(false);
   isProfileMenuOpen = signal(false);
+  isNotifMenuOpen = signal(false);
 
   // Count shown as a badge next to "Pending Approvals" (pending users + pending land holdings).
   pendingApprovalsCount = signal(0);
 
+  // Bell dropdown — always the current user's own inbox, regardless of role.
+  unreadCount = signal(0);
+  recentNotifs = signal<any[]>([]);
+  isLoadingNotifs = signal(false);
+
   ngOnInit(): void {
+    this.syncFarmerDisplayName();
     this.refreshPendingCount();
-    // Recompute after navigation so approving/rejecting elsewhere keeps the badge current.
+    this.refreshUnreadCount();
+    // Recompute after navigation so approving/rejecting elsewhere keeps the badges current.
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => this.refreshPendingCount());
+      .subscribe(() => {
+        this.refreshPendingCount();
+        this.refreshUnreadCount();
+      });
+  }
+
+  private refreshUnreadCount(): void {
+    this.notificationService.getUnreadCount().subscribe({
+      next: (res) => this.unreadCount.set(res?.unread || 0),
+      error: () => {}
+    });
+  }
+
+  toggleNotifMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    const opening = !this.isNotifMenuOpen();
+    this.isNotifMenuOpen.set(opening);
+    this.isProfileMenuOpen.set(false);
+    if (opening) {
+      this.isLoadingNotifs.set(true);
+      this.notificationService.getMyNotifications().subscribe({
+        next: (data) => {
+          const sorted = [...(data || [])]
+            .filter(n => n.status !== 'DI')
+            .sort((a, b) => (b.notificationId || 0) - (a.notificationId || 0));
+          this.recentNotifs.set(sorted.slice(0, 6));
+          this.isLoadingNotifs.set(false);
+        },
+        error: () => this.isLoadingNotifs.set(false)
+      });
+    }
+  }
+
+  closeNotifMenu(): void {
+    this.isNotifMenuOpen.set(false);
+  }
+
+  openNotification(note: any): void {
+    if (note.status === 'UN') {
+      this.notificationService.markAsRead(note.notificationId).subscribe({
+        next: () => {
+          note.status = 'RD';
+          this.unreadCount.set(Math.max(0, this.unreadCount() - 1));
+        },
+        error: () => {}
+      });
+    }
+  }
+
+  notifIcon(category: string): string {
+    switch (category) {
+      case 'Subsidy': return 'monetization_on';
+      case 'InputProcurement': return 'shopping_bag';
+      case 'CropAdvisory': return 'eco';
+      case 'ProduceSale': return 'storefront';
+      case 'Compliance': return 'verified_user';
+      default: return 'notifications';
+    }
+  }
+
+  /**
+   * A Farmer's real name lives on their farmer profile, so take the display name
+   * from there. GET /farmer-profiles is already scoped to the caller, so the first
+   * row is this user's own profile.
+   */
+  private syncFarmerDisplayName(): void {
+    if (!this.authService.hasRole(['Farmer'])) return;
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (profiles) => this.authService.updateDisplayName((profiles || [])[0]?.name),
+      error: () => {}
+    });
   }
 
   private refreshPendingCount(): void {
@@ -539,11 +806,13 @@ export class MainLayoutComponent implements OnInit {
   toggleProfileMenu(event: MouseEvent) {
     event.stopPropagation();
     this.isProfileMenuOpen.update(v => !v);
+    this.isNotifMenuOpen.set(false);
   }
 
   @HostListener('document:click')
   closeProfileMenu() {
     this.isProfileMenuOpen.set(false);
+    this.isNotifMenuOpen.set(false);
   }
 
   goToProfile() {

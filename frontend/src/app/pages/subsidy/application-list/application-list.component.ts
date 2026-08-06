@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { SubsidyService } from '../../../services/subsidy.service';
 import { FarmerService } from '../../../services/farmer.service';
 import { AuthService } from '../../../services/auth.service';
@@ -10,6 +10,18 @@ import { ConfirmationModalComponent } from '../../../components/confirmation-mod
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
 import { exportTableToExcel } from '../../../utils/export-excel.util';
+
+/**
+ * Rejects a date that falls after today. Used for Application Date and
+ * Disbursement Date, which can never be in the future.
+ */
+function notFutureDateValidator(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) return null;
+  const picked = new Date(control.value);
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  return picked.getTime() > today.getTime() ? { futureDate: true } : null;
+}
 
 @Component({
   selector: 'app-application-list',
@@ -30,16 +42,16 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
         </div>
         <div class="header-actions">
           @if (!isFarmer()) {
-            <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0">
+            <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0" title="Export applications to Excel">
               <i class="material-icons-round text-success">table_view</i>
               <span>Export XLS</span>
             </button>
           }
           <!-- Farmers and Extension Officers can file applications -->
           @if (canCreate()) {
-            <button class="btn btn-primary" (click)="openCreateModal()">
+            <button class="btn btn-primary" (click)="openCreateModal()" title="File a new subsidy application">
               <i class="material-icons-round">post_add</i>
-              <span>New Application</span>
+              <span>Application</span>
             </button>
           }
         </div>
@@ -100,11 +112,15 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>S.No</th>
                   <th>Farmer Name</th>
                   <th>Scheme Name</th>
-                  <th>Application Date</th>
-                  <th>Eligibility Score</th>
+                  <th class="sortable" (click)="toggleDateSort()"
+                      [title]="dateSortDir === 'asc' ? 'Sorted oldest first — click for newest first' : 'Sorted newest first — click for oldest first'">
+                    <span class="sort-header">
+                      Application Date
+                      <i class="material-icons-round sort-icon">{{ dateSortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</i>
+                    </span>
+                  </th>
                   <th>Disbursed Amt</th>
                   <th>Disbursed Date</th>
                   <th>Status</th>
@@ -112,17 +128,11 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 </tr>
               </thead>
               <tbody>
-                @for (app of paginatedApplications(); track app.applicationId; let i = $index) {
+                @for (app of paginatedApplications(); track app.applicationId) {
                   <tr>
-                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ getFarmerName(app.farmerId) }}</strong></td>
                     <td>{{ getSchemeName(app.schemeId) }}</td>
                     <td>{{ app.applicationDate | date:'mediumDate' }}</td>
-                    <td>
-                      <span class="eligibility-score" [ngClass]="app.eligibilityScore >= 70 ? 'text-success' : 'text-warning'">
-                        {{ app.eligibilityScore | number:'1.1-1' }}%
-                      </span>
-                    </td>
                     <td>{{ app.disbursedAmount ? (app.disbursedAmount | currency:'INR':'symbol-narrow') : '-' }}</td>
                     <td>{{ app.disbursedDate ? (app.disbursedDate | date:'mediumDate') : '-' }}</td>
                     <td>
@@ -137,21 +147,21 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                     </td>
                     <td>
                       <app-action-menu>
-                        <button class="menu-item" (click)="viewApplicationDetails(app)">
+                        <button class="menu-item" (click)="viewApplicationDetails(app)" title="View application details">
                           <i class="material-icons-round">visibility</i> View
                         </button>
                         @if (canReview() && app.status === 'PE') {
-                          <button class="menu-item" (click)="openReviewModal(app)">
+                          <button class="menu-item" (click)="openReviewModal(app)" title="Review application">
                             <i class="material-icons-round">rate_review</i> Review
                           </button>
                         } @else if (canReview() && app.status === 'AP') {
-                          <button class="menu-item" (click)="openDisburseModal(app)">
+                          <button class="menu-item" (click)="openDisburseModal(app)" title="Record fund disbursement">
                             <i class="material-icons-round">paid</i> Disburse
                           </button>
                         }
                         <!-- Farmers/Admins can delete pending application -->
                         @if (canDelete(app)) {
-                          <button class="menu-item danger" (click)="confirmDelete(app)">
+                          <button class="menu-item danger" (click)="confirmDelete(app)" title="Withdraw application">
                             <i class="material-icons-round">delete</i> Delete
                           </button>
                         }
@@ -178,7 +188,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>File New Subsidy Application</h3>
-              <button class="close-btn" (click)="closeCreateModal()">
+              <button class="close-btn" (click)="closeCreateModal()" title="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -200,9 +210,13 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 @if (!isFarmer()) {
                   <div class="form-group">
                     <label for="formFarmer">Farmer User ID</label>
-                    <input type="number" id="formFarmer" formControlName="farmerId" placeholder="e.g. 102" />
+                    <input type="number" id="formFarmer" formControlName="farmerId" placeholder="e.g. 102" min="1" step="1" />
                     @if (isFieldInvalid('farmerId')) {
-                      <span class="error-text">Farmer User ID must be a positive integer</span>
+                      <span class="error-text">
+                        @if (appForm.get('farmerId')?.errors?.['required']) { Farmer User ID is required. }
+                        @else if (appForm.get('farmerId')?.errors?.['min']) { Farmer User ID must be a positive number. }
+                        @else if (appForm.get('farmerId')?.errors?.['pattern']) { Farmer User ID must be a whole number (no decimals). }
+                      </span>
                     }
                   </div>
                 }
@@ -210,20 +224,32 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                 <div class="form-row">
                   <div class="form-group">
                     <label for="formScore">Eligibility Score (%)</label>
-                    <input type="number" id="formScore" formControlName="eligibilityScore" placeholder="85.5" />
+                    <input type="number" id="formScore" formControlName="eligibilityScore" placeholder="85.5" min="0" max="100" step="0.1" />
                     @if (isFieldInvalid('eligibilityScore')) {
-                      <span class="error-text">Eligibility Score must be between 0 and 100</span>
+                      <span class="error-text">
+                        @if (appForm.get('eligibilityScore')?.errors?.['required']) { Eligibility Score is required. }
+                        @else if (appForm.get('eligibilityScore')?.errors?.['min']) { Eligibility Score cannot be below 0. }
+                        @else if (appForm.get('eligibilityScore')?.errors?.['max']) { Eligibility Score cannot exceed 100. }
+                      </span>
                     }
                   </div>
 
                   <div class="form-group">
                     <label for="formDate">Application Date</label>
                     <input type="date" id="formDate" formControlName="applicationDate" />
+                    @if (isFieldInvalid('applicationDate')) {
+                      <span class="error-text">
+                        @if (appForm.get('applicationDate')?.errors?.['required']) { Application Date is required. }
+                        @else if (appForm.get('applicationDate')?.errors?.['futureDate']) { Application Date cannot be in the future. }
+                      </span>
+                    }
                   </div>
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="appForm.invalid">Submit Application</button>
+                <button type="submit" class="btn btn-primary" [disabled]="appForm.invalid" title="Submit Application" aria-label="Submit Application">
+                  <i class="material-icons-round">save</i>
+                </button>
               </div>
             </form>
           </div>
@@ -236,7 +262,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>Review Subsidy Application</h3>
-              <button class="close-btn" (click)="closeReviewModal()">
+              <button class="close-btn" (click)="closeReviewModal()" title="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -258,15 +284,21 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                     <option value="AP">Approved (AP)</option>
                     <option value="RE">Rejected (RE)</option>
                   </select>
+                  @if (reviewForm.get('status')?.invalid && (reviewForm.get('status')?.dirty || reviewForm.get('status')?.touched)) {
+                    <span class="error-text">Please select an outcome (Approved or Rejected).</span>
+                  }
                 </div>
 
                 <div class="form-group">
                   <label for="reviewScore">Updated Eligibility Score (%) (Optional)</label>
-                  <input type="number" id="reviewScore" formControlName="eligibilityScore" />
+                  <input type="number" id="reviewScore" formControlName="eligibilityScore" min="0" max="100" step="0.1" />
+                  @if (reviewForm.get('eligibilityScore')?.invalid && (reviewForm.get('eligibilityScore')?.dirty || reviewForm.get('eligibilityScore')?.touched)) {
+                    <span class="error-text">Eligibility Score must be between 0 and 100.</span>
+                  }
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Outcome</button>
+                <button type="submit" class="btn btn-primary" [disabled]="reviewForm.invalid">Save Outcome</button>
               </div>
             </form>
           </div>
@@ -279,7 +311,7 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>Record Fund Disbursement</h3>
-              <button class="close-btn" (click)="closeDisburseModal()">
+              <button class="close-btn" (click)="closeDisburseModal()" title="Close">
                 <i class="material-icons-round">close</i>
               </button>
             </div>
@@ -295,15 +327,25 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
 
                 <div class="form-group">
                   <label for="disburseAmt">Disbursed Amount (₹)</label>
-                  <input type="number" id="disburseAmt" formControlName="disbursedAmount" placeholder="e.g. 500" />
+                  <input type="number" id="disburseAmt" formControlName="disbursedAmount" placeholder="e.g. 500" min="1" step="0.01" />
                   @if (disburseForm.get('disbursedAmount')?.invalid && (disburseForm.get('disbursedAmount')?.dirty || disburseForm.get('disbursedAmount')?.touched)) {
-                    <span class="error-text">Disbursed amount must be a positive number</span>
+                    <span class="error-text">
+                      @if (disburseForm.get('disbursedAmount')?.errors?.['required']) { Disbursed amount is required. }
+                      @else if (disburseForm.get('disbursedAmount')?.errors?.['min']) { Disbursed amount must be at least ₹1. }
+                      @else if (disburseForm.get('disbursedAmount')?.errors?.['max']) { Disbursed amount cannot exceed the scheme's benefit amount. }
+                    </span>
                   }
                 </div>
 
                 <div class="form-group">
                   <label for="disburseDate">Disbursement Date</label>
                   <input type="date" id="disburseDate" formControlName="disbursedDate" />
+                  @if (disburseForm.get('disbursedDate')?.invalid && (disburseForm.get('disbursedDate')?.dirty || disburseForm.get('disbursedDate')?.touched)) {
+                    <span class="error-text">
+                      @if (disburseForm.get('disbursedDate')?.errors?.['required']) { Disbursement Date is required. }
+                      @else if (disburseForm.get('disbursedDate')?.errors?.['futureDate']) { Disbursement Date cannot be in the future. }
+                    </span>
+                  }
                 </div>
               </div>
               <div class="modal-footer">
@@ -336,6 +378,37 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
     </div>
   `,
   styles: [`
+    /* Sortable column header */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th.sortable .sort-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    th.sortable .sort-icon {
+      font-size: 1rem;
+      opacity: 0.7;
+    }
+    th.sortable:hover .sort-icon {
+      opacity: 1;
+    }
+    /* Keep the form a constant height: validation messages overlay a reserved
+       slot below each field instead of pushing the layout taller. */
+    form .form-group {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+    form .error-text {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.15rem;
+      line-height: 1.15;
+    }
     .header-actions {
       display: flex;
       gap: 0.5rem;
@@ -433,9 +506,12 @@ export class ApplicationListComponent implements OnInit {
   schemeFilter = '';
   statusFilter = '';
 
-  // Pagination
+  // Sorting on the Application Date column: 'desc' (newest first) by default.
+  dateSortDir: 'asc' | 'desc' = 'desc';
+
+  // Pagination — remember the chosen page size across navigation.
   currentPage = 0;
-  pageSize = 10;
+  pageSize = Number(localStorage.getItem('agrilink.tablePageSize')) || 10;
 
   // Forms
   appForm!: FormGroup;
@@ -523,8 +599,20 @@ export class ApplicationListComponent implements OnInit {
       list = list.filter(a => a.status === this.statusFilter);
     }
 
+    // Sort by application date in the chosen direction (copy first so we
+    // never mutate the source signal's array).
+    list = [...list].sort((a, b) => {
+      const diff = new Date(a.applicationDate).getTime() - new Date(b.applicationDate).getTime();
+      return this.dateSortDir === 'asc' ? diff : -diff;
+    });
+
     this.filteredApplications.set(list);
     this.currentPage = 0;
+  }
+
+  toggleDateSort(): void {
+    this.dateSortDir = this.dateSortDir === 'asc' ? 'desc' : 'asc';
+    this.applyFilters();
   }
 
   paginatedApplications(): any[] {
@@ -540,6 +628,7 @@ export class ApplicationListComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+    localStorage.setItem('agrilink.tablePageSize', String(size));
   }
 
   getSchemeName(schemeId: number): string {
@@ -614,11 +703,15 @@ export class ApplicationListComponent implements OnInit {
 
   openCreateModal(): void {
     const today = new Date().toISOString().substring(0, 10);
+    // A Farmer's own farmerId is their farmer_profile.farmerId (NOT their userId — those
+    // are different id spaces). getAllFarmerProfiles() is scoped server-side to the caller's
+    // own profile(s) for a Farmer, so the first entry is always their own.
+    const ownFarmerId = this.isFarmer() ? this.farmerProfiles()[0]?.farmerId : '';
     this.appForm = this.fb.group({
       schemeId: [null, [Validators.required]],
-      farmerId: [this.isFarmer() ? this.authService.currentUserValue?.userId : '', this.isFarmer() ? [] : [Validators.required, Validators.min(1)]],
+      farmerId: [this.isFarmer() ? this.authService.currentUserValue?.userId : '', this.isFarmer() ? [] : [Validators.required, Validators.min(1), Validators.pattern(/^[0-9]+$/)]],
       eligibilityScore: [80.0, [Validators.required, Validators.min(0), Validators.max(100)]],
-      applicationDate: [today, [Validators.required]]
+      applicationDate: [today, [Validators.required, notFutureDateValidator]]
     });
     this.showCreateModal.set(true);
   }
@@ -630,13 +723,16 @@ export class ApplicationListComponent implements OnInit {
   onCreateSubmit(): void {
     if (this.appForm.invalid) return;
     const val = this.appForm.value;
-    
+
     // Add default user details for farmer submission
     if (this.isFarmer()) {
       val.userId = this.authService.currentUserValue?.userId;
     } else {
-      // For officers, set userId matching farmerId
-      val.userId = val.farmerId;
+      // For officers: farmerId in the form is the real farmer_profile.farmerId, but the
+      // owning user's userId is a different id — resolve it from the loaded profiles
+      // rather than reusing farmerId (they are not interchangeable).
+      const profile = this.farmerProfiles().find(p => p.farmerId == val.farmerId);
+      val.userId = profile?.userId ?? null;
     }
 
     this.subsidyService.createApplication(val).subscribe({
@@ -655,7 +751,8 @@ export class ApplicationListComponent implements OnInit {
     this.selectedApp.set(app);
     this.reviewForm = this.fb.group({
       status: ['', [Validators.required]],
-      eligibilityScore: [app.eligibilityScore, [Validators.required, Validators.min(0), Validators.max(100)]]
+      // Optional on review (label says so): only range-checked when a value is entered.
+      eligibilityScore: [app.eligibilityScore, [Validators.min(0), Validators.max(100)]]
     });
     this.showReviewModal.set(true);
   }
@@ -697,8 +794,8 @@ export class ApplicationListComponent implements OnInit {
     const maxAmt = schemeObj ? schemeObj.benefitAmount : 1000;
     
     this.disburseForm = this.fb.group({
-      disbursedAmount: [maxAmt, [Validators.required, Validators.min(1)]],
-      disbursedDate: [today, [Validators.required]]
+      disbursedAmount: [maxAmt, [Validators.required, Validators.min(1), Validators.max(maxAmt)]],
+      disbursedDate: [today, [Validators.required, notFutureDateValidator]]
     });
     this.showDisburseModal.set(true);
   }

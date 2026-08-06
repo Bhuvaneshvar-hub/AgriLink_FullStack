@@ -1,0 +1,470 @@
+<div class="produce-page">
+  <div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1>Produce Market &amp; Sales Log</h1>
+      <p class="text-secondary">Register harvested yield for sale, inspect listed produce, and record transactions.</p>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tabs-container mb-3">
+    <button class="tab-btn" [class.active]="activeTab() === 'listings'" (click)="setTab('listings')">
+      <i class="material-icons-round">storefront</i>
+      <span>Produce Listings</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'sales'" (click)="setTab('sales')">
+      <i class="material-icons-round">receipt_long</i>
+      <span>Sales &amp; Transactions</span>
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="empty-state">
+      <span class="spinner-large"></span>
+      <p class="mt-3">Fetching marketplace records...</p>
+    </div>
+  } @else {
+    <!-- TABS CONTENT -->
+
+    <!-- 1. PRODUCE LISTINGS TAB -->
+    @if (activeTab() === 'listings') {
+      <div class="tab-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Available Marketplace Produce</h3>
+          <div class="header-actions">
+            @if (isAdmin() && listings().length > 0) {
+              <button class="btn btn-export btn-export-icon" (click)="exportListings('excel')"
+                      title="Export to XLS" aria-label="Export to XLS">
+                <i class="material-icons-round icon-xls">grid_on</i>
+              </button>
+              <button class="btn btn-export btn-export-icon" (click)="exportListings('pdf')"
+                      title="Export to PDF" aria-label="Export to PDF">
+                <i class="material-icons-round icon-pdf">picture_as_pdf</i>
+              </button>
+            }
+            @if (canManageListing()) {
+              <button class="btn btn-primary" (click)="openListingModal()">
+                <i class="material-icons-round">add_circle</i>
+                <span>New</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (listings().length === 0) {
+          <div class="empty-state card">
+            <i class="material-icons-round">shopping_basket</i>
+            <h3>No Listings Listed</h3>
+            <p>There are no listings for sale currently.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Crop Type</th>
+                    <th>Harvest Date</th>
+                    <th>Available Quantity (Kg)</th>
+                    <th>Quality Grade</th>
+                    <th>Price/Kg (₹)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of paginatedListings(); track item.listingId) {
+                    <tr>
+                      <td>{{ getCropName(item.cropId) }}</td>
+                      <td>{{ item.harvestDate | date:'mediumDate' }}</td>
+                      <td>
+                        {{ availableQty(item) }} Kg
+                        @if (availableQty(item) !== item.quantityKg) {
+                          <span class="text-secondary qty-listed">of {{ item.quantityKg }} listed</span>
+                        }
+                      </td>
+                      <td>
+                        <span class="badge badge-info">{{ item.qualityGrade }}</span>
+                      </td>
+                      <td>{{ item.askingPricePerKg | currency:'INR':'symbol-narrow' }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="{
+                          'badge-success': item.status === 'AV',
+                          'badge-info': item.status === 'PB',
+                          'badge-secondary': item.status === 'WD',
+                          'badge-warning': item.status === 'SO'
+                        }">
+                          {{ getListingStatusLabel(item.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        <app-action-menu>
+                          <button class="menu-item" (click)="viewListingDetails(item)">
+                            <i class="material-icons-round">visibility</i> View
+                          </button>
+                          @if (canManageListing()) {
+                            <button class="menu-item" (click)="openListingModal(item)">
+                              <i class="material-icons-round">edit</i> Edit
+                            </button>
+                            <button class="menu-item danger" (click)="confirmDeleteListing(item)">
+                              <i class="material-icons-round">delete</i> Withdraw Listing
+                            </button>
+                          }
+                          @if (isProcurement() && (item.status === 'AV' || item.status === 'PB')) {
+                            <button class="menu-item" (click)="openBuyModal(item)">
+                              <i class="material-icons-round">shopping_cart</i> Buy
+                            </button>
+                          }
+                        </app-action-menu>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pagination
+              [currentPage]="listingPage"
+              [pageSize]="listingPageSize"
+              [totalElements]="listings().length"
+              (pageChange)="onListingPageChange($event)"
+              (pageSizeChange)="onListingPageSizeChange($event)">
+            </app-pagination>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- 2. PRODUCE SALES TAB -->
+    @if (activeTab() === 'sales') {
+      <div class="tab-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3>Recorded Sales Log</h3>
+            <p class="text-secondary">Audit transactions, recorded buyer details, and payment settlements.</p>
+          </div>
+          <div class="header-actions">
+            @if (sales().length > 0) {
+              <div class="search-box">
+                <i class="material-icons-round">search</i>
+                <input
+                  type="text"
+                  placeholder="Search sales..."
+                  [(ngModel)]="saleSearch"
+                  (ngModelChange)="onSaleSearchChange()"
+                  aria-label="Search sales" />
+              </div>
+            }
+            @if (isAdmin() && sales().length > 0) {
+              <button class="btn btn-export btn-export-icon" (click)="exportSales('excel')"
+                      title="Export to XLS" aria-label="Export to XLS">
+                <i class="material-icons-round icon-xls">grid_on</i>
+              </button>
+              <button class="btn btn-export btn-export-icon" (click)="exportSales('pdf')"
+                      title="Export to PDF" aria-label="Export to PDF">
+                <i class="material-icons-round icon-pdf">picture_as_pdf</i>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (sales().length === 0) {
+          <div class="empty-state card">
+            <i class="material-icons-round">payment</i>
+            <h3>No Transactions Found</h3>
+            <p>No purchases have been recorded yet.</p>
+          </div>
+        } @else if (filteredSales().length === 0) {
+          <div class="empty-state card">
+            <i class="material-icons-round">search_off</i>
+            <h3>No Matching Transactions</h3>
+            <p>No sale matches "{{ saleSearch }}".</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Quantity Sold</th>
+                    <th>Agreed Price/Kg</th>
+                    <th>Total Amount</th>
+                    <th>Sale Date</th>
+                    <th>Payment Status</th>
+                    <th>Farmer Confirmation</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (sale of paginatedSales(); track sale.saleId) {
+                    <tr>
+                      <td>{{ sale.quantitySoldKg }} Kg</td>
+                      <td>{{ sale.agreedPricePerKg | currency:'INR':'symbol-narrow' }}</td>
+                      <td><strong>{{ sale.totalAmount | currency:'INR':'symbol-narrow' }}</strong></td>
+                      <td>{{ sale.saleDate | date:'mediumDate' }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="{
+                          'badge-success': sale.paymentStatus === 'PD',
+                          'badge-warning': sale.paymentStatus === 'PE',
+                          'badge-danger': sale.paymentStatus === 'OV'
+                        }">
+                          {{ getPaymentStatusLabel(sale.paymentStatus) }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (sale.paymentStatus !== 'PD') {
+                          <span class="text-secondary">—</span>
+                        } @else if (isFarmerConfirmed(sale)) {
+                          <span class="badge badge-success">
+                            Received@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
+                          </span>
+                        } @else {
+                          <span class="badge badge-warning">Awaiting Farmer</span>
+                        }
+                      </td>
+                      <td>
+                        <app-action-menu>
+                          <button class="menu-item" (click)="viewSaleDetails(sale)">
+                            <i class="material-icons-round">visibility</i> View
+                          </button>
+                          @if (isProcurementOrAdmin() && sale.paymentStatus !== 'PD') {
+                            <button class="menu-item" (click)="confirmMarkPaid(sale)">
+                              <i class="material-icons-round">price_check</i> Mark Payment Paid
+                            </button>
+                          }
+                          @if (canConfirmReceipt(sale)) {
+                            <button class="menu-item" (click)="confirmPaymentReceived(sale)">
+                              <i class="material-icons-round">task_alt</i> I Received This Payment
+                            </button>
+                          }
+                          @if (isProcurementOrAdmin()) {
+                            <button class="menu-item danger" (click)="confirmDeleteSale(sale)">
+                              <i class="material-icons-round">delete</i> Delete
+                            </button>
+                          }
+                        </app-action-menu>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pagination
+              [currentPage]="salePage"
+              [pageSize]="salePageSize"
+              [totalElements]="filteredSales().length"
+              (pageChange)="onSalePageChange($event)"
+              (pageSizeChange)="onSalePageSizeChange($event)">
+            </app-pagination>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- MODALS SECTION -->
+
+  <!-- 1. Listing Create/Edit Modal -->
+  @if (showListingModal()) {
+    <div class="modal-overlay" (click)="closeListingModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditMode() ? 'Edit Produce Listing' : 'List Harvested Produce for Sale' }}</h3>
+          <button class="close-btn" (click)="closeListingModal()">
+            <i class="material-icons-round">close</i>
+          </button>
+        </div>
+        <form [formGroup]="listingForm" (ngSubmit)="submitListingForm()">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="lFarmer">Farmer Profile</label>
+                <select id="lFarmer" formControlName="farmerId">
+                  <option value="">Select Profile</option>
+                  @for (prof of farmerProfiles(); track prof.farmerId) {
+                    <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="lCrop">Crop Catalog</label>
+                <select id="lCrop" formControlName="cropId">
+                  <option value="">Select Crop</option>
+                  @for (crop of cropCatalogs(); track crop.cropId) {
+                    <option [value]="crop.cropId">{{ crop.cropName }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="lDate">Harvest Date</label>
+                <input type="date" id="lDate" formControlName="harvestDate" />
+              </div>
+              <div class="form-group">
+                <label for="lGrade">Quality Grade</label>
+                <select id="lGrade" formControlName="qualityGrade">
+                  <option value="" disabled>Select Grade</option>
+                  <option value="A">Grade A (Premium)</option>
+                  <option value="B">Grade B (Standard)</option>
+                  <option value="C">Grade C (Substandard)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="lQty">Total Quantity (Kg)</label>
+                <input type="number" id="lQty" formControlName="quantityKg" />
+              </div>
+              <div class="form-group">
+                <label for="lPrice">Asking Price (₹/Kg)</label>
+                <input type="number" step="0.01" id="lPrice" formControlName="askingPricePerKg" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="lStatus">Status</label>
+              <select id="lStatus" formControlName="status">
+                <option value="" disabled>Select Status</option>
+                <option value="AV">AV (Available)</option>
+                <option value="PB">PB (PartiallyBooked)</option>
+                <option value="SO">SO (Sold)</option>
+                <option value="WD">WD (Withdrawn)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save" aria-label="Save">
+              <i class="material-icons-round">save</i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- 2. Purchase (Sale) Record Modal -->
+  @if (showBuyModal()) {
+    <div class="modal-overlay" (click)="closeBuyModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Record Transaction</h3>
+          <button class="close-btn" (click)="closeBuyModal()">
+            <i class="material-icons-round">close</i>
+          </button>
+        </div>
+        <form [formGroup]="saleForm" (ngSubmit)="submitSaleForm()">
+          <div class="modal-body">
+            <p>Buying produce from Listing <strong>#{{ selectedListing()?.listingId }}</strong> ({{ getCropName(selectedListing()?.cropId) }}).</p>
+            <p class="text-secondary">Available Stock: <strong>{{ availableQty(selectedListing()) }} Kg</strong>. Asking Price: <strong>{{ selectedListing()?.askingPricePerKg | currency:'INR':'symbol-narrow' }}/Kg</strong>.</p>
+
+            <div class="form-row mt-3">
+              <div class="form-group">
+                <label for="sQty">Available Quantity (Kg)</label>
+                <input
+                  type="number"
+                  id="sQty"
+                  formControlName="quantitySoldKg"
+                  [max]="availableQty(selectedListing())"
+                  (input)="calculateTotal()" />
+                <small class="field-hint">Up to {{ availableQty(selectedListing()) }} Kg still available on this listing.</small>
+                @if (saleForm.get('quantitySoldKg')?.touched && saleForm.get('quantitySoldKg')?.invalid) {
+                  <small class="field-error">Enter between 0.1 and {{ availableQty(selectedListing()) }} Kg.</small>
+                }
+              </div>
+              <div class="form-group">
+                <label for="sPricePct">Agreed Price (% of Asking Price)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  id="sPricePct"
+                  formControlName="offerPercent"
+                  [min]="minOfferPercent"
+                  (input)="calculateTotal()" />
+                <small class="field-hint">
+                  Minimum {{ minOfferPercent }}% of the asking price
+                  ({{ minAgreedPrice() | currency:'INR':'symbol-narrow' }}/Kg).
+                </small>
+                @if (saleForm.get('offerPercent')?.touched && saleForm.get('offerPercent')?.invalid) {
+                  <small class="field-error">Offer cannot go below {{ minOfferPercent }}% of the asking price.</small>
+                }
+              </div>
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="form-group">
+                <label>Agreed Price (₹/Kg)</label>
+                <div class="derived-value">{{ agreedPricePerKg() | currency:'INR':'symbol-narrow' }}</div>
+              </div>
+              <div class="form-group">
+                <label>Total Transaction Value (₹)</label>
+                <div class="derived-value derived-total">
+                  {{ totalCalculatedAmount() | currency:'INR':'symbol-narrow' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label for="sStatus">Payment Settlement Status</label>
+              <select id="sStatus" formControlName="paymentStatus">
+                <option value="" disabled>Select Payment Status</option>
+                <option value="PE">PE (Pending)</option>
+                <option value="PD">PD (Paid)</option>
+              </select>
+              <small class="field-hint">Marking a payment Paid asks the farmer to confirm they received it.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" [disabled]="saleForm.invalid">Record Sale</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Modals -->
+  @if (showDeleteListingConfirm()) {
+    <app-confirmation-modal
+      title="Withdraw Produce Listing"
+      message="Are you sure you want to withdraw this listed produce from the marketplace?"
+      (confirm)="executeDeleteListing()"
+      (cancel)="showDeleteListingConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showDeleteSaleConfirm()) {
+    <app-confirmation-modal
+      title="Cancel Transaction Record"
+      message="Are you sure you want to delete this recorded produce sale from auditing logs?"
+      (confirm)="executeDeleteSale()"
+      (cancel)="showDeleteSaleConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showMarkPaidConfirm()) {
+    <app-confirmation-modal
+      title="Mark Payment as Paid"
+      message="Mark this settlement as Paid? The selling farmer will be asked to confirm they received the money."
+      (confirm)="executeMarkPaid()"
+      (cancel)="showMarkPaidConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showReceiptConfirm()) {
+    <app-confirmation-modal
+      title="Confirm Payment Received"
+      message="Confirm that you have received this payment in full? This is recorded as your own acknowledgement of the settlement."
+      (confirm)="executeConfirmReceipt()"
+      (cancel)="showReceiptConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showDetailModal()) {
+    <app-detail-modal
+      [title]="detailTitle()"
+      [rows]="detailRows()"
+      (close)="showDetailModal.set(false)">
+    </app-detail-modal>
+  }
+</div>

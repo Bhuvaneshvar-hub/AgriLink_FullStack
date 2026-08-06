@@ -17,6 +17,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "notification")
@@ -41,7 +43,11 @@ public class Notification {
 	@Column(name = "category")
 	private NotificationCategory category;
 
+	// Stored as VARCHAR (not a native MySQL ENUM) so new NotificationStatus values can
+	// be added without an ALTER — a native enum column would reject values added after
+	// creation (this bit a Dismissed status before the column was widened).
 	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.VARCHAR)
 	@Column(name = "status")
 	private NotificationStatus status;
 

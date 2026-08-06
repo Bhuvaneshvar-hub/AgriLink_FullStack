@@ -10,5 +10,7 @@ public interface SubsidyApplicationRepository extends JpaRepository<SubsidyAppli
 
 	List<SubsidyApplication> findByUserId(Integer userId);
 
+	List<SubsidyApplication> findByFarmerId(Integer farmerId);
+
 	boolean existsByFarmerIdAndSchemeId(Integer farmerId, Integer schemeId);
 }

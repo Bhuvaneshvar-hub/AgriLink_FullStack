@@ -249,6 +249,10 @@ import { NotificationService } from '../../services/notification.service';
                 <p class="text-secondary">Loading your farm data...</p>
               } @else {
                 <div class="farm-stat-row">
+                  <span class="farm-stat-label">Land Holdings</span>
+                  <span class="farm-stat-value">{{ myLandHoldingsCount() }} registered</span>
+                </div>
+                <div class="farm-stat-row">
                   <span class="farm-stat-label">Crop Plans</span>
                   <span class="farm-stat-value">{{ myCropPlanStats().total }} total &middot; {{ myCropPlanStats().growing }} growing</span>
                 </div>
@@ -901,6 +905,7 @@ export class DashboardComponent implements OnInit {
   rejectedApplicationsCount = signal(0);
 
   // Farmer (self-scoped)
+  myLandHoldingsCount = signal(0);
   myCropPlanStats = signal<{ total: number; growing: number }>({ total: 0, growing: 0 });
   myProduceListingsCount = signal(0);
   mySubsidyStats = signal<{ total: number; pending: number }>({ total: 0, pending: 0 });
@@ -945,13 +950,15 @@ export class DashboardComponent implements OnInit {
     return this.authService.currentUserValue;
   }
 
-  // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.).
-  // getAllNotifications is scoped server-side: officers/admin see all, a farmer sees only their own.
+  // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.) —
+  // always the current user's own inbox, regardless of role.
   private loadRecentNotifications(): void {
     this.isLoadingNotifications.set(true);
-    this.notificationService.getAllNotifications().subscribe({
+    this.notificationService.getMyNotifications().subscribe({
       next: (data) => {
-        const sorted = [...(data || [])].sort((a, b) => (b.notificationId || 0) - (a.notificationId || 0));
+        const sorted = [...(data || [])]
+          .filter(n => n.status !== 'DI')
+          .sort((a, b) => (b.notificationId || 0) - (a.notificationId || 0));
         this.recentNotifications.set(sorted.slice(0, 5));
         this.isLoadingNotifications.set(false);
       },
@@ -1132,34 +1139,62 @@ export class DashboardComponent implements OnInit {
               resolve();
               return;
             }
-            this.cropService.getAllCropPlans().subscribe({
-              next: (plans) => {
-                const mine = plans.filter(p => p.farmerId === farmerId);
-                this.myCropPlanStats.set({
-                  total: mine.length,
-                  growing: mine.filter(p => p.status === 'GROWING').length
-                });
-                this.cropPlansRaw = mine;
-              },
-              error: () => {},
-              complete: () => resolve()
-            });
-            this.produceService.getAllProduceListings().subscribe({
-              next: (listings) => {
-                this.myProduceListingsCount.set(listings.filter(l => l.farmerId === farmerId).length);
-              },
-              error: () => {}
-            });
-            this.subsidyService.getApplicationsByFarmer(farmerId).subscribe({
-              next: (data) => {
-                this.mySubsidyStats.set({
-                  total: data.length,
-                  pending: data.filter(a => a.status === 'PE').length
-                });
-                this.subsidyAppsRaw = data;
-              },
-              error: () => {}
-            });
+            // Every farmer-scoped fetch below must finish before this promise resolves —
+            // buildChartCards() and isLoadingRoleStats() read the *Raw fields synchronously
+            // once roleStatsCalls settles, so a call that hasn't completed yet (e.g. subsidy
+            // applications arriving slower than crop plans) would otherwise be built empty
+            // and never recomputed.
+            const farmerSubCalls: Promise<void>[] = [];
+
+            farmerSubCalls.push(new Promise((res) => {
+              this.cropService.getAllCropPlans().subscribe({
+                next: (plans) => {
+                  const mine = plans.filter(p => p.farmerId === farmerId);
+                  this.myCropPlanStats.set({
+                    total: mine.length,
+                    growing: mine.filter(p => p.status === 'GROWING').length
+                  });
+                  this.cropPlansRaw = mine;
+                },
+                error: () => {},
+                complete: () => res()
+              });
+            }));
+
+            farmerSubCalls.push(new Promise((res) => {
+              this.produceService.getAllProduceListings().subscribe({
+                next: (listings) => {
+                  this.myProduceListingsCount.set(listings.filter(l => l.farmerId === farmerId).length);
+                },
+                error: () => {},
+                complete: () => res()
+              });
+            }));
+
+            farmerSubCalls.push(new Promise((res) => {
+              this.subsidyService.getApplicationsByFarmer(farmerId).subscribe({
+                next: (data) => {
+                  this.mySubsidyStats.set({
+                    total: data.length,
+                    pending: data.filter(a => a.status === 'PE').length
+                  });
+                  this.subsidyAppsRaw = data;
+                },
+                error: () => {},
+                complete: () => res()
+              });
+            }));
+
+            // Land holdings is scoped server-side to the caller's own farmer profile(s).
+            farmerSubCalls.push(new Promise((res) => {
+              this.farmerService.getAllLandHoldings().subscribe({
+                next: (holdings) => this.myLandHoldingsCount.set((holdings || []).length),
+                error: () => {},
+                complete: () => res()
+              });
+            }));
+
+            Promise.all(farmerSubCalls).then(() => resolve());
           },
           error: () => resolve()
         });

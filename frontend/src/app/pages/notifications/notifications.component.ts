@@ -1,9 +1,13 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { UserService } from '../../services/user.service';
+import { FarmerService } from '../../services/farmer.service';
 
 @Component({
   selector: 'app-notifications',
@@ -45,6 +49,15 @@ import { ToastService } from '../../services/toast.service';
               }
             </select>
           </div>
+          <div class="form-group">
+            <label for="dateRangeFilter">Date Range</label>
+            <select id="dateRangeFilter" [(ngModel)]="dateRangeFilter" (ngModelChange)="applyFilters()">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -75,7 +88,6 @@ import { ToastService } from '../../services/toast.service';
                 </div>
                 <p class="message">{{ alert.message }}</p>
                 <div class="notification-footer">
-                  <span class="target-user">User ID Tag: #{{ alert.userId }}</span>
                   <div class="actions">
                     @if (alert.status === 'UN') {
                       <button class="action-link-btn" (click)="markAsRead(alert)">
@@ -86,12 +98,6 @@ import { ToastService } from '../../services/toast.service';
                       <button class="action-link-btn" (click)="markAsUnread(alert)">
                         <i class="material-icons-round">mark_email_unread</i>
                         <span>Mark as Unread</span>
-                      </button>
-                    }
-                    @if (alert.status !== 'DI') {
-                      <button class="action-link-btn danger" (click)="dismiss(alert)">
-                        <i class="material-icons-round">notifications_off</i>
-                        <span>Dismiss</span>
                       </button>
                     }
                   </div>
@@ -105,9 +111,9 @@ import { ToastService } from '../../services/toast.service';
       <!-- Broadcast Modal -->
       @if (showBroadcastModal()) {
         <div class="modal-overlay" (click)="closeBroadcastModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-content wide" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3>Broadcast New System Alert</h3>
+              <h3>Broadcast New Alert</h3>
               <button class="close-btn" (click)="closeBroadcastModal()">
                 <i class="material-icons-round">close</i>
               </button>
@@ -115,10 +121,73 @@ import { ToastService } from '../../services/toast.service';
             <form [formGroup]="broadcastForm" (ngSubmit)="submitBroadcastForm()">
               <div class="modal-body">
                 <div class="form-group">
-                  <label for="bUser">Target User ID</label>
-                  <input type="number" id="bUser" formControlName="userId" placeholder="Enter target user ID (e.g. 1)" />
-                  <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Specify the recipient user's ID.</p>
+                  <label>Send To (Roles)</label>
+                  <div class="role-checks">
+                    @for (role of availableRoles(); track role) {
+                      <label class="check-chip" [class.checked]="isRoleSelected(role)">
+                        <input type="checkbox" [checked]="isRoleSelected(role)" (change)="toggleRole(role)" />
+                        <span>{{ role }}</span>
+                      </label>
+                    }
+                  </div>
                 </div>
+
+                @if (isRoleSelected('Farmer')) {
+                  <div class="form-group">
+                    <div class="picker-head">
+                      <label>Farmers ({{ selectAllFarmers() ? visibleFarmerOptions().length : selectedFarmerIds().length }} selected)</label>
+                      <button type="button" class="select-all-btn" (click)="toggleSelectAllFarmers()">
+                        {{ selectAllFarmers() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    </div>
+                    <input type="number" [(ngModel)]="regionFilter" [ngModelOptions]="{standalone: true}"
+                      placeholder="Filter by region (optional)" class="mb-2" />
+                    @if (isLoadingFarmers()) {
+                      <p class="text-muted picker-empty">Loading farmers...</p>
+                    } @else if (visibleFarmerOptions().length === 0) {
+                      <p class="text-muted picker-empty">No farmers found for this region.</p>
+                    } @else {
+                      <div class="user-picker" [class.disabled]="selectAllFarmers()">
+                        @for (f of visibleFarmerOptions(); track f.farmerId) {
+                          <label class="picker-row">
+                            <input type="checkbox" [checked]="selectAllFarmers() || isFarmerSelected(f.farmerId)"
+                              [disabled]="selectAllFarmers()" (change)="toggleFarmer(f.farmerId)" />
+                            <span>{{ f.name }}</span>
+                            <span class="picker-meta">Region {{ f.regionId ?? '—' }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (hasNonFarmerRoleSelected()) {
+                  <div class="form-group">
+                    <div class="picker-head">
+                      <label>Staff ({{ selectAllStaff() ? visibleStaffOptions().length : selectedStaffIds().length }} selected)</label>
+                      <button type="button" class="select-all-btn" (click)="toggleSelectAllStaff()">
+                        {{ selectAllStaff() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    </div>
+                    @if (isLoadingStaff()) {
+                      <p class="text-muted picker-empty">Loading users...</p>
+                    } @else if (visibleStaffOptions().length === 0) {
+                      <p class="text-muted picker-empty">No active users found for the selected roles.</p>
+                    } @else {
+                      <div class="user-picker" [class.disabled]="selectAllStaff()">
+                        @for (u of visibleStaffOptions(); track u.userId) {
+                          <label class="picker-row">
+                            <input type="checkbox" [checked]="selectAllStaff() || isStaffSelected(u.userId)"
+                              [disabled]="selectAllStaff()" (change)="toggleStaff(u.userId)" />
+                            <span>{{ u.name }}</span>
+                            <span class="picker-meta">{{ u.roleName }} &middot; Region {{ u.regionId ?? '—' }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
                 <div class="form-group">
                   <label for="bCategory">Alert Category</label>
                   <select id="bCategory" formControlName="category">
@@ -131,9 +200,16 @@ import { ToastService } from '../../services/toast.service';
                   <label for="bMessage">Message Content</label>
                   <textarea id="bMessage" formControlName="message" rows="3" placeholder="Enter the broadcast description..."></textarea>
                 </div>
+
+                <p class="recipient-summary">
+                  <i class="material-icons-round">groups</i>
+                  {{ recipientCountLabel() }}
+                </p>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="broadcastForm.invalid">Send Alert</button>
+                <button type="submit" class="btn btn-primary" [disabled]="broadcastForm.invalid || isSending() || !hasAnyRecipientSelectable()">
+                  {{ isSending() ? 'Sending...' : 'Send Alert' }}
+                </button>
               </div>
             </form>
           </div>
@@ -224,15 +300,11 @@ import { ToastService } from '../../services/toast.service';
     }
     .notification-footer {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       margin-top: 0.5rem;
       border-top: 1px dashed var(--border-color);
       padding-top: 0.5rem;
-    }
-    .target-user {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
     }
     .actions {
       display: flex;
@@ -280,6 +352,117 @@ import { ToastService } from '../../services/toast.service';
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Broadcast recipient picker */
+    .modal-content.wide {
+      max-width: 560px;
+    }
+    .role-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .check-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .check-chip input {
+      width: auto;
+      margin: 0;
+    }
+    .check-chip.checked {
+      border-color: var(--primary-color);
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+    }
+    .picker-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .picker-head label {
+      margin-bottom: 0;
+    }
+    .select-all-btn {
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .select-all-btn:hover {
+      background-color: var(--primary-light);
+    }
+    .mb-2 {
+      margin-bottom: 0.5rem;
+    }
+    .user-picker {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      transition: opacity var(--transition-fast);
+    }
+    .user-picker.disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .picker-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .picker-row:last-child {
+      border-bottom: none;
+    }
+    .picker-row input {
+      width: auto;
+      margin: 0;
+    }
+    .picker-row span:first-of-type {
+      flex-grow: 1;
+    }
+    .picker-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .picker-empty {
+      font-size: 0.85rem;
+      padding: 0.5rem 0;
+    }
+    .recipient-summary {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      background-color: var(--primary-light);
+      padding: 0.6rem 0.85rem;
+      border-radius: 0.5rem;
+      margin: 0;
+    }
+    .recipient-summary i {
+      font-size: 18px;
+    }
   `]
 })
 export class NotificationsComponent implements OnInit {
@@ -287,6 +470,8 @@ export class NotificationsComponent implements OnInit {
   private authService = inject(AuthService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
+  private userService = inject(UserService);
+  private farmerService = inject(FarmerService);
 
   // States
   isLoading = signal<boolean>(false);
@@ -296,6 +481,7 @@ export class NotificationsComponent implements OnInit {
   // Filters
   statusFilter = '';
   categoryFilter = '';
+  dateRangeFilter: 'all' | 'today' | '7days' | 'month' = 'all';
 
   // Fixed notification categories (mirror the backend NotificationCategory enum / design section 4.8).
   readonly categories = [
@@ -312,6 +498,23 @@ export class NotificationsComponent implements OnInit {
   // Forms
   broadcastForm!: FormGroup;
 
+  // ===== Broadcast recipient picker =====
+  // Roles: an ExtensionOfficer can only reach Farmers (and only their own region — the
+  // farmer-profiles endpoint they call is already region-scoped server-side); Admin can
+  // target any role. This mirrors what iam-service's user list actually permits per role.
+  private readonly ALL_ROLES = ['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'Farmer'];
+  selectedRoles = signal<string[]>(['Farmer']);
+  regionFilter: number | null = null;
+  selectAllFarmers = signal<boolean>(true);
+  isLoadingFarmers = signal<boolean>(false);
+  farmerOptions = signal<any[]>([]);
+  selectedFarmerIds = signal<number[]>([]);
+  isLoadingStaff = signal<boolean>(false);
+  staffOptions = signal<any[]>([]);
+  selectedStaffIds = signal<number[]>([]);
+  selectAllStaff = signal<boolean>(true);
+  isSending = signal<boolean>(false);
+
   ngOnInit() {
     this.initForm();
     this.loadNotifications();
@@ -321,9 +524,12 @@ export class NotificationsComponent implements OnInit {
     return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer']);
   }
 
+  availableRoles(): string[] {
+    return this.authService.hasRole(['AgriLinkAdmin']) ? this.ALL_ROLES : ['Farmer'];
+  }
+
   private initForm() {
     this.broadcastForm = this.fb.group({
-      userId: [1, [Validators.required, Validators.min(1)]],
       category: ['CropAdvisory', Validators.required],
       message: ['', Validators.required]
     });
@@ -345,7 +551,7 @@ export class NotificationsComponent implements OnInit {
 
   private loadNotifications() {
     this.isLoading.set(true);
-    this.notificationService.getAllNotifications().subscribe({
+    this.notificationService.getMyNotifications().subscribe({
       next: (data) => {
         this.notifications.set(data);
         this.applyFilters();
@@ -361,9 +567,13 @@ export class NotificationsComponent implements OnInit {
   applyFilters() {
     let list = [...this.notifications()];
 
-    // Filter by status
+    // Filter by status. Dismissed alerts are hidden from the default ("All") view —
+    // dismiss is meant to archive an alert out of your way, not just fade it in place —
+    // but they're never deleted, so picking "Dismissed Alerts" still surfaces them.
     if (this.statusFilter) {
       list = list.filter(n => n.status === this.statusFilter);
+    } else {
+      list = list.filter(n => n.status !== 'DI');
     }
 
     // Filter by category (exact match against the fixed category set)
@@ -371,10 +581,34 @@ export class NotificationsComponent implements OnInit {
       list = list.filter(n => n.category === this.categoryFilter);
     }
 
+    // Filter by date range
+    if (this.dateRangeFilter !== 'all') {
+      list = list.filter(n => this.matchesDateRange(n.createdDate));
+    }
+
     // Sort descending by id
     list.sort((a, b) => b.notificationId - a.notificationId);
 
     this.filteredNotifications.set(list);
+  }
+
+  private matchesDateRange(dateStr: string): boolean {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (this.dateRangeFilter === 'today') {
+      return d.toDateString() === now.toDateString();
+    }
+    if (this.dateRangeFilter === '7days') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return d >= start;
+    }
+    if (this.dateRangeFilter === 'month') {
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }
+    return true;
   }
 
   getIconForCategory(category: string): string {
@@ -402,20 +636,23 @@ export class NotificationsComponent implements OnInit {
     });
   }
 
-  dismiss(alert: any) {
-    this.notificationService.dismiss(alert.notificationId).subscribe({
-      next: () => { this.toast.success('Notification dismissed'); this.loadNotifications(); },
-      error: () => this.toast.error('Failed to dismiss notification')
-    });
-  }
-
   // ================= BROADCAST =================
   openBroadcastModal() {
-    this.broadcastForm.reset({
-      userId: 1,
-      category: 'CropAdvisory',
-      message: ''
-    });
+    this.broadcastForm.reset({ category: 'CropAdvisory', message: '' });
+    this.selectedRoles.set(['Farmer']);
+    this.regionFilter = null;
+    this.selectAllFarmers.set(true);
+    this.selectedFarmerIds.set([]);
+    this.selectAllStaff.set(true);
+    this.selectedStaffIds.set([]);
+    // Both lists are fetched exactly once, up front — they don't depend on which
+    // checkboxes end up ticked, only WHICH ROWS ARE SHOWN does (see visibleStaffOptions /
+    // visibleFarmerOptions). Re-fetching on every checkbox click was what caused the
+    // "loading..." flash on each toggle.
+    this.loadFarmerOptions();
+    if (this.availableRoles().length > 1) {
+      this.loadStaffOptions();
+    }
     this.showBroadcastModal.set(true);
   }
 
@@ -423,21 +660,150 @@ export class NotificationsComponent implements OnInit {
     this.showBroadcastModal.set(false);
   }
 
+  isRoleSelected(role: string): boolean {
+    return this.selectedRoles().includes(role);
+  }
+
+  toggleRole(role: string): void {
+    const current = this.selectedRoles();
+    this.selectedRoles.set(current.includes(role) ? current.filter(r => r !== role) : [...current, role]);
+  }
+
+  hasNonFarmerRoleSelected(): boolean {
+    return this.selectedRoles().some(r => r !== 'Farmer');
+  }
+
+  // Only the rows matching the currently-checked (non-Farmer) roles — and the typed
+  // region, if any — so ticking "ExtensionOfficer" doesn't show every officer role.
+  visibleStaffOptions(): any[] {
+    const targetRoles = this.selectedRoles().filter(r => r !== 'Farmer');
+    let pool = this.staffOptions().filter(u => targetRoles.includes(u.roleName));
+    if (this.regionFilter != null) {
+      pool = pool.filter(u => u.regionId === this.regionFilter);
+    }
+    return pool;
+  }
+
+  // getAllFarmerProfiles() is already region-scoped server-side for an ExtensionOfficer
+  // (their own region only) and unrestricted for AgriLinkAdmin — so no client-side role
+  // check is needed here, the backend already only returns what the caller may reach.
+  private loadFarmerOptions(): void {
+    this.isLoadingFarmers.set(true);
+    this.farmerService.getAllFarmerProfiles().subscribe({
+      next: (data) => {
+        this.farmerOptions.set((data || []).filter(f => f.status === 'AC'));
+        this.isLoadingFarmers.set(false);
+      },
+      error: () => { this.farmerOptions.set([]); this.isLoadingFarmers.set(false); }
+    });
+  }
+
+  // getAllUsers() is Admin-only server-side — only called when the picker for a
+  // non-Farmer role is actually shown (which itself only happens for AgriLinkAdmin).
+  private loadStaffOptions(): void {
+    this.isLoadingStaff.set(true);
+    this.userService.getAllUsers().subscribe({
+      next: (data) => {
+        this.staffOptions.set((data || []).filter(u => u.status === 'A' && u.roleName !== 'Farmer'));
+        this.isLoadingStaff.set(false);
+      },
+      error: () => { this.staffOptions.set([]); this.isLoadingStaff.set(false); }
+    });
+  }
+
+  toggleSelectAllFarmers(): void {
+    this.selectAllFarmers.update(v => !v);
+    if (this.selectAllFarmers()) {
+      this.selectedFarmerIds.set([]);
+    }
+  }
+
+  toggleSelectAllStaff(): void {
+    this.selectAllStaff.update(v => !v);
+    if (this.selectAllStaff()) {
+      this.selectedStaffIds.set([]);
+    }
+  }
+
+  isFarmerSelected(farmerId: number): boolean {
+    return this.selectedFarmerIds().includes(farmerId);
+  }
+
+  toggleFarmer(farmerId: number): void {
+    const current = this.selectedFarmerIds();
+    this.selectedFarmerIds.set(current.includes(farmerId) ? current.filter(id => id !== farmerId) : [...current, farmerId]);
+  }
+
+  isStaffSelected(userId: number): boolean {
+    return this.selectedStaffIds().includes(userId);
+  }
+
+  toggleStaff(userId: number): void {
+    const current = this.selectedStaffIds();
+    this.selectedStaffIds.set(current.includes(userId) ? current.filter(id => id !== userId) : [...current, userId]);
+  }
+
+  // The farmer picker list itself is already narrowed to the region typed above.
+  visibleFarmerOptions(): any[] {
+    if (this.regionFilter == null) return this.farmerOptions();
+    return this.farmerOptions().filter(f => f.regionId === this.regionFilter);
+  }
+
+  private resolveRecipientUserIds(): number[] {
+    const ids = new Set<number>();
+
+    if (this.isRoleSelected('Farmer')) {
+      const pool = this.visibleFarmerOptions();
+      const chosen = this.selectAllFarmers() ? pool : pool.filter(f => this.isFarmerSelected(f.farmerId));
+      chosen.forEach(f => { if (f.userId != null) ids.add(f.userId); });
+    }
+
+    if (this.hasNonFarmerRoleSelected()) {
+      const pool = this.visibleStaffOptions();
+      const chosen = this.selectAllStaff() ? pool : pool.filter(u => this.isStaffSelected(u.userId));
+      chosen.forEach(u => ids.add(u.userId));
+    }
+
+    return [...ids];
+  }
+
+  hasAnyRecipientSelectable(): boolean {
+    return this.resolveRecipientUserIds().length > 0;
+  }
+
+  recipientCountLabel(): string {
+    const count = this.resolveRecipientUserIds().length;
+    if (count === 0) return 'No matching recipients yet — adjust your selection above.';
+    return `This alert will be sent to ${count} recipient${count === 1 ? '' : 's'}.`;
+  }
+
   submitBroadcastForm() {
     if (this.broadcastForm.invalid) return;
-    const body = {
-      ...this.broadcastForm.value,
-      status: 'UN',
-      createdDate: new Date().toISOString().split('T')[0]
-    };
+    const userIds = this.resolveRecipientUserIds();
+    if (userIds.length === 0) {
+      this.toast.error('No recipients match your selection.');
+      return;
+    }
 
-    this.notificationService.createNotification(body).subscribe({
-      next: (res) => {
-        this.toast.success(res.message || 'Broadcast alert sent');
-        this.closeBroadcastModal();
-        this.loadNotifications();
-      },
-      error: (err) => this.toast.error(err.error?.message || 'Error broadcasting alert')
+    this.isSending.set(true);
+    const { category, message } = this.broadcastForm.value;
+    const createdDate = new Date().toISOString().split('T')[0];
+
+    forkJoin(
+      userIds.map(userId =>
+        this.notificationService.createNotification({ userId, category, message, status: 'UN', createdDate })
+          .pipe(catchError(() => of(null)))
+      )
+    ).subscribe(results => {
+      this.isSending.set(false);
+      const sent = results.filter(r => r !== null).length;
+      if (sent === 0) {
+        this.toast.error('Failed to send the alert.');
+        return;
+      }
+      this.toast.success(`Alert sent to ${sent} of ${userIds.length} recipient${userIds.length === 1 ? '' : 's'}.`);
+      this.closeBroadcastModal();
+      this.loadNotifications();
     });
   }
 }

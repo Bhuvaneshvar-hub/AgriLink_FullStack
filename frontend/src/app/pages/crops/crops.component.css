@@ -1,0 +1,432 @@
+.crops-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.25rem;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+.tab-btn i {
+  font-size: 20px;
+}
+.tab-btn:hover {
+  color: var(--primary-hover);
+}
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+.tab-content {
+  animation: fadeIn var(--transition-normal);
+}
+/* Icon-only submit button in modal footers — the tooltip/aria-label carries
+   the action name ("Save", "Register", ...). */
+.btn-save-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.4rem;
+  border-radius: 0.6rem;
+  gap: 0;
+}
+.btn-save-icon .material-icons-round {
+  font-size: 22px;
+  line-height: 1;
+}
+.btn-small {
+  padding: 0.4rem 0.8rem !important;
+  font-size: 0.8rem !important;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background var(--transition-fast);
+}
+.action-btn:hover {
+  background-color: var(--primary-light);
+}
+.action-btn i {
+  font-size: 18px;
+}
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.close-btn:hover {
+  color: var(--text-primary);
+}
+/* Farmer | Crop | Current Stage summary above the observation fields. Fixed
+   height and no wrapping, so filling it in never resizes the dialog. */
+.plan-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.9rem;
+  margin: 0.4rem 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* A completed stage stays readable but is clearly not selectable. */
+#oStage option:disabled {
+  color: var(--text-muted);
+}
+/* --- Stable modal height -------------------------------------------------
+   Validation messages and warnings used to be inserted into the flow, so the
+   dialog grew and shrank as values were typed or cleared. Every field in a modal
+   now reserves one line beneath it and the message is positioned into that
+   reserved space, so showing or hiding it never changes the dialog's size. */
+.modal-body .form-group {
+  position: relative;
+  padding-bottom: 1.25rem;
+  margin-bottom: 0.6rem;
+}
+.modal-body .form-group > .field-error,
+.modal-body .form-group > .field-hint,
+.modal-body .form-group > .season-window-warning {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Inline validation message under a field */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+/* Column behaviour: short values stay on one line, only Remarks wraps —
+   so the table reads as tidy columns instead of ragged two-line cells. */
+td.cell-nowrap { white-space: nowrap; }
+td.cell-name {
+  white-space: nowrap;
+  min-width: 140px;
+}
+td.cell-remarks {
+  min-width: 220px;
+  white-space: normal;
+  color: var(--text-secondary);
+}
+/* Crop Catalog columns are given a fixed 20-character width instead of letting
+   the browser split the card's leftover width between them, which is what pushed
+   Crop Name and Category far apart. The last data column soaks up the remainder,
+   so the gap lands once at the end rather than between every pair of columns. */
+.catalog-table {
+  table-layout: fixed;
+}
+.catalog-table th {
+  width: 20ch;
+}
+/* Expected Yield absorbs the leftover width; Actions stays just wide enough. */
+.catalog-table th:nth-child(5) {
+  width: auto;
+}
+.catalog-table th.col-actions {
+  width: 10ch;
+}
+/* Numeric columns stay left-aligned with the rest of the table; tabular figures
+   keep every digit the same width so 5 / 60 / 125 still line up cleanly. */
+th.col-num, td.col-num {
+  text-align: left;
+}
+td.col-num {
+  font-variant-numeric: tabular-nums;
+}
+/* Actions: narrow column so the leftover width goes to the data columns. */
+th.col-actions, td.col-actions {
+  text-align: left;
+  white-space: nowrap;
+  width: 1%;
+}
+/* Health check pill: icon + single word, so pass/fail reads at a glance. */
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.health-badge .material-icons-round {
+  font-size: 14px;
+  line-height: 1;
+}
+/* Sortable column headers */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th.sortable:hover { color: var(--primary-color); }
+.sort-icon {
+  font-size: 15px;
+  vertical-align: middle;
+  margin-left: 0.15rem;
+  opacity: 0.45;
+}
+.sort-icon.active {
+  opacity: 1;
+  color: var(--primary-color);
+}
+.criteria-cell {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.season-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-2, #f2f2f2);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.chip:hover {
+  filter: brightness(0.96);
+}
+.chip.active {
+  background: var(--primary-color, #2e7d32);
+  color: #fff;
+  border-color: var(--primary-color, #2e7d32);
+}
+.chip.active:hover {
+  background: var(--primary-hover, #276b2b);
+  border-color: var(--primary-hover, #276b2b);
+}
+.status-editor {
+  position: relative;
+  display: inline-block;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+.status-badge:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+.status-badge:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+.status-badge i {
+  font-size: 16px;
+}
+.status-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+/* Fixed (not absolute) so the panel is never clipped by the table's
+   horizontal overflow — top/left are measured from the toggle button. */
+.status-menu {
+  position: fixed;
+  z-index: 1200;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 0.35rem;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.status-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  width: 100%;
+}
+.status-option:hover {
+  background: var(--primary-light, #eef);
+}
+.status-option .check {
+  font-size: 16px;
+  color: var(--primary-color);
+}
+.spinner-tiny {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s infinite linear;
+  display: inline-block;
+}
+.season-window-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--warning, #b26a00);
+}
+.season-window-warning i {
+  font-size: 16px;
+}
+.spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s infinite linear;
+  display: inline-block;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* Export buttons: light card style with colored file-type icons */
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface, #ffffff);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.btn-export:hover {
+  background: var(--bg-dark);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.btn-export .material-icons-round { font-size: 20px; }
+/* Icon-only export button — square, no label. The tooltip/aria-label names
+   the format. */
+.btn-export-icon {
+  padding: 0.5rem;
+  width: 38px;
+  height: 38px;
+  justify-content: center;
+  gap: 0;
+}
+.icon-xls { color: #16a34a; }
+.icon-pdf { color: #ef4444; }
+/* Pest/disease flag toggle card */
+.observation-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-dark);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.observation-flag:hover {
+  border-color: var(--primary-color);
+}
+.observation-flag input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--danger);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.observation-flag__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.observation-flag__icon .material-icons-round { font-size: 20px; }
+.observation-flag__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.observation-flag__text strong { font-size: 0.9rem; }
+.observation-flag__text small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.observation-flag--active {
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+.observation-flag--active .observation-flag__icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+.observation-flag--active .observation-flag__text strong { color: var(--danger); }

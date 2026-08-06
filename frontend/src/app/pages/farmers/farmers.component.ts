@@ -84,12 +84,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <table>
                     <thead>
                       <tr>
-                        <th class="sortable" (click)="sortProfilesBy('name')"
-                            title="Sort by name (click again to reverse)">
-                          <span>Name</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="profilesSortField() === 'name'">{{ sortIcon(profilesSortField() === 'name', profilesSortAsc()) }}</i>
-                        </th>
+                        <th>Name</th>
                         <th>Gender</th>
                         <th class="sortable" (click)="sortProfilesBy('dateOfBirth')"
                             title="Sort by date of birth (click again to reverse)">
@@ -98,37 +93,17 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                              [class.active]="profilesSortField() === 'dateOfBirth'">{{ sortIcon(profilesSortField() === 'dateOfBirth', profilesSortAsc()) }}</i>
                         </th>
                         <th>National ID</th>
-                        <th class="sortable" (click)="sortProfilesBy('village')"
-                            title="Sort by village (click again to reverse)">
-                          <span>Village</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="profilesSortField() === 'village'">{{ sortIcon(profilesSortField() === 'village', profilesSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortProfilesBy('district')"
-                            title="Sort by district (click again to reverse)">
-                          <span>District</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="profilesSortField() === 'district'">{{ sortIcon(profilesSortField() === 'district', profilesSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortProfilesBy('phone')"
-                            title="Sort by phone (click again to reverse)">
-                          <span>Phone</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="profilesSortField() === 'phone'">{{ sortIcon(profilesSortField() === 'phone', profilesSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortProfilesBy('status')"
-                            title="Sort by status (click again to reverse)">
-                          <span>Status</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="profilesSortField() === 'status'">{{ sortIcon(profilesSortField() === 'status', profilesSortAsc()) }}</i>
-                        </th>
+                        <th>Village</th>
+                        <th>District</th>
+                        <th>Phone</th>
+                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (prof of paginatedProfiles(); track prof.farmerId) {
                         <tr>
-                          <td><strong>{{ prof.name }}</strong></td>
+                          <td class="cell-name"><strong>{{ prof.name }}(#{{ prof.farmerId }})</strong></td>
                           <td>{{ prof.gender }}</td>
                           <td>{{ prof.dateOfBirth | date:'mediumDate' }}</td>
                           <td>{{ prof.nationalIdNumber }}</td>
@@ -226,49 +201,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <thead>
                       <tr>
                         <th>Farmer</th>
-                        <th class="sortable" (click)="sortHoldingsBy('surveyNumber')"
-                            title="Sort by survey number (click again to reverse)">
-                          <span>Survey Number</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="holdingsSortField() === 'surveyNumber'">{{ sortIcon(holdingsSortField() === 'surveyNumber', holdingsSortAsc()) }}</i>
-                        </th>
+                        <th>Survey Number</th>
                         <th class="sortable" (click)="sortHoldingsBy('areaAcres')"
                             title="Sort by area (click again to reverse)">
                           <span>Area (in Acres)</span>
                           <i class="material-icons-round sort-icon"
                              [class.active]="holdingsSortField() === 'areaAcres'">{{ sortIcon(holdingsSortField() === 'areaAcres', holdingsSortAsc()) }}</i>
                         </th>
-                        <th class="sortable" (click)="sortHoldingsBy('soilType')"
-                            title="Sort by soil type (click again to reverse)">
-                          <span>Soil Type</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="holdingsSortField() === 'soilType'">{{ sortIcon(holdingsSortField() === 'soilType', holdingsSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortHoldingsBy('irrigationSource')"
-                            title="Sort by irrigation source (click again to reverse)">
-                          <span>Irrigation</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="holdingsSortField() === 'irrigationSource'">{{ sortIcon(holdingsSortField() === 'irrigationSource', holdingsSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortHoldingsBy('ownershipType')"
-                            title="Sort by ownership (click again to reverse)">
-                          <span>Ownership</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="holdingsSortField() === 'ownershipType'">{{ sortIcon(holdingsSortField() === 'ownershipType', holdingsSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortHoldingsBy('status')"
-                            title="Sort by status (click again to reverse)">
-                          <span>Status</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="holdingsSortField() === 'status'">{{ sortIcon(holdingsSortField() === 'status', holdingsSortAsc()) }}</i>
-                        </th>
+                        <th>Soil Type</th>
+                        <th>Irrigation</th>
+                        <th>Ownership</th>
+                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (land of paginatedHoldings(); track land.holdingId) {
                         <tr>
-                          <td>{{ getFarmerName(land.farmerId) }}</td>
+                          <td class="cell-name"><strong>{{ getFarmerName(land.farmerId) }}</strong></td>
                           <td>{{ land.surveyNumber }}</td>
                           <td>{{ land.areaAcres }}</td>
                           <td>{{ land.soilType }}</td>
@@ -359,18 +309,8 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <tr>
                         <th>Farmer</th>
                         <th>Survey No.</th>
-                        <th class="sortable" (click)="sortHistoryBy('cropName')"
-                            title="Sort by crop (click again to reverse)">
-                          <span>Crop</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="historySortField() === 'cropName'">{{ sortIcon(historySortField() === 'cropName', historySortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortHistoryBy('season')"
-                            title="Sort by season (click again to reverse)">
-                          <span>Season</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="historySortField() === 'season'">{{ sortIcon(historySortField() === 'season', historySortAsc()) }}</i>
-                        </th>
+                        <th>Crop</th>
+                        <th>Season</th>
                         <th class="sortable" (click)="sortHistoryBy('cropYear')"
                             title="Sort by year (click again to reverse)">
                           <span>Year</span>
@@ -395,7 +335,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <tbody>
                       @for (rec of paginatedHistories(); track rec.historyId) {
                         <tr>
-                          <td>{{ getFarmerNameOnly(rec.farmerId) }}</td>
+                          <td class="cell-name"><strong>{{ getFarmerName(rec.farmerId) }}</strong></td>
                           <td>{{ getSurveyNumber(rec.holdingId) }}</td>
                           <td><strong>{{ rec.cropName }}</strong></td>
                           <td>{{ rec.season }}</td>
@@ -696,7 +636,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <select id="chFarmer" formControlName="farmerId" (change)="onHistoryFarmerChange()">
                       <option value="">Select Profile</option>
                       @for (prof of farmerProfiles(); track prof.farmerId) {
-                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                        <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                       }
                     </select>
                     @if (chInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
@@ -798,6 +738,11 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
     </div>
   `,
   styles: [`
+    /* Farmer name column — matches the Crops module: one line, never split. */
+    td.cell-name {
+      white-space: nowrap;
+      min-width: 140px;
+    }
     .field-error {
       display: block;
       margin-top: 0.25rem;

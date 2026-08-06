@@ -57,23 +57,11 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
                 <table>
                   <thead>
                     <tr>
-                      <th class="sortable" (click)="sortUsersBy('name')" title="Sort by Name">
-                        <span>Name</span>
-                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'name'">{{ sortIcon(usersSortField() === 'name', usersSortAsc()) }}</i>
-                      </th>
-                      <th class="sortable" (click)="sortUsersBy('email')" title="Sort by Email">
-                        <span>Email</span>
-                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'email'">{{ sortIcon(usersSortField() === 'email', usersSortAsc()) }}</i>
-                      </th>
+                      <th>Name</th>
+                      <th>Email</th>
                       <th>Phone</th>
-                      <th class="sortable" (click)="sortUsersBy('roleName')" title="Sort by Requested Role">
-                        <span>Requested Role</span>
-                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'roleName'">{{ sortIcon(usersSortField() === 'roleName', usersSortAsc()) }}</i>
-                      </th>
-                      <th class="sortable" (click)="sortUsersBy('regionId')" title="Sort by Region ID">
-                        <span>Region ID</span>
-                        <i class="material-icons-round sort-icon" [class.active]="usersSortField() === 'regionId'">{{ sortIcon(usersSortField() === 'regionId', usersSortAsc()) }}</i>
-                      </th>
+                      <th>Requested Role</th>
+                      <th>Region ID</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -129,26 +117,14 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
                 <table>
                   <thead>
                     <tr>
-                      <th class="sortable" (click)="sortHoldingsBy('farmerId')" title="Sort by Farmer">
-                        <span>Farmer</span>
-                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'farmerId'">{{ sortIcon(holdingsSortField() === 'farmerId', holdingsSortAsc()) }}</i>
-                      </th>
-                      <th class="sortable" (click)="sortHoldingsBy('surveyNumber')" title="Sort by Survey #">
-                        <span>Survey #</span>
-                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'surveyNumber'">{{ sortIcon(holdingsSortField() === 'surveyNumber', holdingsSortAsc()) }}</i>
-                      </th>
+                      <th>Farmer</th>
+                      <th>Survey #</th>
                       <th class="sortable" (click)="sortHoldingsBy('areaAcres')" title="Sort by Area (Acres)">
                         <span>Area (Acres)</span>
                         <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'areaAcres'">{{ sortIcon(holdingsSortField() === 'areaAcres', holdingsSortAsc()) }}</i>
                       </th>
-                      <th class="sortable" (click)="sortHoldingsBy('soilType')" title="Sort by Soil">
-                        <span>Soil</span>
-                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'soilType'">{{ sortIcon(holdingsSortField() === 'soilType', holdingsSortAsc()) }}</i>
-                      </th>
-                      <th class="sortable" (click)="sortHoldingsBy('irrigationSource')" title="Sort by Irrigation">
-                        <span>Irrigation</span>
-                        <i class="material-icons-round sort-icon" [class.active]="holdingsSortField() === 'irrigationSource'">{{ sortIcon(holdingsSortField() === 'irrigationSource', holdingsSortAsc()) }}</i>
-                      </th>
+                      <th>Soil</th>
+                      <th>Irrigation</th>
                       <th>Ownership</th>
                       <th>Status</th>
                       <th>Actions</th>

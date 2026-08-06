@@ -10,6 +10,7 @@ import com.cognizant.agrilink.crop.service.GrowthObservationService;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GrowthObservationController {
 
 	private static final String ROLE_EXTENSION_OFFICER = "ROLE_ExtensionOfficer";
+	private static final String ROLE_FARMER = "ROLE_Farmer";
 
 	private final GrowthObservationService growthObservationService;
 	private final CropPlanService cropPlanService;
@@ -40,19 +42,28 @@ public class GrowthObservationController {
 	}
 
 	// GET methods return full data.
-	// An ExtensionOfficer sees only observations for crop plans belonging to
-	// farmers in their own region; Admin and other officers see everything.
+	// A Farmer sees only observations logged against their own crop plans; an
+	// ExtensionOfficer sees only observations for crop plans belonging to farmers
+	// in their own region; Admin and other officers see everything.
 	@GetMapping
 	public ResponseEntity<List<GrowthObservation>> getAll(Authentication authentication,
 			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String bearerToken) {
-		if (hasAuthority(authentication, ROLE_EXTENSION_OFFICER)) {
-			List<Integer> regionFarmerIds = farmerClient.getOwnedFarmerIds(bearerToken);
-			List<Integer> regionPlanIds = cropPlanService.getByFarmerIds(regionFarmerIds).stream()
-					.map(CropPlan::getPlanId)
-					.toList();
-			return ResponseEntity.ok(growthObservationService.getByPlanIds(regionPlanIds));
+		if (hasAuthority(authentication, ROLE_FARMER) || hasAuthority(authentication, ROLE_EXTENSION_OFFICER)) {
+			return ResponseEntity.ok(growthObservationService.getByPlanIds(scopedPlanIds(bearerToken)));
 		}
 		return ResponseEntity.ok(growthObservationService.getAll());
+	}
+
+	/**
+	 * Plan ids the caller is entitled to see observations for. farmer-service scopes
+	 * {@code GET /farmer-profiles} by the caller's own user id (Farmer) or region
+	 * (ExtensionOfficer), so forwarding the bearer token yields exactly the right set.
+	 */
+	private List<Integer> scopedPlanIds(String bearerToken) {
+		List<Integer> ownedFarmerIds = farmerClient.getOwnedFarmerIds(bearerToken);
+		return cropPlanService.getByFarmerIds(ownedFarmerIds).stream()
+				.map(CropPlan::getPlanId)
+				.toList();
 	}
 
 	private boolean hasAuthority(Authentication authentication, String role) {
@@ -68,8 +79,16 @@ public class GrowthObservationController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<GrowthObservation> getById(@PathVariable Integer id) {
-		return ResponseEntity.ok(growthObservationService.getById(id));
+	public ResponseEntity<GrowthObservation> getById(@PathVariable Integer id, Authentication authentication,
+			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String bearerToken) {
+		GrowthObservation observation = growthObservationService.getById(id);
+		// Enforced server-side: a Farmer or ExtensionOfficer requesting an id outside
+		// their own scope must not be able to read it directly.
+		if ((hasAuthority(authentication, ROLE_FARMER) || hasAuthority(authentication, ROLE_EXTENSION_OFFICER))
+				&& !scopedPlanIds(bearerToken).contains(observation.getPlanId())) {
+			throw new AccessDeniedException("You can only view observations on your own crop plans");
+		}
+		return ResponseEntity.ok(observation);
 	}
 
 	// Non-GET methods return only a message

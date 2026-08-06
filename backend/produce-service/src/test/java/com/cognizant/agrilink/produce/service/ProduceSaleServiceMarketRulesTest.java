@@ -257,16 +257,23 @@ class ProduceSaleServiceMarketRulesTest {
 		verify(produceSaleRepository, never()).save(any(ProduceSale.class));
 	}
 
+	/**
+	 * The farmer's confirmation is what settles a sale: a transaction is recorded
+	 * Pending and only the farmer acknowledging receipt moves it to Paid.
+	 */
 	@ParameterizedTest
 	@ValueSource(strings = {"PE", "OV"})
-	void confirmFarmerPaymentRejectsUnsettledSales(String paymentStatus) {
+	void confirmFarmerPaymentSettlesUnpaidSales(String paymentStatus) {
 		ProduceSale unsettled = existingSale(400.0);
 		unsettled.setPaymentStatus(PaymentStatus.valueOf(paymentStatus));
 		when(produceSaleRepository.findById(9)).thenReturn(Optional.of(unsettled));
+		when(produceSaleRepository.save(any(ProduceSale.class))).thenAnswer(inv -> inv.getArgument(0));
 
-		assertThatThrownBy(() -> produceSaleService.confirmFarmerPayment(9))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("marked this payment as Paid");
+		ProduceSale confirmed = produceSaleService.confirmFarmerPayment(9);
+
+		assertThat(confirmed.getPaymentStatus()).isEqualTo(PaymentStatus.PD);
+		assertThat(confirmed.getFarmerPaymentConfirmed()).isTrue();
+		assertThat(confirmed.getFarmerConfirmedDate()).isEqualTo(LocalDate.now());
 	}
 
 	@Test

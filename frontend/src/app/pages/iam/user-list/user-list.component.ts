@@ -90,23 +90,11 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
             <table>
               <thead>
                 <tr>
-                  <th class="sortable" (click)="sortBy('name')" title="Sort by Name">
-                    <span>Name</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'name'">{{ sortIcon(sortField() === 'name', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('email')" title="Sort by Email">
-                    <span>Email</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'email'">{{ sortIcon(sortField() === 'email', sortAsc()) }}</i>
-                  </th>
+                  <th>Name</th>
+                  <th>Email</th>
                   <th>Phone</th>
-                  <th class="sortable" (click)="sortBy('roleName')" title="Sort by Role">
-                    <span>Role</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'roleName'">{{ sortIcon(sortField() === 'roleName', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('regionId')" title="Sort by Region ID">
-                    <span>Region ID</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'regionId'">{{ sortIcon(sortField() === 'regionId', sortAsc()) }}</i>
-                  </th>
+                  <th>Role</th>
+                  <th>Region ID</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>

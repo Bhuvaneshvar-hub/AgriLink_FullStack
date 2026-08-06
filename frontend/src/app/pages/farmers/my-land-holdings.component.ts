@@ -57,30 +57,15 @@ import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
             <table>
               <thead>
                 <tr>
-                  <th class="sortable" (click)="sortBy('surveyNumber')" title="Sort by survey number">
-                    <span>Survey Number</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'surveyNumber'">{{ sortIcon(sortField() === 'surveyNumber', sortAsc()) }}</i>
-                  </th>
+                  <th>Survey Number</th>
                   <th class="sortable" (click)="sortBy('areaAcres')" title="Sort by area">
                     <span>Area (Acres)</span>
                     <i class="material-icons-round sort-icon" [class.active]="sortField() === 'areaAcres'">{{ sortIcon(sortField() === 'areaAcres', sortAsc()) }}</i>
                   </th>
-                  <th class="sortable" (click)="sortBy('soilType')" title="Sort by soil type">
-                    <span>Soil Type</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'soilType'">{{ sortIcon(sortField() === 'soilType', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('irrigationSource')" title="Sort by irrigation source">
-                    <span>Irrigation</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'irrigationSource'">{{ sortIcon(sortField() === 'irrigationSource', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('ownershipType')" title="Sort by ownership type">
-                    <span>Ownership</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'ownershipType'">{{ sortIcon(sortField() === 'ownershipType', sortAsc()) }}</i>
-                  </th>
-                  <th class="sortable" (click)="sortBy('status')" title="Sort by status">
-                    <span>Status</span>
-                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'status'">{{ sortIcon(sortField() === 'status', sortAsc()) }}</i>
-                  </th>
+                  <th>Soil Type</th>
+                  <th>Irrigation</th>
+                  <th>Ownership</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>

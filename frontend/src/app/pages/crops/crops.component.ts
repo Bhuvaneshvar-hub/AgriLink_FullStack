@@ -43,1251 +43,8 @@ function wholeNumber(control: AbstractControl): ValidationErrors | null {
   selector: 'app-crops',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
-  template: `
-    <div class="crops-page">
-      <div class="page-header d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h1>Crops & Farm Operations</h1>
-          <p class="text-secondary">Plan crops, log development stages, view observations, and manage farmer details.</p>
-        </div>
-      </div>
-
-      <!-- Tab Navigation -->
-      <div class="tabs-container mb-3">
-        <button class="tab-btn" [class.active]="activeTab() === 'catalog'" (click)="setTab('catalog')"
-                title="Master list of supported crops">
-          <i class="material-icons-round">list_alt</i>
-          <span>Crop Catalog</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'plans'" (click)="setTab('plans')"
-                title="Seasonal sowing and harvesting schedules">
-          <i class="material-icons-round">calendar_today</i>
-          <span>Crop Plans</span>
-        </button>
-        @if (canViewObservations()) {
-          <button class="tab-btn" [class.active]="activeTab() === 'observations'" (click)="setTab('observations')"
-                  title="Field inspection and growth stage logs">
-            <i class="material-icons-round">visibility</i>
-            <span>Growth Observation</span>
-          </button>
-        }
-      </div>
-
-      <!-- Spinner -->
-      @if (isLoading()) {
-        <div class="empty-state">
-          <span class="spinner-large"></span>
-          <p class="mt-3">Fetching records...</p>
-        </div>
-      } @else {
-        <!-- TABS CONTENT -->
-
-        <!-- 1. CROP CATALOG TAB -->
-        @if (activeTab() === 'catalog') {
-          <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center">
-              <h3>Crop Catalog Database</h3>
-              <div class="header-actions">
-                @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
-                  <button class="btn btn-export btn-export-icon" (click)="exportCatalog('excel')"
-                          title="Export to XLS" aria-label="Export to XLS">
-                    <i class="material-icons-round icon-xls">table_chart</i>
-                  </button>
-                }
-                @if (isAdmin()) {
-                  <button class="btn btn-primary" (click)="openCatalogModal()"
-                          title="Add a new crop to the catalog">
-                    <i class="material-icons-round">add_circle</i>
-                    <span>Catalog</span>
-                  </button>
-                }
-              </div>
-            </div>
-            <p class="text-secondary mb-3">
-              Master list of supported crops that farmers choose from when creating crop plans.
-            </p>
-
-            @if (cropCatalogs().length === 0) {
-              <div class="empty-state card">
-                <i class="material-icons-round">grass</i>
-                <h3>No Crops in Catalog</h3>
-                <p>Add crops to catalog to start scheduling plans.</p>
-              </div>
-            } @else {
-              <div class="table-container">
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Crop Name</th>
-                        <th>Category</th>
-                        <th>Season</th>
-                        <th class="sortable" (click)="sortCatalogBy('typicalDurationDays')"
-                            title="Sort by typical duration (click again to reverse)">
-                          <span>Typical Duration</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="catalogSortField() === 'typicalDurationDays'">{{ sortIcon(catalogSortField() === 'typicalDurationDays', catalogSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortCatalogBy('expectedYieldPerAcre')"
-                            title="Sort by expected yield (click again to reverse)">
-                          <span>Expected Yield (in Tons)</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="catalogSortField() === 'expectedYieldPerAcre'">{{ sortIcon(catalogSortField() === 'expectedYieldPerAcre', catalogSortAsc()) }}</i>
-                        </th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (crop of paginatedCatalog(); track crop.cropId) {
-                        <tr>
-                          <td class="cell-name"><strong>{{ crop.cropName }}</strong></td>
-                          <td class="cell-nowrap">{{ crop.category }}</td>
-                          <td class="cell-nowrap">{{ crop.season }}</td>
-                          <td class="cell-nowrap">{{ crop.typicalDurationDays }} Days</td>
-                          <td class="cell-nowrap">{{ crop.expectedYieldPerAcre }}</td>
-                          <td>
-                            <app-action-menu>
-                              <button class="menu-item" (click)="viewCatalogDetails(crop)">
-                                <i class="material-icons-round">visibility</i> View
-                              </button>
-                              @if (isAdmin()) {
-                                <button class="menu-item" (click)="openCatalogModal(crop)">
-                                  <i class="material-icons-round">edit</i> Edit
-                                </button>
-                                <button class="menu-item danger" (click)="confirmDeleteCatalog(crop)">
-                                  <i class="material-icons-round">delete</i> Delete
-                                </button>
-                              }
-                            </app-action-menu>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-                <app-pagination
-                  [currentPage]="catalogPage"
-                  [pageSize]="catalogPageSize"
-                  [totalElements]="cropCatalogs().length"
-                  (pageChange)="onCatalogPageChange($event)"
-                  (pageSizeChange)="onCatalogPageSizeChange($event)">
-                </app-pagination>
-              </div>
-            }
-          </div>
-        }
-
-        <!-- 2. CROP PLANS TAB -->
-        @if (activeTab() === 'plans') {
-          <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center">
-              <h3>Crop Seeding &amp; Harvesting Plans</h3>
-              <div class="header-actions">
-                @if (isAdminOrOfficer() && cropPlans().length > 0) {
-                  <button class="btn btn-export btn-export-icon" (click)="exportPlans('excel')"
-                          title="Export to XLS" aria-label="Export to XLS">
-                    <i class="material-icons-round icon-xls">table_chart</i>
-                  </button>
-                }
-                @if (isFarmer()) {
-                  <button class="btn btn-primary" (click)="openPlanModal()"
-                          title="Create a new crop plan">
-                    <i class="material-icons-round">add_circle</i>
-                    <span>Plan</span>
-                  </button>
-                }
-              </div>
-            </div>
-            <p class="text-secondary mb-3">
-              Seasonal planting schedules — which crop is sown on which land, and when it is expected to be harvested.
-            </p>
-
-            @if (cropPlans().length === 0) {
-              <div class="empty-state card">
-                <i class="material-icons-round">agriculture</i>
-                <h3>No Crop Plans Scheduled</h3>
-                <p>Get started by creating a new planting plan.</p>
-              </div>
-            } @else {
-              <div class="card filters-card mb-3">
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="planSearch">Search</label>
-                  <div class="search-field">
-                    <input type="text" id="planSearch" [(ngModel)]="planSearch"
-                      (ngModelChange)="onPlanSearchChange()"
-                      [placeholder]="isFarmer() ? 'Search by crop, status or season...' : 'Search by farmer, crop, status or season...'"
-                      title="Filter the crop plans below" />
-                    <i class="material-icons-round search-icon">search</i>
-                  </div>
-                </div>
-              </div>
-
-              @if (filteredPlans().length === 0) {
-                <div class="empty-state card">
-                  <i class="material-icons-round">search_off</i>
-                  <h3>No Matching Plans</h3>
-                  <p>No crop plans match "{{ planSearch }}".</p>
-                </div>
-              } @else {
-              <div class="table-container">
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        @if (!isFarmer()) { <th>Farmer</th> }
-                        <th>Crop Type</th>
-                        <th>Season</th>
-                        <th class="sortable" (click)="sortPlansBy('sowingDate')"
-                            title="Sort by sowing date (click again to reverse)">
-                          <span>Sowing Date</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="planSortField() === 'sowingDate'">{{ sortIcon(planSortField() === 'sowingDate', planSortAsc()) }}</i>
-                        </th>
-                        <th class="sortable" (click)="sortPlansBy('expectedHarvestDate')"
-                            title="Sort by estimated harvest date (click again to reverse)">
-                          <span>Estimated Harvest</span>
-                          <i class="material-icons-round sort-icon"
-                             [class.active]="planSortField() === 'expectedHarvestDate'">{{ sortIcon(planSortField() === 'expectedHarvestDate', planSortAsc()) }}</i>
-                        </th>
-                        <th>Area (in Acres)</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (plan of paginatedPlans(); track plan.planId) {
-                        <tr>
-                          @if (!isFarmer()) { <td class="cell-name"><strong>{{ getFarmerName(plan.farmerId) }}</strong></td> }
-                          <td class="cell-nowrap">{{ getCropName(plan.cropId) }}</td>
-                          <td class="cell-nowrap">{{ plan.season }}</td>
-                          <td class="cell-nowrap">{{ plan.sowingDate | date:'mediumDate' }}</td>
-                          <td class="cell-nowrap">{{ plan.expectedHarvestDate | date:'mediumDate' }}</td>
-                          <td class="cell-nowrap">{{ plan.areaPlanted }}</td>
-                          <td>
-                            @if (canEditPlanStatus()) {
-                              <div class="status-editor">
-                                <button type="button" class="badge status-badge" [ngClass]="getPlanStatusClass(plan.status)"
-                                  (click)="toggleStatusMenu(plan, $event)" [disabled]="statusSaving() === plan.planId"
-                                  title="Click to change this plan's status">
-                                  @if (statusSaving() === plan.planId) {
-                                    <span class="spinner-tiny"></span>
-                                  }
-                                  <span>{{ getPlanStatusLabel(plan.status) }}</span>
-                                  <i class="material-icons-round">arrow_drop_down</i>
-                                </button>
-                                @if (openStatusPlanId() === plan.planId) {
-                                  <div class="status-menu-backdrop" (click)="closeStatusMenu()"></div>
-                                  <div class="status-menu"
-                                    [style.top.px]="statusMenuTop()" [style.left.px]="statusMenuLeft()">
-                                    @for (s of planStatuses; track s) {
-                                      <button type="button" class="status-option" (click)="changePlanStatus(plan, s)">
-                                        <span class="badge" [ngClass]="getPlanStatusClass(s)">{{ getPlanStatusLabel(s) }}</span>
-                                        @if (plan.status === s) { <i class="material-icons-round check">check</i> }
-                                      </button>
-                                    }
-                                  </div>
-                                }
-                              </div>
-                            } @else {
-                              <span class="badge" [ngClass]="getPlanStatusClass(plan.status)">
-                                {{ getPlanStatusLabel(plan.status) }}
-                              </span>
-                            }
-                          </td>
-                          <td>
-                            <app-action-menu>
-                              <button class="menu-item" (click)="viewPlanDetails(plan)">
-                                <i class="material-icons-round">visibility</i> View
-                              </button>
-                              @if (isFarmer()) {
-                                <button class="menu-item" (click)="openPlanModal(plan)">
-                                  <i class="material-icons-round">edit</i> Edit
-                                </button>
-                                <button class="menu-item danger" (click)="confirmDeletePlan(plan)">
-                                  <i class="material-icons-round">delete</i> Delete
-                                </button>
-                              }
-                              @if (isAdminOrOfficer()) {
-                                <button class="menu-item" (click)="openAddObservationModal(plan)">
-                                  <i class="material-icons-round">rate_review</i> Log Observation
-                                </button>
-                              }
-                            </app-action-menu>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-                <app-pagination
-                  [currentPage]="planPage"
-                  [pageSize]="planPageSize"
-                  [totalElements]="filteredPlans().length"
-                  (pageChange)="onPlanPageChange($event)"
-                  (pageSizeChange)="onPlanPageSizeChange($event)">
-                </app-pagination>
-              </div>
-              }
-            }
-          </div>
-        }
-
-        <!-- 3. GROWTH OBSERVATIONS TAB -->
-        @if (activeTab() === 'observations') {
-          <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <h3>Crop Growth Stage Logs & Observation Reports</h3>
-                <p class="text-secondary">Field inspection observations registered by extension officers.</p>
-              </div>
-              @if (isAdminOrOfficer()) {
-                <div class="header-actions">
-                  @if (growthObservations().length > 0) {
-                    <button class="btn btn-export btn-export-icon" (click)="exportObservations('excel')"
-                            title="Export to XLS" aria-label="Export to XLS">
-                      <i class="material-icons-round icon-xls">table_chart</i>
-                    </button>
-                  }
-                  <button class="btn btn-primary" (click)="openAddObservationModal()"
-                          title="Log a new growth observation">
-                    <i class="material-icons-round">add_circle</i>
-                    <span>Observation</span>
-                  </button>
-                </div>
-              }
-            </div>
-
-            @if (growthObservations().length === 0) {
-              <div class="empty-state card">
-                <i class="material-icons-round">assessment</i>
-                <h3>No Observations Logged</h3>
-                <p>Observations will populate once extension officers submit growth reports on crop plans.</p>
-              </div>
-            } @else {
-              <div class="card filters-card mb-3">
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="obsSearch">Search</label>
-                  <div class="search-field">
-                    <input type="text" id="obsSearch" [(ngModel)]="obsSearch"
-                      (ngModelChange)="onObsSearchChange()"
-                      placeholder="Search by farmer, crop, stage, remarks or flag..."
-                      title="Filter the observations below" />
-                    <i class="material-icons-round search-icon">search</i>
-                  </div>
-                </div>
-              </div>
-
-              @if (filteredObservations().length === 0) {
-                <div class="empty-state card">
-                  <i class="material-icons-round">search_off</i>
-                  <h3>No Matching Observations</h3>
-                  <p>No observations match "{{ obsSearch }}".</p>
-                </div>
-              } @else {
-              <div class="table-container">
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Farmer</th>
-                        <th>Crop Plan</th>
-                        <th>Date</th>
-                        <th>Growth Stage</th>
-                        <th>Pest/Disease Flag</th>
-                        <th>Remarks</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (obs of paginatedObservations(); track obs.observationId) {
-                        <tr>
-                          <td class="cell-name"><strong>{{ getFarmerNameForPlan(obs.planId) }}</strong></td>
-                          <td class="cell-nowrap">{{ getCropNameForPlan(obs.planId) }}</td>
-                          <td class="cell-nowrap">{{ obs.observationDate | date:'mediumDate' }}</td>
-                          <td>
-                            <span class="badge" [ngClass]="getStageClass(obs.stage)">
-                              {{ getStageLabel(obs.stage) }}
-                            </span>
-                          </td>
-                          <td>
-                            <span class="badge" [ngClass]="obs.pestOrDiseaseFlag ? 'badge-danger' : 'badge-success'">
-                              {{ obs.pestOrDiseaseFlag ? 'DANGER: Disease/Pest' : 'Healthy / Clear' }}
-                            </span>
-                          </td>
-                          <td class="cell-remarks">{{ obs.remarks }}</td>
-                          <td>
-                            <app-action-menu>
-                              <button class="menu-item" (click)="viewObservationDetails(obs)">
-                                <i class="material-icons-round">visibility</i> View
-                              </button>
-                              @if (isAdminOrOfficer()) {
-                                <button class="menu-item danger" (click)="confirmDeleteObservation(obs)">
-                                  <i class="material-icons-round">delete</i> Delete
-                                </button>
-                              }
-                            </app-action-menu>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-                <app-pagination
-                  [currentPage]="obsPage"
-                  [pageSize]="obsPageSize"
-                  [totalElements]="filteredObservations().length"
-                  (pageChange)="onObsPageChange($event)"
-                  (pageSizeChange)="onObsPageSizeChange($event)">
-                </app-pagination>
-              </div>
-              }
-            }
-          </div>
-        }
-
-      }
-
-      <!-- MODALS SECTION -->
-
-      <!-- 1. Catalog Create/Edit Modal -->
-      @if (showCatalogModal()) {
-        <div class="modal-overlay" (click)="closeCatalogModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>{{ isEditMode() ? 'Edit Crop Catalog Item' : 'Add New Crop to Catalog' }}</h3>
-              <button class="close-btn" (click)="closeCatalogModal()" title="Close" aria-label="Close">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="catalogForm" (ngSubmit)="submitCatalogForm()">
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="cName">Crop Name</label>
-                  <input type="text" id="cName" formControlName="cropName" placeholder="e.g. Basmati Rice"
-                         [attr.maxlength]="MAX_CROP_NAME_LENGTH" autocomplete="off"
-                         title="2-30 characters, letters only (no digits)" />
-                  @if (showError(catalogForm, 'cropName')) {
-                    <p class="field-error">{{ cropNameError() }}</p>
-                  }
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cCategory">Category</label>
-                    <select id="cCategory" formControlName="category" title="Pick the crop's category">
-                      <option value="">Select Category</option>
-                      <option value="Cereal">Cereal</option>
-                      <option value="Pulse">Pulse</option>
-                      <option value="Oilseed">Oilseed</option>
-                      <option value="Fibre">Fibre</option>
-                      <option value="Cash Crop">Cash Crop</option>
-                      <option value="Vegetable">Vegetable</option>
-                      <option value="Fruit">Fruit</option>
-                      <option value="Spice">Spice</option>
-                    </select>
-                    @if (showError(catalogForm, 'category')) {
-                      <p class="field-error">Select a category.</p>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label for="cSeason">Season</label>
-                    <select id="cSeason" formControlName="season" title="Pick the growing season">
-                      <option value="">Select Season</option>
-                      @for (s of seasons; track s) {
-                        <option [value]="s">{{ s }}</option>
-                      }
-                    </select>
-                    @if (showError(catalogForm, 'season')) {
-                      <p class="field-error">Select a season.</p>
-                    }
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="cDuration">Typical Duration (Days)</label>
-                    <input type="number" id="cDuration" formControlName="typicalDurationDays" placeholder="e.g. 120"
-                           [min]="MIN_DURATION_DAYS" [max]="MAX_DURATION_DAYS" step="1"
-                           title="Whole number of days, between 7 and 365" />
-                    @if (showError(catalogForm, 'typicalDurationDays')) {
-                      <p class="field-error">{{ durationError() }}</p>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label for="cYield">Exp. Yield per Acre (Tons)</label>
-                    <input type="number" step="0.1" id="cYield" formControlName="expectedYieldPerAcre" placeholder="e.g. 2.5"
-                           [min]="MIN_YIELD_TONS" [max]="MAX_YIELD_TONS"
-                           title="Between 0.1 and 100 tons per acre" />
-                    @if (showError(catalogForm, 'expectedYieldPerAcre')) {
-                      <p class="field-error">{{ yieldError() }}</p>
-                    }
-                  </div>
-                </div>
-                <!-- Status is not shown: a catalogued crop is always created
-                     Active, so the form sets it automatically on save. -->
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="catalogForm.invalid"
-                        title="Save" aria-label="Save">
-                  <i class="material-icons-round">save</i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 2. Plan Create/Edit Modal -->
-      @if (showPlanModal()) {
-        <div class="modal-overlay" (click)="closePlanModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>{{ isEditMode() ? 'Edit Crop Plan' : 'Create Crop Plan Schedule' }}</h3>
-              <button class="close-btn" (click)="closePlanModal()" title="Close" aria-label="Close">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="planForm" (ngSubmit)="submitPlanForm()">
-              <div class="modal-body">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="pFarmer">Farmer Profile</label>
-                    <select id="pFarmer" formControlName="farmerId">
-                      <option value="">Select Profile</option>
-                      @for (prof of plannableFarmerProfiles(); track prof.farmerId) {
-                        <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
-                      }
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="pHolding">Land Holding</label>
-                    <select id="pHolding" formControlName="holdingId">
-                      <option value="">Select Land</option>
-                      @for (land of plannableLandHoldings(); track land.holdingId) {
-                        <option [value]="land.holdingId">Survey: {{ land.surveyNumber }} (#{{ land.holdingId }})</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Season</label>
-                  <div class="season-chips">
-                    <button type="button" class="chip" [class.active]="selectedSeasons().length === 0"
-                      (click)="clearSeasonChips()">All</button>
-                    @for (s of seasons; track s) {
-                      <button type="button" class="chip" [class.active]="isSeasonSelected(s)"
-                        (click)="toggleSeasonChip(s)">{{ s }}</button>
-                    }
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="pCrop">Crop Type</label>
-                  <select id="pCrop" formControlName="cropId">
-                    <option value="">Select crop type</option>
-                    @for (crop of cropsForPlanSeason(); track crop.cropId) {
-                      <option [value]="crop.cropId">{{ crop.cropName }} ({{ crop.season }})</option>
-                    }
-                  </select>
-                  @if (planForm.get('season')?.value) {
-                    <p class="text-secondary" style="margin: 0.4rem 0 0;">
-                      Season fixed to <strong>{{ planForm.get('season')?.value }}</strong> for this crop.
-                    </p>
-                  }
-                </div>
-
-                <!-- No Year field: it is taken from the sowing date below. -->
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="pSowing">Sowing Date</label>
-                    <input type="date" id="pSowing" formControlName="sowingDate" />
-                    @if (sowingWindowWarning()) {
-                      <p class="season-window-warning">
-                        <i class="material-icons-round">info</i>
-                        <span>{{ sowingWindowWarning() }}</span>
-                      </p>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label for="pHarvest">Expected Harvest Date</label>
-                    <input type="date" id="pHarvest" formControlName="expectedHarvestDate"
-                      [min]="planForm.get('sowingDate')?.value || null" />
-                    @if (harvestBeforeSowing()) {
-                      <p class="season-window-warning" style="color: var(--danger);">
-                        <i class="material-icons-round">error_outline</i>
-                        <span>Harvest date must be after the sowing date.</span>
-                      </p>
-                    }
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="pArea">Area Planted (in Acres)</label>
-                    <input type="number" step="0.01" id="pArea" formControlName="areaPlanted"
-                           [min]="MIN_AREA_ACRES" [max]="MAX_AREA_ACRES"
-                           title="Between 0.01 and 10000 acres" />
-                    @if (showError(planForm, 'areaPlanted')) {
-                      <p class="field-error">{{ areaError() }}</p>
-                    }
-                    @if (areaExceedsHolding()) {
-                      <p class="season-window-warning" style="color: var(--danger);">
-                        <i class="material-icons-round">error_outline</i>
-                        <span>Area planted exceeds the selected land holding's size ({{ selectedHoldingArea() }} acres).</span>
-                      </p>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label for="pStatus">Status</label>
-                    <select id="pStatus" formControlName="status">
-                      <option value="">Select Status</option>
-                      <option value="PLANNED">Planned</option>
-                      <option value="SOWING">Sowing</option>
-                      <option value="GROWING">Growing</option>
-                      <option value="HARVESTED">Harvested</option>
-                      <option value="FAILED">Failed</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="planForm.invalid"
-                        title="Save" aria-label="Save">
-                  <i class="material-icons-round">save</i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 3. Add Observation Modal -->
-      @if (showObservationModal()) {
-        <div class="modal-overlay" (click)="closeObservationModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>Log Growth Inspection Observation</h3>
-              <button class="close-btn" (click)="closeObservationModal()" title="Close" aria-label="Close">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="observationForm" (ngSubmit)="submitObservationForm()">
-              <div class="modal-body">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="oFarmer">Farmer</label>
-                    <select id="oFarmer" formControlName="farmerId">
-                      <option value="">Select Farmer</option>
-                      @for (f of farmersWithPlans(); track f.farmerId) {
-                        <option [value]="f.farmerId">{{ f.label }}</option>
-                      }
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="oPlan">Crop Plan</label>
-                    <select id="oPlan" formControlName="planId"
-                            [attr.disabled]="observationForm.get('farmerId')?.value ? null : true">
-                      <option value="">{{ observationForm.get('farmerId')?.value ? 'Select Crop Plan' : 'Select a farmer first' }}</option>
-                      @for (plan of plansForSelectedFarmer(); track plan.planId) {
-                        <option [value]="plan.planId">#{{ plan.planId }} — {{ getCropName(plan.cropId) }} ({{ plan.season }} {{ plan.year }})</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-                @if (observationForm.get('planId')?.value) {
-                  <p class="text-secondary" style="margin: 0.4rem 0 0;">
-                    Farmer: <strong>{{ getFarmerNameForPlan(observationForm.get('planId')?.value) }}</strong>
-                    &nbsp;|&nbsp; Crop: <strong>{{ getCropNameForPlan(observationForm.get('planId')?.value) }}</strong>
-                  </p>
-                }
-
-                <div class="form-row mt-3">
-                  <div class="form-group">
-                    <label for="oDate">Observation Date</label>
-                    <input type="date" id="oDate" formControlName="observationDate" />
-                  </div>
-                  <div class="form-group">
-                    <label for="oStage">Growth Stage Flow</label>
-                    <select id="oStage" formControlName="stage">
-                      <option value="">Select Stage</option>
-                      <option value="GERMINATION">Germination</option>
-                      <option value="VEGETATIVE">Vegetative</option>
-                      <option value="FLOWERING">Flowering</option>
-                      <option value="MATURITY">Maturity</option>
-                    </select>
-                  </div>
-                </div>
-
-                <label for="oFlag" class="observation-flag mt-3"
-                       [class.observation-flag--active]="observationForm.get('pestOrDiseaseFlag')?.value">
-                  <input type="checkbox" id="oFlag" formControlName="pestOrDiseaseFlag" />
-                  <span class="observation-flag__icon">
-                    <i class="material-icons-round">pest_control</i>
-                  </span>
-                  <span class="observation-flag__text">
-                    <strong>Pest or Disease Infestation</strong>
-                    <small>Tick this if pests or disease were spotted during inspection</small>
-                  </span>
-                </label>
-
-                <div class="form-group mt-3">
-                  <label for="oRemarks">Remarks & Description</label>
-                  <textarea id="oRemarks" formControlName="remarks" rows="3" placeholder="Describe the health status, weed growth, fertilizer applications..."></textarea>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="observationForm.invalid"
-                        title="Log Observation" aria-label="Log Observation">
-                  <i class="material-icons-round">save</i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 4. Farmer Profile Modal -->
-      @if (showProfileModal()) {
-        <div class="modal-overlay" (click)="closeProfileModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>{{ isEditMode() ? 'Edit Farmer Identity Details' : 'Register Farmer Identity Profile' }}</h3>
-              <button class="close-btn" (click)="closeProfileModal()" title="Close" aria-label="Close">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="profileForm" (ngSubmit)="submitProfileForm()">
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="fName">Full Name</label>
-                  <input type="text" id="fName" formControlName="name" />
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fDob">Date of Birth</label>
-                    <input type="date" id="fDob" formControlName="dateOfBirth" />
-                  </div>
-                  <div class="form-group">
-                    <label for="fGender">Gender</label>
-                    <select id="fGender" formControlName="gender">
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fNationalId">National ID / Aadhar Number</label>
-                    <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" />
-                  </div>
-                  <div class="form-group">
-                    <label for="fPhone">Phone Number</label>
-                    <input type="text" id="fPhone" formControlName="phone" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="fVillage">Village</label>
-                    <input type="text" id="fVillage" formControlName="village" />
-                  </div>
-                  <div class="form-group">
-                    <label for="fDistrict">District</label>
-                    <input type="text" id="fDistrict" formControlName="district" />
-                  </div>
-                  <div class="form-group">
-                    <label for="fState">State</label>
-                    <select id="fState" formControlName="state">
-                      <option value="">Select State</option>
-                      @for (st of indianStates; track st) {
-                        <option [value]="st">{{ st }}</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="fBank">Bank Account Number</label>
-                  <input type="text" id="fBank" formControlName="bankAccountNumber" />
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="profileForm.invalid"
-                        title="Save Profile" aria-label="Save Profile">
-                  <i class="material-icons-round">save</i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 5. Land Holding Modal -->
-      @if (showHoldingModal()) {
-        <div class="modal-overlay" (click)="closeHoldingModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>{{ isEditMode() ? 'Edit Land Details' : 'Register Land Holding' }}</h3>
-              <button class="close-btn" (click)="closeHoldingModal()" title="Close" aria-label="Close">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="holdingForm" (ngSubmit)="submitHoldingForm()">
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="lFarmer">Assign to Profile</label>
-                  <select id="lFarmer" formControlName="farmerId">
-                    <option value="">Select Profile</option>
-                    @for (prof of plannableFarmerProfiles(); track prof.farmerId) {
-                      <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
-                    }
-                  </select>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="lSurvey">Survey Number (Unique)</label>
-                    <input type="text" id="lSurvey" formControlName="surveyNumber" placeholder="e.g. SR-4012" />
-                  </div>
-                  <div class="form-group">
-                    <label for="lArea">Area (in Acres)</label>
-                    <input type="number" step="0.01" id="lArea" formControlName="areaAcres" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="lSoil">Soil Type</label>
-                    <select id="lSoil" formControlName="soilType">
-                      <option value="">Select</option>
-                      <option value="Clay">Clay</option>
-                      <option value="Sandy">Sandy</option>
-                      <option value="Loam">Loam</option>
-                      <option value="Black">Black</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="lIrrigation">Irrigation Source</label>
-                    <select id="lIrrigation" formControlName="irrigationSource">
-                      <option value="">Select</option>
-                      <option value="Rain">Rain</option>
-                      <option value="Canal">Canal</option>
-                      <option value="Borewell">Borewell</option>
-                      <option value="None">None</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="lOwnership">Ownership Type</label>
-                  <select id="lOwnership" formControlName="ownershipType">
-                    <option value="">Select</option>
-                    <option value="Owned">Owned</option>
-                    <option value="Leased">Leased</option>
-                    <option value="SharedCropping">Shared Cropping</option>
-                  </select>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-save-icon" [disabled]="holdingForm.invalid"
-                        title="Register" aria-label="Register">
-                  <i class="material-icons-round">save</i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- Delete Confirmation Modals -->
-      @if (showDeleteCatalogConfirm()) {
-        <app-confirmation-modal
-          title="Delete Crop Catalog Entry"
-          [message]="'Are you sure you want to delete crop catalog ' + selectedCatalogItem()?.cropName + '?'"
-          (confirm)="executeDeleteCatalog()"
-          (cancel)="showDeleteCatalogConfirm.set(false)">
-        </app-confirmation-modal>
-      }
-
-      @if (showDeletePlanConfirm()) {
-        <app-confirmation-modal
-          title="Delete Crop Plan Schedule"
-          message="Are you sure you want to delete this scheduled crop plan?"
-          (confirm)="executeDeletePlan()"
-          (cancel)="showDeletePlanConfirm.set(false)">
-        </app-confirmation-modal>
-      }
-
-      @if (showDeleteObservationConfirm()) {
-        <app-confirmation-modal
-          title="Delete Observation Log"
-          message="Are you sure you want to delete this growth inspection entry?"
-          (confirm)="executeDeleteObservation()"
-          (cancel)="showDeleteObservationConfirm.set(false)">
-        </app-confirmation-modal>
-      }
-
-      @if (showDetailModal()) {
-        <app-detail-modal
-          [title]="detailTitle()"
-          [rows]="detailRows()"
-          (close)="showDetailModal.set(false)">
-        </app-detail-modal>
-      }
-    </div>
-  `,
-  styles: [`
-    .crops-page {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-    }
-    .tabs-container {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--border-color);
-      padding-bottom: 0.25rem;
-      flex-wrap: wrap;
-    }
-    .tab-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      outline: none;
-    }
-    .tab-btn i {
-      font-size: 20px;
-    }
-    .tab-btn:hover {
-      color: var(--primary-hover);
-    }
-    .tab-btn.active {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
-    }
-    .tab-content {
-      animation: fadeIn var(--transition-normal);
-    }
-    /* Icon-only submit button in modal footers — the tooltip/aria-label carries
-       the action name ("Save", "Register", ...). */
-    .btn-save-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.6rem 1.4rem;
-      border-radius: 0.6rem;
-      gap: 0;
-    }
-    .btn-save-icon .material-icons-round {
-      font-size: 22px;
-      line-height: 1;
-    }
-    .btn-small {
-      padding: 0.4rem 0.8rem !important;
-      font-size: 0.8rem !important;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .table-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .action-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.25rem;
-      border-radius: 0.25rem;
-      transition: background var(--transition-fast);
-    }
-    .action-btn:hover {
-      background-color: var(--primary-light);
-    }
-    .action-btn i {
-      font-size: 18px;
-    }
-    .grid-layout {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .close-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      color: var(--text-secondary);
-    }
-    .close-btn:hover {
-      color: var(--text-primary);
-    }
-    /* Inline validation message under a field */
-    .field-error {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      margin: 0.3rem 0 0;
-      font-size: 0.78rem;
-      color: var(--danger);
-    }
-    /* Column behaviour: short values stay on one line, only Remarks wraps —
-       so the table reads as tidy columns instead of ragged two-line cells. */
-    td.cell-nowrap { white-space: nowrap; }
-    td.cell-name {
-      white-space: nowrap;
-      min-width: 140px;
-    }
-    td.cell-remarks {
-      min-width: 220px;
-      white-space: normal;
-      color: var(--text-secondary);
-    }
-    /* Sortable column headers */
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    th.sortable:hover { color: var(--primary-color); }
-    .sort-icon {
-      font-size: 15px;
-      vertical-align: middle;
-      margin-left: 0.15rem;
-      opacity: 0.45;
-    }
-    .sort-icon.active {
-      opacity: 1;
-      color: var(--primary-color);
-    }
-    .criteria-cell {
-      max-width: 150px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .season-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .chip {
-      padding: 0.4rem 0.9rem;
-      border-radius: 999px;
-      border: 1px solid var(--border-color);
-      background: var(--surface-2, #f2f2f2);
-      color: var(--text-primary);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      white-space: nowrap;
-    }
-    .chip:hover {
-      filter: brightness(0.96);
-    }
-    .chip.active {
-      background: var(--primary-color, #2e7d32);
-      color: #fff;
-      border-color: var(--primary-color, #2e7d32);
-    }
-    .chip.active:hover {
-      background: var(--primary-hover, #276b2b);
-      border-color: var(--primary-hover, #276b2b);
-    }
-    .status-editor {
-      position: relative;
-      display: inline-block;
-    }
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.15rem;
-      border: none;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 600;
-    }
-    .status-badge:hover:not(:disabled) {
-      filter: brightness(0.95);
-    }
-    .status-badge:disabled {
-      cursor: default;
-      opacity: 0.8;
-    }
-    .status-badge i {
-      font-size: 16px;
-    }
-    .status-menu-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-    }
-    /* Fixed (not absolute) so the panel is never clipped by the table's
-       horizontal overflow — top/left are measured from the toggle button. */
-    .status-menu {
-      position: fixed;
-      z-index: 1200;
-      background: var(--surface, #fff);
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      padding: 0.35rem;
-      min-width: 160px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-    .status-option {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0.35rem 0.5rem;
-      border-radius: 0.35rem;
-      width: 100%;
-    }
-    .status-option:hover {
-      background: var(--primary-light, #eef);
-    }
-    .status-option .check {
-      font-size: 16px;
-      color: var(--primary-color);
-    }
-    .spinner-tiny {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.5);
-      border-top-color: currentColor;
-      border-radius: 50%;
-      animation: spin 0.8s infinite linear;
-      display: inline-block;
-    }
-    .season-window-warning {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      margin: 0.4rem 0 0;
-      font-size: 0.8rem;
-      color: var(--warning, #b26a00);
-    }
-    .season-window-warning i {
-      font-size: 16px;
-    }
-    .spinner-large {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--border-color);
-      border-top-color: var(--primary-color);
-      border-radius: 50%;
-      animation: spin 1s infinite linear;
-      display: inline-block;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    /* Export buttons: light card style with colored file-type icons */
-    .btn-export {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--surface, #ffffff);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
-      font-weight: 600;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-    .btn-export:hover {
-      background: var(--bg-dark);
-      border-color: var(--primary-color);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    }
-    .btn-export .material-icons-round { font-size: 20px; }
-    /* Icon-only export button — square, no label. The tooltip/aria-label names
-       the format. */
-    .btn-export-icon {
-      padding: 0.5rem;
-      width: 38px;
-      height: 38px;
-      justify-content: center;
-      gap: 0;
-    }
-    .icon-xls { color: #16a34a; }
-    .icon-pdf { color: #ef4444; }
-    /* Pest/disease flag toggle card */
-    .observation-flag {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      background: var(--bg-dark);
-      cursor: pointer;
-      transition: border-color 0.15s ease, background 0.15s ease;
-    }
-    .observation-flag:hover {
-      border-color: var(--primary-color);
-    }
-    .observation-flag input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      accent-color: var(--danger);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .observation-flag__icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--text-secondary);
-      flex-shrink: 0;
-      transition: background 0.15s ease, color 0.15s ease;
-    }
-    .observation-flag__icon .material-icons-round { font-size: 20px; }
-    .observation-flag__text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.3;
-    }
-    .observation-flag__text strong { font-size: 0.9rem; }
-    .observation-flag__text small {
-      color: var(--text-secondary);
-      font-size: 0.75rem;
-    }
-    .observation-flag--active {
-      border-color: var(--danger);
-      background: rgba(239, 68, 68, 0.08);
-    }
-    .observation-flag--active .observation-flag__icon {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--danger);
-    }
-    .observation-flag--active .observation-flag__text strong { color: var(--danger); }
-  `]
+  templateUrl: './crops.component.html',
+  styleUrls: ['./crops.component.css']
 })
 export class CropsComponent implements OnInit {
   private cropService = inject(CropService);
@@ -1319,6 +76,8 @@ export class CropsComponent implements OnInit {
   catalogSortAsc = signal<boolean>(true);
   planSortField = signal<string | null>(null);
   planSortAsc = signal<boolean>(true);
+  obsSortField = signal<string | null>(null);
+  obsSortAsc = signal<boolean>(true);
 
   // Crop plan lifecycle statuses, used by the inline status editor.
   readonly planStatuses = ['PLANNED', 'SOWING', 'GROWING', 'HARVESTED', 'FAILED'];
@@ -1401,10 +160,12 @@ export class CropsComponent implements OnInit {
     return this.authService.hasRole(['AgriLinkAdmin']);
   }
 
-  // Growth observations: backend allows read only for these roles
-  // (Farmer and ProcurementOfficer are denied). Keep the frontend in sync.
+  // Growth observations: a Farmer may read the inspection remarks logged against
+  // their own crop plans (crop-service scopes the response to their plans); the
+  // officers and admin may also read. Only officers/admin may log or delete one.
   canViewObservations(): boolean {
-    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst']);
+    return this.authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin',
+                                     'ComplianceAnalyst', 'Farmer']);
   }
 
   setTab(tab: 'catalog' | 'plans' | 'observations' | 'profiles') {
@@ -1435,7 +196,10 @@ export class CropsComponent implements OnInit {
       expectedHarvestDate: ['', Validators.required],
       areaPlanted: [0.5, [Validators.required, Validators.min(MIN_AREA_ACRES),
                           Validators.max(MAX_AREA_ACRES)]],
-      status: ['', Validators.required]
+      // Not shown in the form — a new plan always starts Planned, and the status
+      // is advanced afterwards from the badge in the Crop Plans table. On edit,
+      // patchValue keeps the plan's real status so it isn't reset.
+      status: ['PLANNED', Validators.required]
     });
 
     // The Year field is not shown — the backend still requires it, so keep it in
@@ -1499,6 +263,12 @@ export class CropsComponent implements OnInit {
     // user picks a plan that actually belongs to the newly selected farmer.
     this.observationForm.get('farmerId')!.valueChanges.subscribe(() => {
       this.observationForm.get('planId')!.setValue('', { emitEvent: false });
+    });
+
+    // Each plan is at its own point in the growth flow, so a stage picked for the
+    // previous plan may already be completed on the new one. Clear it on switch.
+    this.observationForm.get('planId')!.valueChanges.subscribe(() => {
+      this.observationForm.get('stage')!.setValue('', { emitEvent: false });
     });
 
     this.profileForm = this.fb.group({
@@ -1634,6 +404,7 @@ export class CropsComponent implements OnInit {
     this.selectedSeasons.set([]);
   }
 
+
   // Plans a Farmer may see are limited to their own; Admin/Officer see all.
   // Then filtered by the search box (farmer name or crop name).
   filteredPlans(): any[] {
@@ -1691,7 +462,8 @@ export class CropsComponent implements OnInit {
     const month = date.getMonth() + 1; // getMonth() is 0-based
     if (isMonthInWindow(month, window)) return null;
 
-    return `Heads up: ${season} crops are usually sown between ${window.label}. You can still save this plan.`;
+    // Kept to one line: the message sits in a fixed-height slot under the field.
+    return `${season} is usually sown ${window.label}.`;
   }
 
   obsSearch = '';
@@ -1704,7 +476,10 @@ export class CropsComponent implements OnInit {
     const q = this.obsSearch.trim().toLowerCase();
     if (!q) return list;
     return list.filter(o => {
-      const flagText = o.pestOrDiseaseFlag ? 'danger disease pest' : 'healthy clear';
+      // Searchable synonyms so both the new label and the underlying meaning match.
+      const flagText = o.pestOrDiseaseFlag
+        ? 'failed danger disease pest'
+        : 'passed healthy clear';
       return this.getFarmerNameForPlan(o.planId).toLowerCase().includes(q) ||
         this.getCropNameForPlan(o.planId).toLowerCase().includes(q) ||
         this.getStageLabel(o.stage).toLowerCase().includes(q) ||
@@ -1714,7 +489,10 @@ export class CropsComponent implements OnInit {
     });
   }
 
-  paginatedObservations(): any[] { return this.page(this.filteredObservations(), this.obsPage, this.obsPageSize); }
+  paginatedObservations(): any[] {
+    const sorted = this.applySort(this.filteredObservations(), this.obsSortField(), this.obsSortAsc());
+    return this.page(sorted, this.obsPage, this.obsPageSize);
+  }
   onObsPageChange(p: number) { this.obsPage = p; }
   onObsPageSizeChange(s: number) { this.obsPageSize = s; this.obsPage = 0; }
 
@@ -1781,6 +559,11 @@ export class CropsComponent implements OnInit {
   sortPlansBy(field: string) {
     this.toggleSort(this.planSortField, this.planSortAsc, field);
     this.planPage = 0;
+  }
+
+  sortObsBy(field: string) {
+    this.toggleSort(this.obsSortField, this.obsSortAsc, field);
+    this.obsPage = 0;
   }
 
   private toggleSort(fieldSig: WritableSignal<string | null>,
@@ -1919,6 +702,42 @@ export class CropsComponent implements OnInit {
     const farmerId = this.observationForm?.get('farmerId')?.value;
     if (!farmerId) return [];
     return this.cropPlans().filter(p => p.farmerId == farmerId);
+  }
+
+  /**
+   * Growth stages in the order a crop passes through them. A plan can only move
+   * forward, so anything at or before the stage already logged is behind it.
+   */
+  readonly growthStages = ['GERMINATION', 'VEGETATIVE', 'FLOWERING', 'MATURITY'];
+
+  /**
+   * The stage a plan has already reached — the furthest stage on its most recent
+   * observation. Null when nothing has been logged against the plan yet.
+   */
+  currentStageForPlan(planId: any): string | null {
+    if (!planId) return null;
+    const logged = this.growthObservations().filter(o => o.planId == planId);
+    if (logged.length === 0) return null;
+    // Furthest along the flow rather than latest by date, so an out-of-order
+    // back-dated entry can't appear to rewind the crop's progress.
+    return logged.reduce((furthest, o) =>
+      this.growthStages.indexOf(o.stage) > this.growthStages.indexOf(furthest) ? o.stage : furthest,
+      logged[0].stage);
+  }
+
+  /** Current stage of the plan selected in the observation form. */
+  selectedPlanStage(): string | null {
+    return this.currentStageForPlan(this.observationForm?.get('planId')?.value);
+  }
+
+  /**
+   * True when a stage is at or before the plan's current stage — that part of the
+   * crop's life is over, so it stays visible but cannot be picked again.
+   */
+  isStageCompleted(stage: string): boolean {
+    const current = this.selectedPlanStage();
+    if (!current) return false;
+    return this.growthStages.indexOf(stage) <= this.growthStages.indexOf(current);
   }
 
   getStageLabel(stage: string): string {
@@ -2105,7 +924,7 @@ export class CropsComponent implements OnInit {
       { label: 'Officer ID', value: '#' + obs.officerId },
       { label: 'Observation Date', value: this.fmtDate(obs.observationDate) },
       { label: 'Growth Stage', value: this.getStageLabel(obs.stage) },
-      { label: 'Pest / Disease', value: obs.pestOrDiseaseFlag ? 'Detected' : 'Healthy / Clear' },
+      { label: 'Health Check', value: obs.pestOrDiseaseFlag ? 'Failed — pest or disease detected' : 'Passed' },
       { label: 'Remarks', value: obs.remarks }
     ]);
     this.showDetailModal.set(true);
@@ -2229,7 +1048,7 @@ export class CropsComponent implements OnInit {
         : [];
       const defaultHoldingId = ownHoldings.length > 0 ? ownHoldings[0].holdingId : '';
       this.planForm.reset({
-        status: '',
+        status: 'PLANNED',
         year: new Date().getFullYear(),
         areaPlanted: 0.5,
         cropId: '',
@@ -2412,13 +1231,13 @@ export class CropsComponent implements OnInit {
       this.toast.error('No growth observations to export.');
       return;
     }
-    const columns = ['Farmer', 'Crop Plan', 'Observation Date', 'Growth Stage', 'Pest/Disease Flag', 'Remarks'];
+    const columns = ['Farmer', 'Crop Plan', 'Observation Date', 'Growth Stage', 'Health Check', 'Remarks'];
     const rows = observations.map(o => [
       this.getFarmerNameForPlan(o.planId),
       '#' + o.planId + ' — ' + this.getCropNameForPlan(o.planId),
       this.fmtDate(o.observationDate),
       this.getStageLabel(o.stage),
-      o.pestOrDiseaseFlag ? 'Disease/Pest Detected' : 'Healthy / Clear',
+      o.pestOrDiseaseFlag ? 'Failed' : 'Passed',
       o.remarks
     ]);
     this.doExport(format, columns, rows, 'growth-observations', 'Crop Growth Observation Reports');

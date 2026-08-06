@@ -78,7 +78,7 @@ import { NotificationService } from '../../services/notification.service';
           }
 
           @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
-            <a routerLink="/farmers" routerLinkActive="active" (click)="closeSidebar()">
+            <a routerLink="/farmers" routerLinkActive="active" (click)="navigateToFarmers()">
               <i class="material-icons-round">groups</i>
               <span>Farmer Registration</span>
             </a>
@@ -818,6 +818,11 @@ export class MainLayoutComponent implements OnInit {
   goToProfile() {
     this.closeProfileMenu();
     this.router.navigate(['/profile']);
+  }
+
+  navigateToFarmers() {
+    this.closeSidebar();
+    this.router.navigate(['/farmers']);
   }
 
   get userInitials(): string {

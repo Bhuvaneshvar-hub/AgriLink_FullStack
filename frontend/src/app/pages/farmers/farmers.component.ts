@@ -445,6 +445,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
             </div>
             <form [formGroup]="profileForm" (ngSubmit)="submitProfileForm()">
               <div class="modal-body">
+                @if (profileStep() === 1) {
                 <div class="form-group">
                   <label for="fName">Full Name</label>
                   <input type="text" id="fName" formControlName="name" />
@@ -524,29 +525,37 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     </select>
                   </div>
                 </div>
+                }
 
-                @if (!isEditMode()) {
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="fEmail">Login Email</label>
-                      <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
-                      @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
-                      @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
-                    </div>
-                    <div class="form-group">
-                      <label for="fPassword">Login Password</label>
-                      <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
-                      @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
-                    </div>
-                    <div class="form-group">
-                      <label for="fRegionId">Region ID</label>
-                      <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
-                    </div>
+                @if (!isEditMode() && profileStep() === 2) {
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="fEmail">Login Email</label>
+                    <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
+                    @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
+                    @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
                   </div>
+                  <div class="form-group">
+                    <label for="fPassword">Login Password</label>
+                    <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
+                    @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
+                  </div>
+                  <div class="form-group">
+                    <label for="fRegionId">Region ID</label>
+                    <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
+                  </div>
+                </div>
                 }
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Profile</button>
+                @if (!isEditMode() && profileStep() === 1) {
+                  <button type="button" class="btn btn-primary" (click)="goToStep2()">Next</button>
+                } @else if (!isEditMode() && profileStep() === 2) {
+                  <button type="button" class="btn" (click)="profileStep.set(1)">Back</button>
+                  <button type="submit" class="btn btn-primary">Save Profile</button>
+                } else {
+                  <button type="submit" class="btn btn-primary">Save Profile</button>
+                }
               </div>
             </form>
           </div>
@@ -840,6 +849,8 @@ export class FarmersComponent implements OnInit {
 
   // Modal states
   showProfileModal = signal<boolean>(false);
+  // Profile registration step (1 = basic identity, 2 = account & region)
+  profileStep = signal<number>(1);
   showHoldingModal = signal<boolean>(false);
   showHistoryModal = signal<boolean>(false);
   showDeleteProfileConfirm = signal<boolean>(false);
@@ -1209,6 +1220,7 @@ export class FarmersComponent implements OnInit {
   // ===== Farmer Profile CRUD =====
   openProfileModal(profile?: any) {
     this.submittedProfile.set(false);
+    this.profileStep.set(1);
     const emailCtrl = this.profileForm.get('email');
     const pwdCtrl = this.profileForm.get('password');
     if (profile) {
@@ -1234,7 +1246,7 @@ export class FarmersComponent implements OnInit {
     this.showProfileModal.set(true);
   }
 
-  closeProfileModal() { this.showProfileModal.set(false); this.submittedProfile.set(false); }
+  closeProfileModal() { this.showProfileModal.set(false); this.submittedProfile.set(false); this.profileStep.set(1); }
 
   // Shows a field's error once the user has interacted with it or tried to submit.
   pInvalid(field: string): boolean {
@@ -1249,6 +1261,13 @@ export class FarmersComponent implements OnInit {
 
   submitProfileForm() {
     this.submittedProfile.set(true);
+    // If creating a new profile and we're on step 1, validate step1 and move to step 2.
+    if (!this.isEditMode() && this.profileStep() === 1) {
+      if (!this.isStep1Valid()) return;
+      this.profileStep.set(2);
+      return;
+    }
+
     this.profileForm.markAllAsTouched();
     if (this.profileForm.invalid) return;
     const v: any = { ...this.profileForm.value };
@@ -1308,6 +1327,23 @@ export class FarmersComponent implements OnInit {
         error: (err) => this.toast.error(err.error?.message || 'Error creating farmer login account')
       });
     }
+  }
+
+  isStep1Valid(): boolean {
+    const fields = ['name','dateOfBirth','gender','nationalIdNumber','phone','village','district','state'];
+    let valid = true;
+    fields.forEach(f => {
+      const c = this.profileForm.get(f);
+      c?.markAsTouched();
+      if (c?.invalid) valid = false;
+    });
+    return valid;
+  }
+
+  goToStep2() {
+    this.submittedProfile.set(true);
+    if (!this.isStep1Valid()) return;
+    this.profileStep.set(2);
   }
 
   confirmDeleteProfile(profile: any) {

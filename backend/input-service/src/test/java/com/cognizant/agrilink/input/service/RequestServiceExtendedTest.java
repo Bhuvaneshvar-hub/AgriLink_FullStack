@@ -204,6 +204,9 @@ class RequestServiceExtendedTest {
 		Catalog catalog = Catalog.builder().inputId(10).availableStock(100).build();
 		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
 
+		Catalog catalog = Catalog.builder().inputId(10).availableStock(100).build();
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+
 		RequestDto dto = buildDto();
 		dto.setStatus(RequestStatus.AP);
 		requestService.update(1, dto);

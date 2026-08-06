@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { SubsidyService } from '../../services/subsidy.service';
@@ -89,7 +89,7 @@ import { NotificationService } from '../../services/notification.service';
         }
 
         @if (authService.hasRole(['AgriLinkAdmin'])) {
-          <a routerLink="/farmers" class="hero-card hero-amber">
+          <a routerLink="/farmers" class="hero-card hero-amber" (click)="goToFarmers()">
             <div class="hero-card-top">
               <span class="hero-chip">Needs Review</span>
               <i class="material-icons-round">terrain</i>
@@ -901,6 +901,7 @@ import { NotificationService } from '../../services/notification.service';
 })
 export class DashboardComponent implements OnInit {
   public authService = inject(AuthService);
+  private router = inject(Router);
   private userService = inject(UserService);
   private subsidyService = inject(SubsidyService);
   private farmerService = inject(FarmerService);
@@ -983,6 +984,10 @@ export class DashboardComponent implements OnInit {
 
   get currentUser() {
     return this.authService.currentUserValue;
+  }
+
+  goToFarmers() {
+    this.router.navigate(['/farmers']);
   }
 
   // Recent alerts feed for the dashboard (approvals, subsidy/produce updates, etc.) —

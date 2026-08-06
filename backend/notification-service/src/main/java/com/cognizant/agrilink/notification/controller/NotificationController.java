@@ -119,8 +119,11 @@ public class NotificationController {
 	}
 
 	private Integer currentUserId(Authentication authentication) {
-		return (Integer) authentication.getPrincipal();
-	}
+    if (authentication == null) {
+        throw new AccessDeniedException("Authentication required");
+    }
+    return (Integer) authentication.getPrincipal();
+}
 
 	private boolean isFarmer(Authentication authentication) {
 		if (authentication == null) {

@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationControllerTest {
@@ -56,23 +57,30 @@ class NotificationControllerTest {
 	}
 
 	@Test
-	void getAllReturnsData() throws Exception {
-		when(notificationService.getAll()).thenReturn(List.of(notification));
+void getAllReturnsData() throws Exception {
 
-		mockMvc.perform(get("/notifications"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].message").value("Sowing reminder"));
-	}
+    when(notificationService.getByUserId(1))
+            .thenReturn(List.of(notification));
+
+    mockMvc.perform(
+            get("/notifications")
+                    .principal(new TestingAuthenticationToken(1, null))
+    )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].message").value("Sowing reminder"));
+}
 
 	@Test
-	void getByIdReturnsData() throws Exception {
-		when(notificationService.getById(1)).thenReturn(notification);
+void getByIdReturnsData() throws Exception {
+    when(notificationService.getById(1)).thenReturn(notification);
 
-		mockMvc.perform(get("/notifications/1"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.category").value("CropAdvisory"));
-	}
-
+    mockMvc.perform(
+            get("/notifications/1")
+                    .principal(new TestingAuthenticationToken(1, null))
+    )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.category").value("CropAdvisory"));
+}
 	@Test
 	void createReturnsMessageOnly() throws Exception {
 		when(notificationService.create(any(NotificationDto.class))).thenReturn(notification);

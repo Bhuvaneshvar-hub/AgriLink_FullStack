@@ -98,7 +98,7 @@ import { NotificationService } from '../../services/notification.service';
             </a>
           }
 
-          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer', 'ExtensionOfficer'])) {
+          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer'])) {
             <a routerLink="/produce" routerLinkActive="active" (click)="closeSidebar()">
               <i class="material-icons-round">storefront</i>
               <span>Produce Market</span>

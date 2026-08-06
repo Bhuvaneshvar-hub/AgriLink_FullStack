@@ -31,105 +31,137 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           <p>All requests have been processed. Great job!</p>
         </div>
       } @else {
+        <div class="tabs">
+          <button class="tab-btn" [class.active]="activeTab() === 'users'" (click)="activeTab.set('users')">
+            User Registrations
+            @if (users().length > 0) { <span class="tab-count">{{ users().length }}</span> }
+          </button>
+          <button class="tab-btn" [class.active]="activeTab() === 'holdings'" (click)="activeTab.set('holdings')">
+            Land Holdings
+            @if (pendingHoldings().length > 0) { <span class="tab-count">{{ pendingHoldings().length }}</span> }
+          </button>
+        </div>
+
         <!-- Pending user registrations -->
-        @if (users().length > 0) {
-          <h3 class="section-title">Pending User Registrations ({{ users().length }})</h3>
-          <div class="table-container mb-4">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Requested Role</th>
-                    <th>Region ID</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (user of paginatedUsers(); track user.userId) {
-                    <tr>
-                      <td><strong>{{ user.name }}</strong> <span class="id-note">(#{{ user.userId }})</span></td>
-                      <td>{{ user.email }}</td>
-                      <td>{{ user.phone }}</td>
-                      <td>{{ user.roleName }}</td>
-                      <td>{{ user.regionId || 'N/A' }}</td>
-                      <td>
-                        <span class="badge badge-warning">Pending</span>
-                      </td>
-                      <td>
-                        <app-action-menu>
-                          <button class="menu-item" (click)="viewUserDetails(user)">
-                            <i class="material-icons-round">visibility</i> View
-                          </button>
-                          <button class="menu-item" (click)="onApprove(user)">
-                            <i class="material-icons-round">done</i> Approve
-                          </button>
-                        </app-action-menu>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+        @if (activeTab() === 'users') {
+          @if (users().length === 0) {
+            <div class="empty-state card">
+              <i class="material-icons-round">rule_folder</i>
+              <h3>No Pending User Registrations</h3>
+              <p>All registration requests have been processed.</p>
             </div>
-            <app-pagination
-              [currentPage]="currentPage"
-              [pageSize]="pageSize"
-              [totalElements]="users().length"
-              (pageChange)="onPageChange($event)"
-              (pageSizeChange)="onPageSizeChange($event)">
-            </app-pagination>
-          </div>
+          } @else {
+            <div class="table-container">
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Requested Role</th>
+                      <th>Region ID</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (user of paginatedUsers(); track user.userId) {
+                      <tr>
+                        <td><strong>{{ user.name }}</strong> <span class="id-note">(#{{ user.userId }})</span></td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone }}</td>
+                        <td>{{ user.roleName }}</td>
+                        <td>{{ user.regionId || 'N/A' }}</td>
+                        <td>
+                          <span class="badge badge-warning">Pending</span>
+                        </td>
+                        <td>
+                          <app-action-menu>
+                            <button class="menu-item" (click)="viewUserDetails(user)">
+                              <i class="material-icons-round">visibility</i> View
+                            </button>
+                            <button class="menu-item" (click)="onApprove(user)">
+                              <i class="material-icons-round">done</i> Approve
+                            </button>
+                          </app-action-menu>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <app-pagination
+                [currentPage]="currentPage"
+                [pageSize]="pageSize"
+                [totalElements]="users().length"
+                (pageChange)="onPageChange($event)"
+                (pageSizeChange)="onPageSizeChange($event)">
+              </app-pagination>
+            </div>
+          }
         }
 
         <!-- Pending land-holding submissions -->
-        @if (pendingHoldings().length > 0) {
-          <h3 class="section-title">Pending Land Holdings ({{ pendingHoldings().length }})</h3>
-          <div class="table-container">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Farmer</th>
-                    <th>Survey #</th>
-                    <th>Area (Acres)</th>
-                    <th>Soil</th>
-                    <th>Irrigation</th>
-                    <th>Ownership</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (h of pendingHoldings(); track h.holdingId) {
-                    <tr>
-                      <td>{{ getFarmerName(h.farmerId) }} <span class="id-note">(#{{ h.farmerId }})</span></td>
-                      <td>{{ h.surveyNumber }}</td>
-                      <td>{{ h.areaAcres }}</td>
-                      <td>{{ h.soilType }}</td>
-                      <td>{{ h.irrigationSource }}</td>
-                      <td>{{ h.ownershipType }}</td>
-                      <td>
-                        <span class="badge badge-warning">Pending</span>
-                      </td>
-                      <td>
-                        <app-action-menu>
-                          <button class="menu-item" (click)="approveHolding(h)">
-                            <i class="material-icons-round">done</i> Approve
-                          </button>
-                          <button class="menu-item danger" (click)="rejectHolding(h)">
-                            <i class="material-icons-round">close</i> Reject
-                          </button>
-                        </app-action-menu>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+        @if (activeTab() === 'holdings') {
+          @if (pendingHoldings().length === 0) {
+            <div class="empty-state card">
+              <i class="material-icons-round">rule_folder</i>
+              <h3>No Pending Land Holdings</h3>
+              <p>All land-holding submissions have been processed.</p>
             </div>
-          </div>
+          } @else {
+            <div class="table-container">
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Farmer</th>
+                      <th>Survey #</th>
+                      <th>Area (Acres)</th>
+                      <th>Soil</th>
+                      <th>Irrigation</th>
+                      <th>Ownership</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (h of paginatedHoldings(); track h.holdingId) {
+                      <tr>
+                        <td><strong>{{ getFarmerName(h.farmerId) }}</strong> <span class="id-note">(#{{ h.farmerId }})</span></td>
+                        <td>{{ h.surveyNumber }}</td>
+                        <td>{{ h.areaAcres }}</td>
+                        <td>{{ h.soilType }}</td>
+                        <td>{{ h.irrigationSource }}</td>
+                        <td>{{ h.ownershipType }}</td>
+                        <td>
+                          <span class="badge badge-warning">Pending</span>
+                        </td>
+                        <td>
+                          <app-action-menu>
+                            <button class="menu-item" (click)="approveHolding(h)">
+                              <i class="material-icons-round">done</i> Approve
+                            </button>
+                            <button class="menu-item danger" (click)="rejectHolding(h)">
+                              <i class="material-icons-round">close</i> Reject
+                            </button>
+                          </app-action-menu>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <app-pagination
+                [currentPage]="holdingsPage"
+                [pageSize]="holdingsPageSize"
+                [totalElements]="pendingHoldings().length"
+                (pageChange)="onHoldingsPageChange($event)"
+                (pageSizeChange)="onHoldingsPageSizeChange($event)">
+              </app-pagination>
+            </div>
+          }
         }
       }
 
@@ -150,6 +182,47 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
       color: var(--text-primary);
     }
     .mb-4 { margin-bottom: 1.5rem; }
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .tab-count {
+      background-color: var(--danger, #dc2626);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
     .id-note {
       color: var(--text-muted);
       font-size: 0.8em;
@@ -185,6 +258,7 @@ export class UserPendingListComponent implements OnInit {
   users = signal<any[]>([]);
   pendingHoldings = signal<any[]>([]);
   isLoading = signal(true);
+  activeTab = signal<'users' | 'holdings'>('users');
   private farmerNames = new Map<number, string>();
 
   // Detail (view) modal
@@ -195,6 +269,8 @@ export class UserPendingListComponent implements OnInit {
   // Pagination
   currentPage = 0;
   pageSize = 10;
+  holdingsPage = 0;
+  holdingsPageSize = 10;
 
   ngOnInit(): void {
     this.loadAll();
@@ -245,6 +321,21 @@ export class UserPendingListComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+  }
+
+  paginatedHoldings(): any[] {
+    const start = this.holdingsPage * this.holdingsPageSize;
+    const end = start + this.holdingsPageSize;
+    return this.pendingHoldings().slice(start, end);
+  }
+
+  onHoldingsPageChange(page: number): void {
+    this.holdingsPage = page;
+  }
+
+  onHoldingsPageSizeChange(size: number): void {
+    this.holdingsPageSize = size;
+    this.holdingsPage = 0;
   }
 
   viewUserDetails(user: any): void {

@@ -1,0 +1,412 @@
+<div class="inputs-page">
+  <div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1>Input Operations & Supplies</h1>
+      <p class="text-secondary">Distribute seeds, fertilizers, and logistics equipment. Catalog stocks and review request items.</p>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tabs-container mb-3">
+    <button class="tab-btn" [class.active]="activeTab() === 'catalog'" (click)="setTab('catalog')">
+      <i class="material-icons-round">fact_check</i>
+      <span>Inputs Catalog</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'requests'" (click)="setTab('requests')">
+      <i class="material-icons-round">shopping_bag</i>
+      <span>Farmer Requests</span>
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="empty-state">
+      <span class="spinner-large"></span>
+      <p class="mt-3">Loading input resources...</p>
+    </div>
+  } @else {
+
+    <!-- 1. INPUT CATALOG TAB -->
+    @if (activeTab() === 'catalog') {
+      <div class="tab-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Available Supplies & Stocks</h3>
+          <div class="d-flex align-items-center" style="gap: 0.5rem;">
+            @if (catalogs().length > 0) {
+              <button class="btn btn-secondary btn-icon-only" title="Export to Excel" (click)="exportCatalog('excel')">
+                <i class="material-icons-round text-success">table_view</i>
+              </button>
+            }
+            @if (isCatalogManager()) {
+              <button class="btn btn-primary" title="Create new catalog" (click)="openCatalogModal()">
+                <span class="btn-plus-icon">+</span>
+                <span>Catalog</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (catalogs().length === 0) {
+          <div class="empty-state card">
+            <i class="material-icons-round">category</i>
+            <h3>No Supplies Listed</h3>
+            <p>Register seeds or fertilizers in the catalog first.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Standard Price</th>
+                    <th class="sortable" (click)="toggleCatalogSort('subsidisedPrice')">
+                      Subsidised Price
+                      <i class="material-icons-round sort-icon">{{ getCatalogSortIcon('subsidisedPrice') }}</i>
+                    </th>
+                    <th>Available Stock</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of pagedCatalogs(); track item.inputId) {
+                    <tr>
+                      <td><strong>{{ item.name }}</strong></td>
+                      <td>{{ item.category }}</td>
+                      <td>{{ item.unit }}</td>
+                      <td>{{ item.pricePerUnit | currency:'INR':'symbol-narrow' }}</td>
+                      <td><strong class="text-success">{{ item.subsidisedPrice | currency:'INR':'symbol-narrow' }}</strong></td>
+                      <td>{{ item.availableStock }} {{ item.unit }}s</td>
+                      <td>
+                        <span class="badge" [ngClass]="item.status === 'AC' ? 'badge-success' : 'badge-warning'">
+                          {{ item.status === 'AC' ? 'Active' : 'Inactive' }}
+                        </span>
+                      </td>
+                      <td>
+                        <app-action-menu>
+                          <button class="menu-item" (click)="viewCatalogDetails(item)">
+                            <i class="material-icons-round">visibility</i> View
+                          </button>
+                          @if (isFarmer() && item.status === 'AC' && item.availableStock > 0) {
+                            <button class="menu-item" (click)="openRequestModal(item)">
+                              <i class="material-icons-round">add_shopping_cart</i> Request
+                            </button>
+                          }
+                          @if (isCatalogManager()) {
+                            <button class="menu-item" (click)="openCatalogModal(item)">
+                              <i class="material-icons-round">edit</i> Edit
+                            </button>
+                            <button class="menu-item" (click)="toggleCatalogStatus(item)">
+                              <i class="material-icons-round">{{ item.status === 'AC' ? 'toggle_off' : 'toggle_on' }}</i>
+                              {{ item.status === 'AC' ? 'Set Inactive' : 'Set Active' }}
+                            </button>
+                            <button class="menu-item danger" (click)="confirmDeleteCatalog(item)">
+                              <i class="material-icons-round">delete</i> Delete
+                            </button>
+                          }
+                        </app-action-menu>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pagination
+              [currentPage]="catalogPage()"
+              [pageSize]="catalogPageSize()"
+              [totalElements]="sortedCatalogs().length"
+              (pageChange)="onCatalogPageChange($event)"
+              (pageSizeChange)="onCatalogPageSizeChange($event)">
+            </app-pagination>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- 2. FARMER REQUESTS TAB -->
+    @if (activeTab() === 'requests') {
+      <div class="tab-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Requested Supply Allocations</h3>
+          @if (requests().length > 0) {
+            <button class="btn btn-secondary btn-icon-only" title="Export to Excel" (click)="exportRequests('excel')">
+              <i class="material-icons-round text-success">table_view</i>
+            </button>
+          }
+        </div>
+
+        @if (requests().length === 0) {
+          <div class="empty-state card">
+            <i class="material-icons-round">local_shipping</i>
+            <h3>No Input Requests Found</h3>
+            <p>No agricultural input requests recorded yet.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Input Item</th>
+                    <th>Qty Requested</th>
+                    <th>Total Price</th>
+                    <th>Request Date</th>
+                    <th>Assigned Centre</th>
+                    <th class="sortable" (click)="toggleRequestSort()">
+                      Status
+                      <i class="material-icons-round sort-icon">{{ getRequestSortIcon() }}</i>
+                    </th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (req of pagedRequests(); track req.requestId) {
+                    <tr>
+                      <td>{{ getInputName(req.inputId) }}</td>
+                      <td>{{ req.quantityRequested }}</td>
+                      <td><strong>{{ req.actualPrice | currency:'INR':'symbol-narrow' }}</strong></td>
+                      <td>{{ req.requestDate | date:'mediumDate' }}</td>
+                      <td>Centre #{{ req.assignedCentreId }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="{
+                          'badge-warning': req.status === 'PE',
+                          'badge-info': req.status === 'AP',
+                          'badge-success': req.status === 'DL',
+                          'badge-danger': req.status === 'RE'
+                        }">
+                          {{ getRequestStatusLabel(req.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        <app-action-menu>
+                          <button class="menu-item" (click)="viewRequestDetails(req)">
+                            <i class="material-icons-round">visibility</i> View
+                          </button>
+                          @if (isAdminOrOfficer()) {
+                            @if (req.status === 'PE') {
+                              <button class="menu-item" (click)="updateStatus(req, 'AP')">
+                                <i class="material-icons-round">check_circle</i> Approve
+                              </button>
+                              <button class="menu-item danger" (click)="updateStatus(req, 'RE')">
+                                <i class="material-icons-round">cancel</i> Reject
+                              </button>
+                            } @else if (req.status === 'AP') {
+                              <button class="menu-item" (click)="updateStatus(req, 'DL')">
+                                <i class="material-icons-round">local_shipping</i> Mark Delivered
+                              </button>
+                            }
+                          }
+                          @if (isFarmer() && req.status === 'PE') {
+                            <button class="menu-item danger" (click)="confirmDeleteRequest(req)">
+                              <i class="material-icons-round">delete</i> Cancel Request
+                            </button>
+                          }
+                        </app-action-menu>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pagination
+              [currentPage]="requestPage()"
+              [pageSize]="requestPageSize()"
+              [totalElements]="filteredSortedRequests().length"
+              (pageChange)="onRequestPageChange($event)"
+              (pageSizeChange)="onRequestPageSizeChange($event)">
+            </app-pagination>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- MODALS SECTION -->
+
+  <!-- 1. Catalog Create/Edit Modal -->
+  @if (showCatalogModal()) {
+    <div class="modal-overlay" (click)="closeCatalogModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditMode() ? 'Edit Supply Catalog Details' : 'Add Supply Item to Catalog' }}</h3>
+          <button class="close-btn" (click)="closeCatalogModal()">
+            <i class="material-icons-round">close</i>
+          </button>
+        </div>
+        <form [formGroup]="catalogForm" (ngSubmit)="submitCatalogForm()">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="catName">Supply Item Name</label>
+              <input type="text" id="catName" formControlName="name" placeholder="e.g. Organic Urea Fertilizer"
+                title="Enter the name of the supply item (e.g. Organic Urea Fertilizer)"
+                [class.input-error]="catalogForm.get('name')?.invalid && catalogForm.get('name')?.touched" />
+              <span class="field-error">
+                {{ (catalogForm.get('name')?.invalid && catalogForm.get('name')?.touched) ? 'Supply item name is required.' : '' }}
+              </span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="catCategory">Category</label>
+                <input type="text" id="catCategory" formControlName="category" placeholder="e.g. Seed, Fertilizer, Tool"
+                  title="Enter the category of the supply item (e.g. Seed, Fertilizer, Tool)"
+                  [class.input-error]="catalogForm.get('category')?.invalid && catalogForm.get('category')?.touched" />
+                <span class="field-error">
+                  {{ (catalogForm.get('category')?.invalid && catalogForm.get('category')?.touched) ? 'Category is required.' : '' }}
+                </span>
+              </div>
+              <div class="form-group">
+                <label for="catUnit">Distribution Unit</label>
+                <input type="text" id="catUnit" formControlName="unit" placeholder="e.g. Kg, Packet, Piece"
+                  title="Enter the unit of distribution (e.g. Kg, Packet, Piece)"
+                  [class.input-error]="catalogForm.get('unit')?.invalid && catalogForm.get('unit')?.touched" />
+                <span class="field-error">
+                  {{ (catalogForm.get('unit')?.invalid && catalogForm.get('unit')?.touched) ? 'Distribution unit is required.' : '' }}
+                </span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="catPrice">Standard Price Per Unit (₹)</label>
+                <input type="number" step="0.01" id="catPrice" formControlName="pricePerUnit"
+                  title="Enter the standard market price per unit in rupees (minimum ₹0.01)"
+                  [class.input-error]="catalogForm.get('pricePerUnit')?.invalid && catalogForm.get('pricePerUnit')?.touched" />
+                <span class="field-error">
+                  {{ (catalogForm.get('pricePerUnit')?.invalid && catalogForm.get('pricePerUnit')?.touched) ? 'Standard price must be at least ₹0.01.' : '' }}
+                </span>
+              </div>
+              <div class="form-group">
+                <label for="catSub">Subsidised Price (₹)</label>
+                <input type="number" step="0.01" id="catSub" formControlName="subsidisedPrice"
+                  title="Enter the government subsidised price per unit in rupees (minimum ₹0.01)"
+                  [class.input-error]="catalogForm.get('subsidisedPrice')?.invalid && catalogForm.get('subsidisedPrice')?.touched" />
+                <span class="field-error">
+                  {{ (catalogForm.get('subsidisedPrice')?.invalid && catalogForm.get('subsidisedPrice')?.touched) ? 'Subsidised price must be at least ₹0.01.' : '' }}
+                </span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="catStock">Initial Available Stock</label>
+              <input type="number" id="catStock" formControlName="availableStock"
+                title="Enter the initial quantity of stock available (minimum 0)"
+                [class.input-error]="catalogForm.get('availableStock')?.invalid && catalogForm.get('availableStock')?.touched" />
+              <span class="field-error">
+                {{ (catalogForm.get('availableStock')?.invalid && catalogForm.get('availableStock')?.touched) ? 'Available stock must be 0 or more.' : '' }}
+              </span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" title="Save the supply catalog item" [disabled]="catalogForm.invalid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- 2. Request Input Modal -->
+  @if (showRequestModal()) {
+    <div class="modal-overlay" (click)="closeRequestModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Create Supply Request</h3>
+          <button class="close-btn" (click)="closeRequestModal()">
+            <i class="material-icons-round">close</i>
+          </button>
+        </div>
+        <form [formGroup]="requestForm" (ngSubmit)="submitRequestForm()">
+          <div class="modal-body">
+            <p>Requesting supply item: <strong>{{ selectedCatalogItem()?.name }}</strong>.</p>
+            <p class="text-secondary">
+              Subsidised Price: <strong>{{ selectedCatalogItem()?.subsidisedPrice | currency:'INR':'symbol-narrow' }}</strong>
+              per {{ selectedCatalogItem()?.unit }}.
+              Available Stock: {{ selectedCatalogItem()?.availableStock }} {{ selectedCatalogItem()?.unit }}s.
+            </p>
+
+            <div class="form-group mt-3">
+              <label for="reqFarmer">Assign to Profile</label>
+              @if (isFarmer()) {
+                <input type="text" id="reqFarmer"
+                  [value]="farmerProfiles()[0].name + ' (#' + farmerProfiles()[0].farmerId + ')'" readonly
+                  title="Your registered farmer profile"
+                  style="background: var(--bg-dark); cursor: not-allowed;" />
+              } @else {
+                <select id="reqFarmer" formControlName="farmerId"
+                  title="Select the farmer profile to assign this supply request to"
+                  [class.input-error]="requestForm.get('farmerId')?.invalid && requestForm.get('farmerId')?.touched">
+                  <option value="">Select Profile</option>
+                  @for (prof of farmerProfiles(); track prof.farmerId) {
+                    <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
+                  }
+                </select>
+                @if (requestForm.get('farmerId')?.invalid && requestForm.get('farmerId')?.touched) {
+                  <span class="field-error">Please select a farmer profile.</span>
+                }
+              }
+            </div>
+
+            <div class="form-row mt-3">
+              <div class="form-group">
+                <label for="reqQty">Quantity Requested ({{ selectedCatalogItem()?.unit }}s)</label>
+                <input type="number" id="reqQty" formControlName="quantityRequested" (input)="calculateTotalPrice()"
+                  title="Enter the quantity you wish to request (minimum 1)"
+                  [class.input-error]="requestForm.get('quantityRequested')?.invalid && requestForm.get('quantityRequested')?.touched" />
+                @if (requestForm.get('quantityRequested')?.invalid && requestForm.get('quantityRequested')?.touched) {
+                  <span class="field-error">Quantity must be at least 1.</span>
+                }
+              </div>
+              <div class="form-group">
+                <label for="reqCentre">Assigned Supply Center ID</label>
+                <input type="number" id="reqCentre" formControlName="assignedCentreId" placeholder="e.g. 101"
+                  title="Enter the ID of the supply distribution center (e.g. 101)"
+                  [class.input-error]="requestForm.get('assignedCentreId')?.invalid && requestForm.get('assignedCentreId')?.touched" />
+                @if (requestForm.get('assignedCentreId')?.invalid && requestForm.get('assignedCentreId')?.touched) {
+                  <span class="field-error">A valid supply center ID is required.</span>
+                }
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label>Total Calculated Price (₹)</label>
+              <div class="total-price-display">
+                {{ calculatedTotalPrice() | currency:'INR':'symbol-narrow' }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" title="Submit your supply request for approval" [disabled]="requestForm.invalid">
+              Place Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Confirmation Modals -->
+  @if (showDeleteCatalogConfirm()) {
+    <app-confirmation-modal
+      title="Delete Catalog Item"
+      [message]="'Are you sure you want to delete ' + selectedCatalogItem()?.name + ' from the catalog?'"
+      (confirm)="executeDeleteCatalog()"
+      (cancel)="showDeleteCatalogConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showDeleteRequestConfirm()) {
+    <app-confirmation-modal
+      title="Cancel Supply Request"
+      message="Are you sure you want to cancel this input supply request?"
+      (confirm)="executeDeleteRequest()"
+      (cancel)="showDeleteRequestConfirm.set(false)">
+    </app-confirmation-modal>
+  }
+
+  @if (showDetailModal()) {
+    <app-detail-modal
+      [title]="detailTitle()"
+      [rows]="detailRows()"
+      (close)="showDetailModal.set(false)">
+    </app-detail-modal>
+  }
+</div>

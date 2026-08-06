@@ -150,13 +150,14 @@ import { INDIAN_STATES } from '../../../utils/indian-states';
             <div class="form-row-2">
               <div class="form-group">
                 <label for="gender">Gender</label>
-                <select id="gender" formControlName="gender">
-                  <option value="" disabled>Select</option>
+                <select id="gender" formControlName="gender"
+                  [class.input-error]="isFieldInvalid('gender')">
+                  <option value="">Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
-                <span class="error-text"></span>
+                <span class="error-text" [class.visible]="isFieldInvalid('gender')">Gender is required</span>
               </div>
 
               <div class="form-group">
@@ -348,6 +349,9 @@ import { INDIAN_STATES } from '../../../utils/indian-states';
       padding: 0.45rem 0.65rem;
       font-size: 0.82rem;
       min-width: 0;
+    }
+    .register-form select {
+      cursor: pointer;
     }
     .form-row-2 {
       display: grid;

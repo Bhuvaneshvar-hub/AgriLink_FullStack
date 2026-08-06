@@ -15,467 +15,8 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
   selector: 'app-inputs',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
-  template: `
-    <div class="inputs-page">
-      <div class="page-header d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h1>Input Operations & Supplies</h1>
-          <p class="text-secondary">Distribute seeds, fertilizers, and logistics equipment. Catalog stocks and review request items.</p>
-        </div>
-        <div class="header-export-buttons">
-          @if (activeTab() === 'catalog' && catalogs().length > 0) {
-            <button class="btn btn-secondary" (click)="exportCatalog('excel')">
-              <i class="material-icons-round text-success">table_view</i>
-              <span>Export XLS</span>
-            </button>
-            <button class="btn btn-secondary" (click)="exportCatalog('pdf')" style="margin-left: 0.5rem;">
-              <i class="material-icons-round text-danger">picture_as_pdf</i>
-              <span>Export PDF</span>
-            </button>
-          }
-          @if (activeTab() === 'requests' && requests().length > 0) {
-            <button class="btn btn-secondary" (click)="exportRequests('excel')">
-              <i class="material-icons-round text-success">table_view</i>
-              <span>Export XLS</span>
-            </button>
-            <button class="btn btn-secondary" (click)="exportRequests('pdf')" style="margin-left: 0.5rem;">
-              <i class="material-icons-round text-danger">picture_as_pdf</i>
-              <span>Export PDF</span>
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Tab Navigation -->
-      <div class="tabs-container mb-3">
-        <button class="tab-btn" [class.active]="activeTab() === 'catalog'" (click)="setTab('catalog')">
-          <i class="material-icons-round">fact_check</i>
-          <span>Inputs Catalog</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'requests'" (click)="setTab('requests')">
-          <i class="material-icons-round">shopping_bag</i>
-          <span>Farmer Requests</span>
-        </button>
-      </div>
-
-      @if (isLoading()) {
-        <div class="empty-state">
-          <span class="spinner-large"></span>
-          <p class="mt-3">Loading input resources...</p>
-        </div>
-      } @else {
-        <!-- TABS CONTENT -->
-
-        <!-- 1. INPUT CATALOG TAB -->
-        @if (activeTab() === 'catalog') {
-          <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h3>Available Supplies & Stocks</h3>
-              @if (isCatalogManager()) {
-                <button class="btn btn-primary" (click)="openCatalogModal()">
-                  <i class="material-icons-round">add_circle</i>
-                  <span>Add </span>
-                </button>
-              }
-            </div>
-
-            @if (catalogs().length === 0) {
-              <div class="empty-state card">
-                <i class="material-icons-round">category</i>
-                <h3>No Supplies Listed</h3>
-                <p>Register seeds or fertilizers in the catalog first.</p>
-              </div>
-            } @else {
-              <div class="table-container">
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Supply ID</th>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Unit</th>
-                        <th>Standard Price</th>
-                        <th class="sortable" (click)="toggleCatalogSort('subsidisedPrice')">
-                          Subsidised Price
-                          <i class="material-icons-round sort-icon">{{ getCatalogSortIcon('subsidisedPrice') }}</i>
-                        </th>
-                        <th>Available Stock</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (item of sortedCatalogs(); track item.inputId) {
-                        <tr>
-                          <td>{{ item.inputId }}</td>
-                          <td><strong>{{ item.name }}</strong></td>
-                          <td>{{ item.category }}</td>
-                          <td>{{ item.unit }}</td>
-                          <td>{{ item.pricePerUnit | currency:'INR':'symbol-narrow' }}</td>
-                          <td><strong class="text-success">{{ item.subsidisedPrice | currency:'INR':'symbol-narrow' }}</strong></td>
-                          <td>{{ item.availableStock }} {{ item.unit }}s</td>
-                          <td>
-                            <app-action-menu>
-                              <button class="menu-item" (click)="viewCatalogDetails(item)">
-                                <i class="material-icons-round">visibility</i> View
-                              </button>
-                              @if (isFarmer() && item.status === 'AC' && item.availableStock > 0) {
-                                <button class="menu-item" (click)="openRequestModal(item)">
-                                  <i class="material-icons-round">add_shopping_cart</i> Request
-                                </button>
-                              }
-                              @if (isCatalogManager()) {
-                                <button class="menu-item" (click)="openCatalogModal(item)">
-                                  <i class="material-icons-round">edit</i> Edit
-                                </button>
-                                <button class="menu-item danger" (click)="confirmDeleteCatalog(item)">
-                                  <i class="material-icons-round">delete</i> Delete
-                                </button>
-                              }
-                            </app-action-menu>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            }
-          </div>
-        }
-
-        <!-- 2. FARMER REQUESTS TAB -->
-        @if (activeTab() === 'requests') {
-          <div class="tab-content">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h3>Requested Supply Allocations</h3>
-            </div>
-
-            @if (requests().length === 0) {
-              <div class="empty-state card">
-                <i class="material-icons-round">local_shipping</i>
-                <h3>No Input Requests Found</h3>
-                <p>No agricultural input requests recorded yet.</p>
-              </div>
-            } @else {
-              <div class="table-container">
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Input Item</th>
-                        <th>Qty Requested</th>
-                        <th>Total Price</th>
-                        <th>Request Date</th>
-                        <th>Assigned Centre</th>
-                        <th class="sortable" (click)="toggleRequestSort()">
-                          Status
-                          <i class="material-icons-round sort-icon">{{ getRequestSortIcon() }}</i>
-                        </th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (req of sortedRequests(); track req.requestId) {
-                        <tr>
-                          <td>{{ getInputName(req.inputId) }}</td>
-                          <td>{{ req.quantityRequested }}</td>
-                          <td><strong>{{ req.actualPrice | currency:'INR':'symbol-narrow' }}</strong></td>
-                          <td>{{ req.requestDate | date:'mediumDate' }}</td>
-                          <td>Centre #{{ req.assignedCentreId }}</td>
-                          <td>
-                            <span class="badge" [ngClass]="{
-                              'badge-warning': req.status === 'PE',
-                              'badge-info': req.status === 'AP',
-                              'badge-success': req.status === 'DL',
-                              'badge-danger': req.status === 'RE'
-                            }">
-                              {{ getRequestStatusLabel(req.status) }}
-                            </span>
-                          </td>
-                          <td>
-                            <app-action-menu>
-                              <button class="menu-item" (click)="viewRequestDetails(req)">
-                                <i class="material-icons-round">visibility</i> View
-                              </button>
-                              @if (isAdminOrOfficer()) {
-                                @if (req.status === 'PE') {
-                                  <button class="menu-item" (click)="updateStatus(req, 'AP')">
-                                    <i class="material-icons-round">check_circle</i> Approve
-                                  </button>
-                                  <button class="menu-item danger" (click)="updateStatus(req, 'RE')">
-                                    <i class="material-icons-round">cancel</i> Reject
-                                  </button>
-                                } @else if (req.status === 'AP') {
-                                  <button class="menu-item" (click)="updateStatus(req, 'DL')">
-                                    <i class="material-icons-round">local_shipping</i> Mark Delivered
-                                  </button>
-                                }
-                              }
-                              @if (isFarmer() && req.status === 'PE') {
-                                <button class="menu-item danger" (click)="confirmDeleteRequest(req)">
-                                  <i class="material-icons-round">delete</i> Cancel Request
-                                </button>
-                              }
-                            </app-action-menu>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      }
-
-      <!-- MODALS SECTION -->
-
-      <!-- 1. Catalog Create/Edit Modal -->
-      @if (showCatalogModal()) {
-        <div class="modal-overlay" (click)="closeCatalogModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>{{ isEditMode() ? 'Edit Supply Catalog Details' : 'Add Supply Item to Catalog' }}</h3>
-              <button class="close-btn" (click)="closeCatalogModal()">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="catalogForm" (ngSubmit)="submitCatalogForm()">
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="catName">Supply Item Name</label>
-                  <input type="text" id="catName" formControlName="name" placeholder="e.g. Organic Urea Fertilizer" />
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="catCategory">Category</label>
-                    <input type="text" id="catCategory" formControlName="category" placeholder="e.g. Seed, Fertilizer, Tool" />
-                  </div>
-                  <div class="form-group">
-                    <label for="catUnit">Distribution Unit</label>
-                    <input type="text" id="catUnit" formControlName="unit" placeholder="e.g. Kg, Packet, Piece" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="catPrice">Standard Price Per Unit (₹)</label>
-                    <input type="number" step="0.01" id="catPrice" formControlName="pricePerUnit" />
-                  </div>
-                  <div class="form-group">
-                    <label for="catSub">Subsidised Price (₹)</label>
-                    <input type="number" step="0.01" id="catSub" formControlName="subsidisedPrice" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="catStock">Initial Available Stock</label>
-                    <input type="number" id="catStock" formControlName="availableStock" />
-                  </div>
-                  <div class="form-group">
-                    <label for="catStatus">Status</label>
-                    <select id="catStatus" formControlName="status">
-                      <option value="" disabled>Select Status</option>
-                      <option value="AC">Active</option>
-                      <option value="IN">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="catalogForm.invalid">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 2. Request Input Modal -->
-      @if (showRequestModal()) {
-        <div class="modal-overlay" (click)="closeRequestModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>Create Supply Request</h3>
-              <button class="close-btn" (click)="closeRequestModal()">
-                <i class="material-icons-round">close</i>
-              </button>
-            </div>
-            <form [formGroup]="requestForm" (ngSubmit)="submitRequestForm()">
-              <div class="modal-body">
-                <p>Requesting supply item: <strong>{{ selectedCatalogItem()?.name }}</strong>.</p>
-                <p class="text-secondary">Subsidised Price: <strong>{{ selectedCatalogItem()?.subsidisedPrice | currency:'INR':'symbol-narrow' }}</strong> per {{ selectedCatalogItem()?.unit }}. Available Stock: {{ selectedCatalogItem()?.availableStock }} {{ selectedCatalogItem()?.unit }}s.</p>
-                
-                <div class="form-group mt-3">
-                  <label for="reqFarmer">Assign to Profile</label>
-                  @if (isFarmer()) {
-                    <input type="text" id="reqFarmer" [value]="farmerProfiles()[0].name + ' (#' + farmerProfiles()[0].farmerId + ')'" readonly style="background: var(--bg-dark); cursor: not-allowed;" />
-                  } @else {
-                    <select id="reqFarmer" formControlName="farmerId">
-                      <option value="">Select Profile</option>
-                      @for (prof of farmerProfiles(); track prof.farmerId) {
-                        <option [value]="prof.farmerId">{{ prof.name }} (#{{ prof.farmerId }})</option>
-                      }
-                    </select>
-                  }
-                </div>
-
-                <div class="form-row mt-3">
-                  <div class="form-group">
-                    <label for="reqQty">Quantity Requested ({{ selectedCatalogItem()?.unit }}s)</label>
-                    <input type="number" id="reqQty" formControlName="quantityRequested" (input)="calculateTotalPrice()" />
-                  </div>
-                  <div class="form-group">
-                    <label for="reqCentre">Assigned Supply Center ID</label>
-                    <input type="number" id="reqCentre" formControlName="assignedCentreId" placeholder="e.g. 101" />
-                  </div>
-                </div>
-
-                <div class="form-group mt-3">
-                  <label>Total Calculated Price (₹)</label>
-                  <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-hover);">
-                    {{ calculatedTotalPrice() | currency:'INR':'symbol-narrow' }}
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="requestForm.invalid">Place Request</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- Confirmation Modals -->
-      @if (showDeleteCatalogConfirm()) {
-        <app-confirmation-modal
-          title="Delete Catalog Item"
-          [message]="'Are you sure you want to delete ' + selectedCatalogItem()?.name + ' from the catalog?'"
-          (confirm)="executeDeleteCatalog()"
-          (cancel)="showDeleteCatalogConfirm.set(false)">
-        </app-confirmation-modal>
-      }
-
-      @if (showDeleteRequestConfirm()) {
-        <app-confirmation-modal
-          title="Cancel Supply Request"
-          message="Are you sure you want to cancel this input supply request?"
-          (confirm)="executeDeleteRequest()"
-          (cancel)="showDeleteRequestConfirm.set(false)">
-        </app-confirmation-modal>
-      }
-
-      @if (showDetailModal()) {
-        <app-detail-modal
-          [title]="detailTitle()"
-          [rows]="detailRows()"
-          (close)="showDetailModal.set(false)">
-        </app-detail-modal>
-      }
-    </div>
-  `,
-  styles: [`
-    .inputs-page {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-    }
-    .tabs-container {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--border-color);
-      padding-bottom: 0.25rem;
-      flex-wrap: wrap;
-    }
-    .tab-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      outline: none;
-    }
-    .tab-btn i {
-      font-size: 20px;
-    }
-    .tab-btn:hover {
-      color: var(--primary-hover);
-    }
-    .tab-btn.active {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
-    }
-    .tab-content {
-      animation: fadeIn var(--transition-normal);
-    }
-    .btn-small {
-      padding: 0.4rem 0.8rem !important;
-      font-size: 0.8rem !important;
-      margin-right: 0.25rem;
-    }
-    .table-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .action-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.25rem;
-      border-radius: 0.25rem;
-      transition: background var(--transition-fast);
-    }
-    .action-btn:hover {
-      background-color: var(--primary-light);
-    }
-    .action-btn i {
-      font-size: 18px;
-    }
-    .close-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      color: var(--text-secondary);
-    }
-    .close-btn:hover {
-      color: var(--text-primary);
-    }
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    th.sortable:hover { color: var(--primary-color); }
-    .sort-icon {
-      font-size: 14px !important;
-      vertical-align: middle;
-      margin-left: 2px;
-      color: var(--text-muted);
-    }
-    .spinner-large {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--border-color);
-      border-top-color: var(--primary-color);
-      border-radius: 50%;
-      animation: spin 1s infinite linear;
-      display: inline-block;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  `]
+  templateUrl: './inputs.component.html',
+  styleUrl: './inputs.component.css'
 })
 export class InputsComponent implements OnInit {
   private inputService = inject(InputService);
@@ -529,10 +70,37 @@ export class InputsComponent implements OnInit {
     });
   });
 
+  filteredSortedRequests = computed(() => {
+    const sorted = this.sortedRequests();
+    if (!this.isFarmer()) return sorted;
+    const myFarmerId = this.farmerProfiles()[0]?.farmerId;
+    if (!myFarmerId) return [];
+    return sorted.filter(r => r.farmerId == myFarmerId);
+  });
+
+  // Pagination — Catalog
+  catalogPage = signal<number>(0);
+  catalogPageSize = signal<number>(5);
+
+  // Pagination — Requests
+  requestPage = signal<number>(0);
+  requestPageSize = signal<number>(5);
+
+  // Paginated slices
+  pagedCatalogs = computed(() => {
+    const start = this.catalogPage() * this.catalogPageSize();
+    return this.sortedCatalogs().slice(start, start + this.catalogPageSize());
+  });
+
+  pagedRequests = computed(() => {
+    const start = this.requestPage() * this.requestPageSize();
+    return this.filteredSortedRequests().slice(start, start + this.requestPageSize());
+  });
+
   // Calculated Values
   calculatedTotalPrice = signal<number>(0);
 
-  // Modals Displays
+  // Modal Visibility
   showCatalogModal = signal<boolean>(false);
   showRequestModal = signal<boolean>(false);
   showDeleteCatalogConfirm = signal<boolean>(false);
@@ -568,6 +136,12 @@ export class InputsComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
+  onCatalogPageChange(page: number) { this.catalogPage.set(page); }
+  onCatalogPageSizeChange(size: number) { this.catalogPageSize.set(size); this.catalogPage.set(0); }
+
+  onRequestPageChange(page: number) { this.requestPage.set(page); }
+  onRequestPageSizeChange(size: number) { this.requestPageSize.set(size); this.requestPage.set(0); }
+
   private initForms() {
     this.catalogForm = this.fb.group({
       name: ['', Validators.required],
@@ -575,8 +149,7 @@ export class InputsComponent implements OnInit {
       unit: ['', Validators.required],
       pricePerUnit: [1.0, [Validators.required, Validators.min(0.01)]],
       subsidisedPrice: [0.5, [Validators.required, Validators.min(0.01)]],
-      availableStock: [100, [Validators.required, Validators.min(0)]],
-      status: ['', Validators.required]
+      availableStock: [100, [Validators.required, Validators.min(0)]]
     });
 
     this.requestForm = this.fb.group({
@@ -589,17 +162,14 @@ export class InputsComponent implements OnInit {
   private loadAllData() {
     this.isLoading.set(true);
 
-    // Load farmer profiles independently
     this.farmerService.getAllFarmerProfiles().subscribe({
       next: (profiles) => this.farmerProfiles.set(profiles),
       error: () => this.farmerProfiles.set([])
     });
 
-    // Load catalogs
     this.inputService.getAllInputCatalogs().subscribe({
       next: (cats) => {
         this.catalogs.set(cats);
-        // Load requests
         this.inputService.getAllInputRequests().subscribe({
           next: (reqs) => {
             this.requests.set(reqs);
@@ -656,11 +226,17 @@ export class InputsComponent implements OnInit {
     this.showDetailModal.set(true);
   }
 
+  getFarmerName(farmerId: number): string {
+    const profile = this.farmerProfiles().find(p => p.farmerId == farmerId);
+    return profile ? profile.name : '';
+  }
+
   viewRequestDetails(req: any) {
+    const farmerName = this.getFarmerName(req.farmerId);
     this.detailTitle.set(`Input Request #${req.requestId}`);
     this.detailRows.set([
       { label: 'Req ID', value: req.requestId },
-      { label: 'Farmer ID', value: '#' + req.farmerId },
+      { label: 'Farmer', value: farmerName ? `${farmerName} (#${req.farmerId})` : '#' + req.farmerId },
       { label: 'Input Item', value: this.getInputName(req.inputId) },
       { label: 'Qty Requested', value: req.quantityRequested },
       { label: 'Total Price', value: this.fmtMoney(req.actualPrice) },
@@ -681,7 +257,6 @@ export class InputsComponent implements OnInit {
       this.isEditMode.set(false);
       this.selectedCatalogItem.set(null);
       this.catalogForm.reset({
-        status: '',
         pricePerUnit: 1.0,
         subsidisedPrice: 0.5,
         availableStock: 100
@@ -696,10 +271,10 @@ export class InputsComponent implements OnInit {
 
   submitCatalogForm() {
     if (this.catalogForm.invalid) return;
-    const body = this.catalogForm.value;
 
     if (this.isEditMode()) {
       const id = this.selectedCatalogItem().inputId;
+      const body = { ...this.catalogForm.value, status: this.selectedCatalogItem().status };
       this.inputService.updateInputCatalog(id, body).subscribe({
         next: (res) => {
           this.toast.success(res.message || 'Supply catalog updated');
@@ -709,6 +284,7 @@ export class InputsComponent implements OnInit {
         error: (err) => this.toast.error(err.error?.message || 'Error updating catalog item')
       });
     } else {
+      const body = { ...this.catalogForm.value, status: 'AC' };
       this.inputService.createInputCatalog(body).subscribe({
         next: (res) => {
           this.toast.success(res.message || 'Supply item added successfully');
@@ -718,6 +294,18 @@ export class InputsComponent implements OnInit {
         error: (err) => this.toast.error(err.error?.message || 'Error adding catalog item')
       });
     }
+  }
+
+  toggleCatalogStatus(item: any) {
+    const newStatus = item.status === 'AC' ? 'IN' : 'AC';
+    const body = { ...item, status: newStatus };
+    this.inputService.updateInputCatalog(item.inputId, body).subscribe({
+      next: (res) => {
+        this.toast.success(res.message || `Item marked as ${newStatus === 'AC' ? 'Active' : 'Inactive'}`);
+        this.loadAllData();
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to update status')
+    });
   }
 
   confirmDeleteCatalog(item: any) {
@@ -858,10 +446,7 @@ export class InputsComponent implements OnInit {
   }
 
   updateStatus(req: any, status: 'AP' | 'RE' | 'DL') {
-    const body = {
-      ...req,
-      status: status
-    };
+    const body = { ...req, status };
     this.inputService.updateInputRequest(req.requestId, body).subscribe({
       next: (res) => {
         this.toast.success(res.message || `Request status changed to ${status}`);

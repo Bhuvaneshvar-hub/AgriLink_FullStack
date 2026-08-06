@@ -91,11 +91,7 @@ function wholeNumber(control: AbstractControl): ValidationErrors | null {
                 @if (isAdminOrOfficer() && cropCatalogs().length > 0) {
                   <button class="btn btn-export btn-export-icon" (click)="exportCatalog('excel')"
                           title="Export to XLS" aria-label="Export to XLS">
-                    <i class="material-icons-round icon-xls">grid_on</i>
-                  </button>
-                  <button class="btn btn-export btn-export-icon" (click)="exportCatalog('pdf')"
-                          title="Export to PDF" aria-label="Export to PDF">
-                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
+                    <i class="material-icons-round icon-xls">table_chart</i>
                   </button>
                 }
                 @if (isAdmin()) {
@@ -190,11 +186,7 @@ function wholeNumber(control: AbstractControl): ValidationErrors | null {
                 @if (isAdminOrOfficer() && cropPlans().length > 0) {
                   <button class="btn btn-export btn-export-icon" (click)="exportPlans('excel')"
                           title="Export to XLS" aria-label="Export to XLS">
-                    <i class="material-icons-round icon-xls">grid_on</i>
-                  </button>
-                  <button class="btn btn-export btn-export-icon" (click)="exportPlans('pdf')"
-                          title="Export to PDF" aria-label="Export to PDF">
-                    <i class="material-icons-round icon-pdf">picture_as_pdf</i>
+                    <i class="material-icons-round icon-xls">table_chart</i>
                   </button>
                 }
                 @if (isFarmer()) {
@@ -353,11 +345,7 @@ function wholeNumber(control: AbstractControl): ValidationErrors | null {
                   @if (growthObservations().length > 0) {
                     <button class="btn btn-export btn-export-icon" (click)="exportObservations('excel')"
                             title="Export to XLS" aria-label="Export to XLS">
-                      <i class="material-icons-round icon-xls">grid_on</i>
-                    </button>
-                    <button class="btn btn-export btn-export-icon" (click)="exportObservations('pdf')"
-                            title="Export to PDF" aria-label="Export to PDF">
-                      <i class="material-icons-round icon-pdf">picture_as_pdf</i>
+                      <i class="material-icons-round icon-xls">table_chart</i>
                     </button>
                   }
                   <button class="btn btn-primary" (click)="openAddObservationModal()"

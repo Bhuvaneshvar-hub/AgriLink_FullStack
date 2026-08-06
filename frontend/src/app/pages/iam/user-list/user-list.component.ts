@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
-import { FarmerService } from '../../../services/farmer.service';
 import { ToastService } from '../../../services/toast.service';
 import { NAME_PATTERN } from '../../../utils/validators';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
@@ -10,11 +10,12 @@ import { ConfirmationModalComponent } from '../../../components/confirmation-mod
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
 import { exportTableToExcel } from '../../../utils/export-excel.util';
+import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
   template: `
     <div class="user-list-page">
       <div class="page-header d-flex justify-content-between align-items-center mb-3">
@@ -89,20 +90,30 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
             <table>
               <thead>
                 <tr>
-                  <th>S.No</th>
-                  <th>Name</th>
-                  <th>Email</th>
+                  <th class="sortable" (click)="sortBy('name')" title="Sort by Name">
+                    <span>Name</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'name'">{{ sortIcon(sortField() === 'name', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('email')" title="Sort by Email">
+                    <span>Email</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'email'">{{ sortIcon(sortField() === 'email', sortAsc()) }}</i>
+                  </th>
                   <th>Phone</th>
-                  <th>Role</th>
-                  <th>Region ID</th>
+                  <th class="sortable" (click)="sortBy('roleName')" title="Sort by Role">
+                    <span>Role</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'roleName'">{{ sortIcon(sortField() === 'roleName', sortAsc()) }}</i>
+                  </th>
+                  <th class="sortable" (click)="sortBy('regionId')" title="Sort by Region ID">
+                    <span>Region ID</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'regionId'">{{ sortIcon(sortField() === 'regionId', sortAsc()) }}</i>
+                  </th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                @for (user of paginatedUsers(); track user.userId; let i = $index) {
+                @for (user of paginatedUsers(); track user.userId) {
                   <tr>
-                    <td>{{ currentPage * pageSize + i + 1 }}</td>
                     <td><strong>{{ user.name }}</strong></td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.phone }}</td>
@@ -213,11 +224,19 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
                     <select id="formRole" formControlName="roleId">
                       <option [value]="null" disabled>Select role...</option>
                       @for (role of roles(); track role.roleId) {
-                        <option [value]="role.roleId">{{ role.roleName }}</option>
+                        <option [value]="role.roleId" [disabled]="!isEditMode() && role.roleName === 'Farmer'">
+                          {{ role.roleName }}{{ !isEditMode() && role.roleName === 'Farmer' ? ' (use Farmer Registration)' : '' }}
+                        </option>
                       }
                     </select>
                     @if (isFieldInvalid('roleId')) {
                       <span class="error-text">Role selection is required</span>
+                    }
+                    @if (!isEditMode()) {
+                      <small class="text-secondary">
+                        Farmer accounts need a full profile (land/ID/bank details) —
+                        create them from <a routerLink="/farmers">Farmer Registration</a> instead.
+                      </small>
                     }
                   </div>
 
@@ -348,7 +367,6 @@ import { exportTableToExcel } from '../../../utils/export-excel.util';
 })
 export class UserListComponent implements OnInit {
   private userService = inject(UserService);
-  private farmerService = inject(FarmerService);
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
 
@@ -379,6 +397,11 @@ export class UserListComponent implements OnInit {
   // Pagination
   currentPage = 0;
   pageSize = 10;
+
+  // Sorting
+  sortField = signal<string | null>(null);
+  sortAsc = signal(true);
+  sortIcon = sortIcon;
 
   // Forms
   userForm!: FormGroup;
@@ -442,9 +465,15 @@ export class UserListComponent implements OnInit {
   }
 
   paginatedUsers(): any[] {
+    const sorted = applySort(this.filteredUsers(), this.sortField(), this.sortAsc());
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-    return this.filteredUsers().slice(start, end);
+    return sorted.slice(start, end);
+  }
+
+  sortBy(field: string): void {
+    toggleSort(this.sortField, this.sortAsc, field);
+    this.currentPage = 0;
   }
 
   onPageChange(page: number): void {
@@ -553,35 +582,9 @@ export class UserListComponent implements OnInit {
     } else {
       this.userService.createUser(val).subscribe({
         next: (res) => {
-          const roleName = this.roles().find(r => r.roleId === val.roleId)?.roleName;
-          if (roleName === 'Farmer' && res?.userId) {
-            // A Farmer login needs a linked farmer profile - without it the farmer has
-            // no name/record in the farmer-service (e.g. their subsidy applications
-            // display as "Farmer #<id>"). Create a minimal Active profile here.
-            this.farmerService.createFarmerProfile({
-              userId: res.userId,
-              name: val.name,
-              phone: val.phone,
-              status: 'AC'
-            }).subscribe({
-              next: () => {
-                this.toastService.success('Farmer account and profile created successfully.');
-                this.closeFormModal();
-                this.loadUsers();
-              },
-              error: () => {
-                // The login account was created; surface that the profile step failed
-                // so an admin can complete it from the Farmer Registration page.
-                this.toastService.error('User created, but the farmer profile could not be created. Complete it from Farmer Registration.');
-                this.closeFormModal();
-                this.loadUsers();
-              }
-            });
-          } else {
-            this.toastService.success(res.message || 'User created successfully.');
-            this.closeFormModal();
-            this.loadUsers();
-          }
+          this.toastService.success(res.message || 'User created successfully.');
+          this.closeFormModal();
+          this.loadUsers();
         },
         error: (err) => {
           this.toastService.error(err.error?.message || 'Failed to create user account.');

@@ -14,7 +14,12 @@ import { CommonModule } from '@angular/common';
       <div class="pagination-controls">
         <div class="page-size-selector">
           <label>Show</label>
-          <select (change)="onPageSizeChange($event)">
+          <!-- Selection is marked per-option rather than with [value] on the select:
+               a select's value assignment is discarded while it still has no
+               options, which left the control showing sizeOptions[0] regardless of
+               the real pageSize - and then picking that first size fired no change
+               event, so it looked dead. -->
+          <select (change)="onPageSizeChange($event)" aria-label="Rows per page">
             @for (size of sizeOptions; track size) {
               <option [value]="size" [selected]="size === pageSize">{{ size }}</option>
             }
@@ -26,7 +31,10 @@ import { CommonModule } from '@angular/common';
             <i class="material-icons-round">chevron_left</i>
           </button>
           
-          @for (page of pages; track page) {
+          <!-- Tracked by position, not value: a page range with a window in the
+               middle carries the -1 ellipsis sentinel twice ("1 ... 4 5 6 ... 9"),
+               and tracking by value would make those two entries duplicate keys. -->
+          @for (page of pages; track $index) {
             @if (page === -1) {
               <span class="pagination-ellipsis">...</span>
             } @else {
@@ -130,7 +138,7 @@ export class PaginationComponent implements OnChanges {
   @Input() currentPage = 0;
   @Input() pageSize = 10;
   @Input() totalElements = 0;
-  @Input() sizeOptions = [5, 10, 20, 50];
+  @Input() sizeOptions = [3, 5, 10, 20, 50];
 
   @Output() pageChange = new EventEmitter<number>();
   @Output() pageSizeChange = new EventEmitter<number>();
@@ -164,34 +172,47 @@ export class PaginationComponent implements OnChanges {
     }
   }
 
+  /**
+   * Builds the page buttons: always the first and last page, plus a window around
+   * the current one. Gaps are bridged with an ellipsis, except a gap of exactly one
+   * page, where the number itself is shown rather than hiding a single page behind
+   * "..." (which read as though pages were missing).
+   */
   private generatePageRange(): void {
     const current = this.currentPage;
     const total = this.totalPages;
-    
-    if (total <= 5) {
+
+    if (total <= 0) {
+      this.pages = [];
+      return;
+    }
+    // Few enough to list in full — no ellipsis needed.
+    if (total <= 7) {
       this.pages = Array.from({ length: total }, (_, i) => i);
       return;
     }
 
+    const window = new Set<number>([0, total - 1]);
+    for (const page of [current - 1, current, current + 1]) {
+      if (page >= 0 && page <= total - 1) {
+        window.add(page);
+      }
+    }
+
     const pages: number[] = [];
-    pages.push(0);
-
-    if (current > 2) {
-      pages.push(-1); // Ellipsis
+    let previous: number | null = null;
+    for (const page of [...window].sort((a, b) => a - b)) {
+      if (previous !== null) {
+        const gap = page - previous;
+        if (gap === 2) {
+          pages.push(previous + 1); // a lone page: show it instead of an ellipsis
+        } else if (gap > 2) {
+          pages.push(-1);
+        }
+      }
+      pages.push(page);
+      previous = page;
     }
-
-    const start = Math.max(1, current - 1);
-    const end = Math.min(total - 2, current + 1);
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    if (current < total - 3) {
-      pages.push(-1); // Ellipsis
-    }
-
-    pages.push(total - 1);
     this.pages = pages;
   }
 }

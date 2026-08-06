@@ -87,7 +87,11 @@ export class AuthService {
           const session: UserSession = {
             userId: res.userId,
             email: credentials.email,
-            name: res.name || (res.roleName === 'AgriLinkAdmin' ? 'Administrator' : 'User'),
+            // Prefer the account's real name. If the server didn't send one, fall
+            // back to the email's local part rather than a generic "User", which
+            // would otherwise be cached in localStorage and shown everywhere.
+            name: res.name
+              || (res.roleName === 'AgriLinkAdmin' ? 'Administrator' : this.nameFromEmail(credentials.email)),
             roleName: res.roleName,
             regionId: res.regionId
           };
@@ -97,6 +101,28 @@ export class AuthService {
         }
       })
     );
+  }
+
+  /**
+   * Correct the cached display name from an authoritative source — currently the
+   * farmer profile, which carries the person's real name. Needed because the login
+   * response does not always include `name`, and the session is cached in
+   * localStorage, so a placeholder would otherwise stick until the next login.
+   */
+  updateDisplayName(name: string | undefined): void {
+    const current = this.currentUserValue;
+    const trimmed = (name || '').trim();
+    if (!current || !trimmed || current.name === trimmed) return;
+    const updated: UserSession = { ...current, name: trimmed };
+    localStorage.setItem('agrilink_session', JSON.stringify(updated));
+    this.currentUserSubject.next(updated);
+  }
+
+  /** "lakshmi@gmail.com" -> "Lakshmi". Last-resort display name only. */
+  private nameFromEmail(email: string | undefined): string {
+    const local = (email || '').split('@')[0].replace(/[._-]+/g, ' ').trim();
+    if (!local) return 'User';
+    return local.charAt(0).toUpperCase() + local.slice(1);
   }
 
   register(userData: any): Observable<any> {

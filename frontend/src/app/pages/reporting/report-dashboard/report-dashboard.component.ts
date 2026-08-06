@@ -8,6 +8,7 @@ import { PaginationComponent } from '../../../components/pagination/pagination.c
 import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/table-sort.util';
 
 @Component({
   selector: 'app-report-dashboard',
@@ -23,11 +24,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
         
         @if (canGenerate()) {
           <div class="header-export-buttons">
-            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()">
+            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()" title="Export reports to Excel">
               <i class="material-icons-round text-success">table_view</i>
               <span>Export XLS</span>
             </button>
-            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;">
+            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;" title="Export reports to PDF">
               <i class="material-icons-round text-danger">picture_as_pdf</i>
               <span>Export PDF</span>
             </button>
@@ -35,7 +36,26 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
         }
       </div>
 
-      <!-- Visual Analytics Section -->
+      <!-- Tab Navigation -->
+      <div class="report-tabs">
+        <button type="button" class="report-tab" [class.active]="activeTab() === 'analytics'" (click)="activeTab.set('analytics')">
+          <i class="material-icons-round">insights</i>
+          <span>Analytics</span>
+        </button>
+        @if (canGenerate()) {
+          <button type="button" class="report-tab" [class.active]="activeTab() === 'generate'" (click)="activeTab.set('generate')">
+            <i class="material-icons-round">analytics</i>
+            <span>Generate Report</span>
+          </button>
+        }
+        <button type="button" class="report-tab" [class.active]="activeTab() === 'history'" (click)="activeTab.set('history')">
+          <i class="material-icons-round">history</i>
+          <span>History Logs</span>
+        </button>
+      </div>
+
+      <!-- Tab: Visual Analytics -->
+      @if (activeTab() === 'analytics') {
       <div class="analytics-visuals mb-4">
         <!-- VCards Metrics Row -->
         <div class="metrics-row mb-4">
@@ -45,7 +65,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
             <div class="metric-info">
               <span class="metric-label">Total Subsidies Disbursed</span>
-              <h2 class="metric-value">₹96,750</h2>
+              <h2 class="metric-value subsidy">₹96,750</h2>
               <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +15% from last month</span>
             </div>
           </div>
@@ -56,7 +76,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
             <div class="metric-info">
               <span class="metric-label">Produce Market Sales</span>
-              <h2 class="metric-value">₹1,27,230</h2>
+              <h2 class="metric-value sales">₹1,27,230</h2>
               <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +28% from last month</span>
             </div>
           </div>
@@ -67,7 +87,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
             <div class="metric-info">
               <span class="metric-label">Total Sown Crops</span>
-              <h2 class="metric-value">18 Plans</h2>
+              <h2 class="metric-value crops">18 Plans</h2>
               <span class="metric-sub text-secondary"><i class="material-icons-round">update</i> Active plans in current season</span>
             </div>
           </div>
@@ -78,7 +98,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
             <div class="metric-info">
               <span class="metric-label">Active Farmers Registered</span>
-              <h2 class="metric-value">25 Farmers</h2>
+              <h2 class="metric-value farmers">25 Farmers</h2>
               <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +8 new profiles</span>
             </div>
           </div>
@@ -222,10 +242,10 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
           </div>
         </div>
       </div>
+      }
 
-      <div class="grid-layout">
-        <!-- Generate Report Form -->
-        @if (canGenerate()) {
+      <!-- Tab: Generate Custom Report -->
+      @if (canGenerate() && activeTab() === 'generate') {
           <div class="card form-card">
             <div class="card-header">
               <h3>Generate Custom Report</h3>
@@ -266,16 +286,17 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 }
               </div>
 
-              <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="reportForm.invalid || selectedMetrics.size === 0">
+              <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="reportForm.invalid || selectedMetrics.size === 0" title="Generate report">
                 <i class="material-icons-round">analytics</i>
-                <span>Generate Report Metadata</span>
+                <span>Generate Report</span>
               </button>
             </form>
           </div>
-        }
+      }
 
-        <!-- Reports List -->
-        <div class="card list-card" [class.full-width]="!canGenerate()">
+      <!-- Tab: Report History Logs -->
+      @if (activeTab() === 'history') {
+        <div class="card list-card full-width">
           <div class="card-header">
             <h3>Report History Logs</h3>
           </div>
@@ -310,11 +331,26 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                 <table>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Scope</th>
-                      <th>Metrics</th>
-                      <th>Generated By</th>
-                      <th>Date</th>
+                      <th class="sortable" (click)="sortBy('reportId')" title="Sort by report ID (click again to reverse)">
+                        <span>ID</span>
+                        <i class="material-icons-round sort-icon" [class.active]="sortField() === 'reportId'">{{ sortIcon(sortField() === 'reportId', sortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortBy('scope')" title="Sort by scope (click again to reverse)">
+                        <span>Scope</span>
+                        <i class="material-icons-round sort-icon" [class.active]="sortField() === 'scope'">{{ sortIcon(sortField() === 'scope', sortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortBy('metrics')" title="Sort by metrics (click again to reverse)">
+                        <span>Metrics</span>
+                        <i class="material-icons-round sort-icon" [class.active]="sortField() === 'metrics'">{{ sortIcon(sortField() === 'metrics', sortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortBy('generatedBy')" title="Sort by generated by (click again to reverse)">
+                        <span>Generated By</span>
+                        <i class="material-icons-round sort-icon" [class.active]="sortField() === 'generatedBy'">{{ sortIcon(sortField() === 'generatedBy', sortAsc()) }}</i>
+                      </th>
+                      <th class="sortable" (click)="sortBy('generatedDate')" title="Sort by date (click again to reverse)">
+                        <span>Date</span>
+                        <i class="material-icons-round sort-icon" [class.active]="sortField() === 'generatedDate'">{{ sortIcon(sortField() === 'generatedDate', sortAsc()) }}</i>
+                      </th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -328,11 +364,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
                         <td>{{ report.generatedDate | date:'mediumDate' }}</td>
                         <td>
                           <app-action-menu>
-                            <button class="menu-item" (click)="viewReportDetails(report)">
+                            <button class="menu-item" (click)="viewReportDetails(report)" title="View report details">
                               <i class="material-icons-round">visibility</i> View
                             </button>
                             @if (canGenerate()) {
-                              <button class="menu-item danger" (click)="confirmDelete(report)">
+                              <button class="menu-item danger" (click)="confirmDelete(report)" title="Delete report">
                                 <i class="material-icons-round">delete</i> Delete
                               </button>
                             }
@@ -353,7 +389,7 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
             </div>
           }
         </div>
-      </div>
+      }
 
       <!-- Delete Confirmation -->
       @if (showDeleteConfirm()) {
@@ -377,6 +413,49 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
     </div>
   `,
   styles: [`
+    /* Tab navigation */
+    .report-tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .report-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1.1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .report-tab:hover { color: var(--text-primary); }
+    .report-tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .report-tab i { font-size: 1.1rem; }
+
+    /* Keep the form a constant height: validation messages overlay a reserved
+       slot below each field instead of pushing the layout taller. */
+    form .form-group {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+    form .error-text {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.15rem;
+      line-height: 1.15;
+    }
     .grid-layout {
       display: flex;
       flex-direction: row;
@@ -495,6 +574,11 @@ import { DetailModalComponent, DetailRow } from '../../../components/detail-moda
       color: var(--text-primary);
       margin: 0;
     }
+    /* Colour each metric to match its icon / the graph palette */
+    .metric-value.subsidy { color: #3b82f6; }
+    .metric-value.sales   { color: #16a34a; }
+    .metric-value.crops   { color: #f59e0b; }
+    .metric-value.farmers { color: #8b5cf6; }
     .metric-sub {
       font-size: 0.7rem;
       display: flex;
@@ -595,6 +679,10 @@ export class ReportDashboardComponent implements OnInit {
   filteredReports = signal<any[]>([]);
   isLoading = signal(true);
   isExporting = signal(false);
+
+  // Active tab: 'analytics' (graphs) | 'generate' (custom report) | 'history' (logs).
+  // Splitting the page into tabs keeps each view short and avoids page scrolling.
+  activeTab = signal<'analytics' | 'generate' | 'history'>('analytics');
   
   // Selection
   selectedMetrics = new Set<string>(['yield']);
@@ -612,9 +700,14 @@ export class ReportDashboardComponent implements OnInit {
   detailTitle = signal<string>('');
   detailRows = signal<DetailRow[]>([]);
 
-  // Pagination
+  // Pagination — remember the chosen page size across navigation.
   currentPage = 0;
-  pageSize = 10;
+  pageSize = Number(localStorage.getItem('agrilink.tablePageSize')) || 10;
+
+  // Column sorting for the report history table.
+  sortField = signal<string | null>(null);
+  sortAsc = signal(true);
+  readonly sortIcon = sortIconFn;
 
   // Form
   reportForm!: FormGroup;
@@ -717,9 +810,15 @@ export class ReportDashboardComponent implements OnInit {
   }
 
   paginatedReports(): any[] {
+    const sorted = applySort(this.filteredReports(), this.sortField(), this.sortAsc());
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-    return this.filteredReports().slice(start, end);
+    return sorted.slice(start, end);
+  }
+
+  sortBy(field: string): void {
+    toggleSort(this.sortField, this.sortAsc, field);
+    this.currentPage = 0;
   }
 
   onPageChange(page: number): void {
@@ -729,6 +828,7 @@ export class ReportDashboardComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
+    localStorage.setItem('agrilink.tablePageSize', String(size));
   }
 
   confirmDelete(report: any): void {

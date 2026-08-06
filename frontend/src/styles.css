@@ -73,6 +73,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Hide native scrollbars but preserve scrolling */
+html, body, .main-content, .table-responsive {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* WebKit browsers (Chrome, Safari, newer Edge) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.main-content::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-title);
   font-weight: 600;
@@ -225,6 +241,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+  /* Top-align the columns so a field with a warning/helper line underneath
+     doesn't drag its neighbour's label and input out of line. */
+  align-items: start;
 }
 
 /* Button Styling */
@@ -366,6 +385,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   max-width: 100%;
 }
 
+/* Tables are sized to fit their card, so no horizontal scrollbar appears.
+   Cells wrap instead of forcing the table wider than the page. overflow-x
+   stays as a last-resort safety net for very narrow phones — with wrapping
+   enabled it should never actually engage on a desktop. */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -373,8 +396,17 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   text-align: left;
+}
+
+th, td {
+  /* break-word (not `anywhere`) so text wraps at spaces and only splits a word
+     that genuinely cannot fit. `anywhere` broke ordinary words mid-letter
+     ("Germinatio/n", "Chickpe/a"), which looked broken. */
+  overflow-wrap: break-word;
+  vertical-align: middle;
 }
 
 th {
@@ -384,15 +416,23 @@ th {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 1rem 1.25rem;
+  padding: 0.9rem 0.85rem;
   border-bottom: 1px solid var(--border-color);
+  /* Column labels stay on one line — a wrapped "ACTIO/NS" reads as a glitch. */
+  white-space: nowrap;
 }
 
 td {
-  padding: 1rem 1.25rem;
+  padding: 0.85rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+/* Pills must never be split across lines. */
+.badge {
+  white-space: nowrap;
 }
 
 tbody tr:last-child td {
@@ -501,6 +541,14 @@ tbody tr:hover {
   max-height: 70vh;
 }
 
+/* The last field's own margin used to stack on top of the body's padding,
+   leaving noticeably more space below the final row than above the first.
+   Drop it so the body is evenly inset on all sides. */
+.modal-body > *:last-child,
+.modal-body > *:last-child .form-group {
+  margin-bottom: 0;
+}
+
 .modal-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
@@ -574,6 +622,41 @@ select.ng-invalid.ng-touched,
 select.ng-invalid.ng-dirty,
 textarea.ng-invalid.ng-touched,
 textarea.ng-invalid.ng-dirty {
-  border-color: var(--danger) !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18) !important;
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+}
+
+/* A field the user has filled in correctly reads green, so a valid value is
+   never left looking like an error. */
+input.ng-valid.ng-dirty,
+select.ng-valid.ng-dirty,
+textarea.ng-valid.ng-dirty {
+  border-color: var(--success);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+}
+
+/* The focus ring always wins, so the field being edited is never painted red. */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Sortable table column headers — shared by every data table app-wide. */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th.sortable:hover {
+  color: var(--primary-color);
+}
+.sort-icon {
+  font-size: 15px;
+  vertical-align: middle;
+  margin-left: 0.15rem;
+  opacity: 0.45;
+}
+.sort-icon.active {
+  opacity: 1;
+  color: var(--primary-color);
 }

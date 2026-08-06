@@ -21,4 +21,6 @@ public class ProduceSaleDto {
 	private Double totalAmount;
 	private LocalDate saleDate;
 	private PaymentStatus paymentStatus;
+	private Boolean farmerPaymentConfirmed;
+	private LocalDate farmerConfirmedDate;
 }

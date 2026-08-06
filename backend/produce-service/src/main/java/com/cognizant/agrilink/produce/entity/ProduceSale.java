@@ -49,4 +49,17 @@ public class ProduceSale {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "paymentStatus")
 	private PaymentStatus paymentStatus;
+
+	/**
+	 * Secondary, farmer-side check on a settlement: the buyer marking a sale
+	 * {@code PD} (Paid) only claims the money was sent - the selling farmer must
+	 * separately confirm they actually received it. {@code null} on legacy rows is
+	 * read as "not confirmed".
+	 */
+	@Column(name = "farmerPaymentConfirmed")
+	private Boolean farmerPaymentConfirmed;
+
+	/** Date the selling farmer confirmed receipt; {@code null} until confirmed. */
+	@Column(name = "farmerConfirmedDate")
+	private LocalDate farmerConfirmedDate;
 }

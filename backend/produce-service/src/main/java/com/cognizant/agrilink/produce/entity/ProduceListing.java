@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,4 +50,13 @@ public class ProduceListing {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
 	private ListingStatus status;
+
+	/**
+	 * Kg still open for purchase: {@code quantityKg} minus every quantity already
+	 * committed by recorded sales. Derived, never persisted - populated on read by
+	 * {@code ProduceSaleService.applyAvailableQuantity} so buyers always see the
+	 * remaining stock rather than the originally listed amount.
+	 */
+	@Transient
+	private Double availableQuantityKg;
 }

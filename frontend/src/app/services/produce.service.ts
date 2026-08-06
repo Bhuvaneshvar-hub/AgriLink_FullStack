@@ -49,4 +49,9 @@ export class ProduceService {
   deleteProduceSale(id: number): Observable<any> {
     return this.http.delete<any>(`/agrilink/produce/produce-sales/${id}`);
   }
+
+  /** Selling farmer's confirmation that a payment marked Paid actually reached them. */
+  confirmFarmerPayment(id: number): Observable<any> {
+    return this.http.post<any>(`/agrilink/produce/produce-sales/${id}/farmer-confirmation`, {});
+  }
 }

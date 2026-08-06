@@ -8,8 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cognizant.agrilink.input.dto.RequestDto;
+import com.cognizant.agrilink.input.entity.Catalog;
 import com.cognizant.agrilink.input.entity.Request;
 import com.cognizant.agrilink.input.enums.RequestStatus;
+import com.cognizant.agrilink.input.repository.CatalogRepository;
 import com.cognizant.agrilink.input.repository.RequestRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -27,6 +29,9 @@ class RequestServiceTest {
 
 	@Mock
 	private RequestRepository requestRepository;
+
+	@Mock
+	private CatalogRepository catalogRepository;
 
 	@InjectMocks
 	private RequestService requestService;
@@ -105,6 +110,74 @@ class RequestServiceTest {
 
 		requestService.delete(1);
 
+		verify(requestRepository, times(1)).delete(request);
+	}
+
+	@Test
+	void approvingRequestDecreasesCatalogStock() {
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(200).build();
+		when(requestRepository.findById(1)).thenReturn(Optional.of(request));
+		when(requestRepository.save(any(Request.class))).thenReturn(request);
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+		dto.setStatus(RequestStatus.AP);
+
+		requestService.update(1, dto);
+
+		assertThat(catalog.getAvailableStock()).isEqualTo(150);
+		verify(catalogRepository).save(catalog);
+	}
+
+	@Test
+	void approvingMoreThanAvailableStockIsRejected() {
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(20).build();
+		when(requestRepository.findById(1)).thenReturn(Optional.of(request));
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+		dto.setStatus(RequestStatus.AP);
+
+		assertThatThrownBy(() -> requestService.update(1, dto))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("Insufficient stock");
+		assertThat(catalog.getAvailableStock()).isEqualTo(20);
+	}
+
+	@Test
+	void markingApprovedRequestDeliveredDoesNotDeductTwice() {
+		request.setStatus(RequestStatus.AP);
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(150).build();
+		when(requestRepository.findById(1)).thenReturn(Optional.of(request));
+		when(requestRepository.save(any(Request.class))).thenReturn(request);
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+		dto.setStatus(RequestStatus.DL);
+
+		requestService.update(1, dto);
+
+		assertThat(catalog.getAvailableStock()).isEqualTo(150);
+	}
+
+	@Test
+	void rejectingApprovedRequestReturnsStock() {
+		request.setStatus(RequestStatus.AP);
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(150).build();
+		when(requestRepository.findById(1)).thenReturn(Optional.of(request));
+		when(requestRepository.save(any(Request.class))).thenReturn(request);
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+		dto.setStatus(RequestStatus.RE);
+
+		requestService.update(1, dto);
+
+		assertThat(catalog.getAvailableStock()).isEqualTo(200);
+	}
+
+	@Test
+	void deletingApprovedRequestReturnsStock() {
+		request.setStatus(RequestStatus.AP);
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(150).build();
+		when(requestRepository.findById(1)).thenReturn(Optional.of(request));
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+
+		requestService.delete(1);
+
+		assertThat(catalog.getAvailableStock()).isEqualTo(200);
 		verify(requestRepository, times(1)).delete(request);
 	}
 }

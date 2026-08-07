@@ -165,7 +165,7 @@ import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="form.invalid">{{ isEditMode() ? 'Save Changes' : 'Submit for Approval' }}</button>
+                <button type="submit" class="btn btn-primary" [disabled]="form.invalid" [title]="isEditMode() ? 'Save Changes' : 'Submit for Approval'"><i class="material-icons-round">save</i><span>{{ isEditMode() ? 'Save Changes' : 'Submit for Approval' }}</span></button>
               </div>
             </form>
           </div>
@@ -242,7 +242,7 @@ import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Save Profile</button>
+                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid" title="Save Profile"><i class="material-icons-round">save</i><span>Save Profile</span></button>
               </div>
             </form>
           </div>

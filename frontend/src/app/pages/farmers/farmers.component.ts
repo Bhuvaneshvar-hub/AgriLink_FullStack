@@ -539,7 +539,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <span>Back</span>
                     </button>
                   }
-                  <button type="submit" class="btn btn-primary">Save Profile</button>
+                  <button type="submit" class="btn btn-primary" title="Save Profile"><i class="material-icons-round">save</i><span>Save Profile</span></button>
                 }
               </div>
             </form>
@@ -627,7 +627,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Register</button>
+                <button type="submit" class="btn btn-primary" title="Register"><i class="material-icons-round">save</i><span>Register</span></button>
               </div>
             </form>
           </div>
@@ -709,7 +709,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Record</button>
+                <button type="submit" class="btn btn-primary" title="Save Record"><i class="material-icons-round">save</i><span>Save Record</span></button>
               </div>
             </form>
           </div>

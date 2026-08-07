@@ -106,8 +106,9 @@ export class CropsComponent implements OnInit {
 
   // Pagination state (page index is 0-based)
   catalogPage = 0;   catalogPageSize = 5;
-  planPage = 0;      planPageSize = 5;
-  obsPage = 0;       obsPageSize = 5;
+  // Crop plans and growth observations have taller rows, so they open on 3.
+  planPage = 0;      planPageSize = 3;
+  obsPage = 0;       obsPageSize = 3;
   profilePage = 0;   profilePageSize = 5;
   holdingPage = 0;   holdingPageSize = 5;
 

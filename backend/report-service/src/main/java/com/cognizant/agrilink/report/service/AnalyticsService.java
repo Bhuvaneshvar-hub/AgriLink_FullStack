@@ -444,6 +444,27 @@ public class AnalyticsService {
 				.collect(Collectors.toList());
 	}
 
+	public List<Map<String, Object>> getSalesTrend() {
+		List<ProduceSaleDto> sales = getProduceSales();
+
+		Map<String, Double> grouped = sales.stream()
+				.filter(s -> s.getSaleDate() != null && s.getTotalAmount() != null)
+				.collect(Collectors.groupingBy(
+						s -> s.getSaleDate().format(DateTimeFormatter.ofPattern("yyyy-MM")),
+						Collectors.summingDouble(ProduceSaleDto::getTotalAmount)
+				));
+
+		return grouped.entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.map(e -> {
+					Map<String, Object> item = new HashMap<>();
+					item.put("month", e.getKey());
+					item.put("salesAmount", e.getValue());
+					return item;
+				})
+				.collect(Collectors.toList());
+	}
+
 	public List<Map<String, Object>> getEligibilityDistribution() {
 		List<SubsidyApplicationDto> apps = getSubsidyApplications();
 

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReportService } from '../../../services/report.service';
@@ -24,13 +25,11 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
         
         @if (canGenerate()) {
           <div class="header-export-buttons">
-            <button class="btn btn-secondary" (click)="onExport('excel')" [disabled]="isExporting()" title="Export reports to Excel">
+            <button class="btn btn-secondary btn-icon-only" (click)="onExport('excel')" [disabled]="isExporting()" title="Export reports to Excel" aria-label="Export reports to Excel">
               <i class="material-icons-round text-success">table_view</i>
-              <span>Export XLS</span>
             </button>
-            <button class="btn btn-secondary" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;" title="Export reports to PDF">
+            <button class="btn btn-secondary btn-icon-only" (click)="onExport('pdf')" [disabled]="isExporting()" style="margin-left: 0.5rem;" title="Export reports to PDF" aria-label="Export reports to PDF">
               <i class="material-icons-round text-danger">picture_as_pdf</i>
-              <span>Export PDF</span>
             </button>
           </div>
         }
@@ -65,8 +64,8 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
             </div>
             <div class="metric-info">
               <span class="metric-label">Total Subsidies Disbursed</span>
-              <h2 class="metric-value subsidy">₹96,750</h2>
-              <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +15% from last month</span>
+              <h2 class="metric-value subsidy">₹{{ totalSubsidiesDisbursed() | number:'1.0-0' }}</h2>
+              <span class="metric-sub text-secondary"><i class="material-icons-round">account_balance</i> Across {{ schemeCount() }} scheme(s)</span>
             </div>
           </div>
 
@@ -76,8 +75,8 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
             </div>
             <div class="metric-info">
               <span class="metric-label">Produce Market Sales</span>
-              <h2 class="metric-value sales">₹1,27,230</h2>
-              <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +28% from last month</span>
+              <h2 class="metric-value sales">₹{{ produceMarketSales() | number:'1.0-0' }}</h2>
+              <span class="metric-sub text-secondary"><i class="material-icons-round">receipt_long</i> {{ salesCount() }} sale(s) recorded</span>
             </div>
           </div>
 
@@ -86,9 +85,9 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
               <i class="material-icons-round">eco</i>
             </div>
             <div class="metric-info">
-              <span class="metric-label">Total Sown Crops</span>
-              <h2 class="metric-value crops">18 Plans</h2>
-              <span class="metric-sub text-secondary"><i class="material-icons-round">update</i> Active plans in current season</span>
+              <span class="metric-label">Total Sown Area</span>
+              <h2 class="metric-value crops">{{ totalSownArea() | number:'1.0-1' }} Ac</h2>
+              <span class="metric-sub text-secondary"><i class="material-icons-round">update</i> Across {{ seasonCount() }} season(s)</span>
             </div>
           </div>
 
@@ -98,26 +97,25 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
             </div>
             <div class="metric-info">
               <span class="metric-label">Active Farmers Registered</span>
-              <h2 class="metric-value farmers">25 Farmers</h2>
-              <span class="metric-sub text-success"><i class="material-icons-round text-success">trending_up</i> +8 new profiles</span>
+              <h2 class="metric-value farmers">{{ activeFarmers() }} Farmers</h2>
+              <span class="metric-sub text-secondary"><i class="material-icons-round">place</i> Across {{ districtCount() }} district(s)</span>
             </div>
           </div>
         </div>
 
         <div class="charts-row">
-          <!-- Monthly Transactions Line Chart -->
+          <!-- Monthly Financial Progress — real data: sales (/produce/salesTrend) + subsidies (/subsidy/disbursementTrend) -->
           <div class="chart-card">
             <div class="chart-header">
               <h3>Monthly Financial Progress (2026)</h3>
               <div class="chart-legend">
-                <span class="legend-item"><span class="color-dot sales"></span>Sales</span>
-                <span class="legend-item"><span class="color-dot subsidies"></span>Subsidies</span>
+                <span class="legend-item"><span class="color-dot" style="background:#16a34a"></span>Sales (₹)</span>
+                <span class="legend-item"><span class="color-dot" style="background:#3b82f6"></span>Subsidies (₹)</span>
               </div>
             </div>
             <div class="chart-container">
-              <!-- Inline SVG Line Chart -->
+              @if (trendMonths().length) {
               <svg viewBox="-20 0 520 220" class="svg-chart">
-                <!-- Gradients -->
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="#16a34a" stop-opacity="0.25"/>
@@ -128,116 +126,75 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
                     <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0"/>
                   </linearGradient>
                 </defs>
-                
-                <!-- Grid Lines -->
-                <line x1="40" y1="20" x2="480" y2="20" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="60" x2="480" y2="60" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="100" x2="480" y2="100" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="140" x2="480" y2="140" stroke="#f1f5f9" stroke-width="1"/>
+
+                <!-- Grid + Y axis labels (computed) -->
+                @for (yl of trendYLabels(); track yl.label) {
+                  <line x1="40" [attr.y1]="yl.y" x2="480" [attr.y2]="yl.y" stroke="#f1f5f9" stroke-width="1"/>
+                  <text x="35" [attr.y]="yl.y + 4" text-anchor="end" class="chart-text">{{ yl.label }}</text>
+                }
                 <line x1="40" y1="170" x2="480" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
 
-                <!-- Y Axis Labels -->
-                <text x="35" y="25" text-anchor="end" class="chart-text">50k</text>
-                <text x="35" y="65" text-anchor="end" class="chart-text">30k</text>
-                <text x="35" y="105" text-anchor="end" class="chart-text">15k</text>
-                <text x="35" y="145" text-anchor="end" class="chart-text">5k</text>
-                <text x="35" y="174" text-anchor="end" class="chart-text">0</text>
+                <!-- X axis labels (months) -->
+                @for (m of trendMonths(); track m.label) {
+                  <text [attr.x]="m.x" y="190" text-anchor="middle" class="chart-text">{{ m.label }}</text>
+                }
 
-                <!-- X Axis Labels (Jan - Jul) -->
-                <text x="60" y="190" text-anchor="middle" class="chart-text">Jan</text>
-                <text x="120" y="190" text-anchor="middle" class="chart-text">Feb</text>
-                <text x="180" y="190" text-anchor="middle" class="chart-text">Mar</text>
-                <text x="240" y="190" text-anchor="middle" class="chart-text">Apr</text>
-                <text x="300" y="190" text-anchor="middle" class="chart-text">May</text>
-                <text x="360" y="190" text-anchor="middle" class="chart-text">Jun</text>
-                <text x="420" y="190" text-anchor="middle" class="chart-text">Jul</text>
+                <!-- Sales series (green) -->
+                <path [attr.d]="salesAreaPath()" fill="url(#salesGrad)"/>
+                <path [attr.d]="salesPath()" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                @for (p of salesPts(); track $index) {
+                  <circle [attr.cx]="p.x" [attr.cy]="p.y" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
+                }
 
-                <!-- Area Paths -->
-                <!-- Sales Area -->
-                <path d="M 60 170 L 60 78 L 120 170 L 180 73 L 240 170 L 300 170 L 360 100 L 420 170 Z" fill="url(#salesGrad)"/>
-                <!-- Subsidies Area -->
-                <path d="M 60 170 L 60 134 L 120 134 L 180 170 L 240 144 L 300 170 L 360 170 L 420 170 Z" fill="url(#subsidiesGrad)"/>
+                <!-- Subsidies series (blue) -->
+                <path [attr.d]="subsidyAreaPath()" fill="url(#subsidiesGrad)"/>
+                <path [attr.d]="subsidyPath()" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                @for (p of subsidyPts(); track $index) {
+                  <circle [attr.cx]="p.x" [attr.cy]="p.y" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
+                }
 
-                <!-- Lines -->
-                <!-- Sales Line -->
-                <path d="M 60 78 L 120 170 L 180 73 L 240 170 L 300 170 L 360 100 L 420 170" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Subsidies Line -->
-                <path d="M 60 134 L 120 134 L 180 170 L 240 144 L 300 170 L 360 170 L 420 170" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-
-                <!-- Data Dots -->
-                <!-- Sales Dots -->
-                <circle cx="60" cy="78" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="120" cy="170" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="180" cy="73" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="240" cy="170" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="360" cy="100" r="4" fill="#16a34a" stroke="#fff" stroke-width="1.5"/>
-                
-                <!-- Subsidies Dots -->
-                <circle cx="60" cy="134" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="120" cy="134" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
-                <circle cx="240" cy="144" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>
-
-                <!-- Axis Titles -->
                 <text x="260" y="215" text-anchor="middle" class="chart-axis-title">Month (2026)</text>
                 <text x="-8" y="95" text-anchor="middle" transform="rotate(-90 -8 95)" class="chart-axis-title">Amount (₹)</text>
               </svg>
+              } @else {
+                <p class="text-secondary" style="padding:2rem;text-align:center;">No financial data yet.</p>
+              }
             </div>
           </div>
 
-          <!-- Crop Yield Area distribution Bar Chart -->
+          <!-- Sown Area by Season — real data from /dashboard/cropCoverage -->
           <div class="chart-card">
             <div class="chart-header">
-              <h3>Expected Crop Yield Distribution (Acre Area)</h3>
+              <h3>Sown Area by Season (Acres)</h3>
               <div class="chart-legend">
-                <span class="legend-item"><span class="color-dot paddy"></span>Paddy</span>
-                <span class="legend-item"><span class="color-dot wheat"></span>Wheat</span>
-                <span class="legend-item"><span class="color-dot cotton"></span>Cotton</span>
-                <span class="legend-item"><span class="color-dot groundnut"></span>Groundnut</span>
+                @for (b of seasonBars(); track b.label) {
+                  <span class="legend-item"><span class="color-dot" [style.background]="b.color"></span>{{ b.label }}</span>
+                }
               </div>
             </div>
             <div class="chart-container">
+              @if (seasonBars().length) {
               <svg viewBox="-20 0 520 220" class="svg-chart">
-                <!-- Grid Lines -->
-                <line x1="40" y1="20" x2="480" y2="20" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="60" x2="480" y2="60" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="100" x2="480" y2="100" stroke="#f1f5f9" stroke-width="1"/>
-                <line x1="40" y1="140" x2="480" y2="140" stroke="#f1f5f9" stroke-width="1"/>
+                <!-- Grid + Y axis labels (computed) -->
+                @for (yl of seasonYLabels(); track yl.label) {
+                  <line x1="40" [attr.y1]="yl.y" x2="480" [attr.y2]="yl.y" stroke="#f1f5f9" stroke-width="1"/>
+                  <text x="35" [attr.y]="yl.y + 4" text-anchor="end" class="chart-text">{{ yl.label }}</text>
+                }
                 <line x1="40" y1="170" x2="480" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
 
-                <!-- Y Axis Labels -->
-                <text x="35" y="25" text-anchor="end" class="chart-text">30 Ac</text>
-                <text x="35" y="65" text-anchor="end" class="chart-text">20 Ac</text>
-                <text x="35" y="105" text-anchor="end" class="chart-text">10 Ac</text>
-                <text x="35" y="145" text-anchor="end" class="chart-text">5 Ac</text>
-                <text x="35" y="174" text-anchor="end" class="chart-text">0</text>
+                <!-- Bars + value + season labels -->
+                @for (b of seasonBars(); track b.label) {
+                  <rect [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.width" [attr.height]="b.height" rx="4" [attr.fill]="b.color" class="svg-bar"/>
+                  <text [attr.x]="b.x + b.width / 2" [attr.y]="b.y - 8" text-anchor="middle" font-weight="600" font-size="11" fill="#475569">{{ b.value | number:'1.0-1' }} Ac</text>
+                  <text [attr.x]="b.x + b.width / 2" y="190" text-anchor="middle" class="chart-text">{{ b.label }}</text>
+                }
 
-                <!-- X Axis Labels (Crops) -->
-                <text x="100" y="190" text-anchor="middle" class="chart-text">Paddy</text>
-                <text x="200" y="190" text-anchor="middle" class="chart-text">Wheat</text>
-                <text x="300" y="190" text-anchor="middle" class="chart-text">Cotton</text>
-                <text x="400" y="190" text-anchor="middle" class="chart-text">Groundnut</text>
-
-                <!-- Bars (Paddy expected: 24, Wheat: 18.5, Cotton: 12, Groundnut: 15) -->
-                <!-- Paddy -->
-                <rect x="80" y="44" width="40" height="126" rx="4" fill="#16a34a" class="svg-bar"/>
-                <text x="100" y="36" text-anchor="middle" font-weight="600" font-size="11" fill="#0f766e">24 Ac</text>
-
-                <!-- Wheat -->
-                <rect x="180" y="66" width="40" height="104" rx="4" fill="#f59e0b" class="svg-bar"/>
-                <text x="200" y="58" text-anchor="middle" font-weight="600" font-size="11" fill="#b45309">18.5 Ac</text>
-
-                <!-- Cotton -->
-                <rect x="280" y="92" width="40" height="78" rx="4" fill="#3b82f6" class="svg-bar"/>
-                <text x="300" y="84" text-anchor="middle" font-weight="600" font-size="11" fill="#1d4ed8">12 Ac</text>
-
-                <!-- Groundnut -->
-                <rect x="380" y="80" width="40" height="90" rx="4" fill="#a855f7" class="svg-bar"/>
-                <text x="400" y="72" text-anchor="middle" font-weight="600" font-size="11" fill="#6b21a8">15 Ac</text>
-
-                <!-- Axis Titles -->
-                <text x="260" y="215" text-anchor="middle" class="chart-axis-title">Crop</text>
+                <text x="260" y="215" text-anchor="middle" class="chart-axis-title">Season</text>
                 <text x="-8" y="95" text-anchor="middle" transform="rotate(-90 -8 95)" class="chart-axis-title">Area (Acres)</text>
               </svg>
+              } @else {
+                <p class="text-secondary" style="padding:2rem;text-align:center;">No crop coverage data yet.</p>
+              }
             </div>
           </div>
         </div>
@@ -401,6 +358,19 @@ import { toggleSort, sortIcon as sortIconFn, applySort } from '../../../utils/ta
     </div>
   `,
   styles: [`
+    /* Icon-only export buttons: square, centred icon (label moved to tooltip) */
+    .btn-icon-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .btn-icon-only i {
+      margin: 0;
+    }
+
     /* Tab navigation */
     .report-tabs {
       display: flex;
@@ -700,9 +670,173 @@ export class ReportDashboardComponent implements OnInit {
   // Form
   reportForm!: FormGroup;
 
+  // ── Live analytics (Analytics tab) — all values below are fetched from
+  // the backend analytics endpoints, which aggregate real data on each call.
+  analyticsLoading = signal(true);
+  analyticsError = signal(false);
+  totalSubsidiesDisbursed = signal(0);
+  schemeCount = signal(0);
+  produceMarketSales = signal(0);
+  salesCount = signal(0);
+  totalSownArea = signal(0);
+  seasonCount = signal(0);
+  activeFarmers = signal(0);
+  districtCount = signal(0);
+
+  // Chart 1 — monthly financial progress: Sales + Subsidies (two lines),
+  // computed geometry over a shared, merged month axis.
+  trendMonths = signal<{ x: number; label: string }[]>([]);
+  trendYLabels = signal<{ y: number; label: string }[]>([]);
+  subsidyPts = signal<{ x: number; y: number }[]>([]);
+  subsidyPath = signal('');
+  subsidyAreaPath = signal('');
+  salesPts = signal<{ x: number; y: number }[]>([]);
+  salesPath = signal('');
+  salesAreaPath = signal('');
+
+  // Chart 2 — sown area by season (bars), computed geometry.
+  seasonBars = signal<{ x: number; y: number; height: number; width: number; label: string; value: number; color: string }[]>([]);
+  seasonYLabels = signal<{ y: number; label: string }[]>([]);
+
   ngOnInit(): void {
     this.loadReports();
+    this.loadAnalytics();
     this.initForm();
+  }
+
+  // Pull every card + chart dataset in parallel from the live analytics API.
+  loadAnalytics(): void {
+    this.analyticsLoading.set(true);
+    this.analyticsError.set(false);
+    forkJoin({
+      utilisation: this.reportService.getUtilisationByScheme(),
+      sales: this.reportService.getProduceSalesSummary(),
+      coverage: this.reportService.getCropCoverage(),
+      farmers: this.reportService.getRegistrationSummary(),
+      trend: this.reportService.getDisbursementTrend(),
+      salesTrend: this.reportService.getSalesTrend()
+    }).subscribe({
+      next: (r) => {
+        const utilisation = r.utilisation || [];
+        const coverage = r.coverage || [];
+        const farmers = r.farmers || [];
+
+        // Cards
+        this.totalSubsidiesDisbursed.set(utilisation.reduce((s: number, x: any) => s + (x.totalDisbursed || 0), 0));
+        this.schemeCount.set(utilisation.length);
+        this.produceMarketSales.set(r.sales?.totalSalesValue || 0);
+        this.salesCount.set(r.sales?.salesCount || 0);
+        this.totalSownArea.set(coverage.reduce((s: number, x: any) => s + (x.area || 0), 0));
+        this.seasonCount.set(coverage.length);
+        this.activeFarmers.set(farmers.reduce((s: number, x: any) => s + (x.farmerCount || 0), 0));
+        this.districtCount.set(farmers.length);
+
+        // Charts
+        this.buildTrendChart(r.trend || [], r.salesTrend || []);
+        this.buildSeasonChart(coverage);
+        this.analyticsLoading.set(false);
+      },
+      error: () => {
+        this.analyticsError.set(true);
+        this.analyticsLoading.set(false);
+      }
+    });
+  }
+
+  // Build the "Monthly Financial Progress" chart: two real series (subsidies
+  // disbursed + produce sales) plotted over one merged, sorted month axis.
+  private buildTrendChart(subsidyTrend: any[], salesTrend: any[]): void {
+    const left = 60, right = 420, top = 30, base = 170;
+
+    const subsidyByMonth = new Map<string, number>();
+    subsidyTrend.forEach(t => subsidyByMonth.set(t.month, t.disbursedAmount || 0));
+    const salesByMonth = new Map<string, number>();
+    salesTrend.forEach(t => salesByMonth.set(t.month, t.salesAmount || 0));
+
+    // Union of all months across both series, chronologically sorted.
+    const months = Array.from(new Set([...subsidyByMonth.keys(), ...salesByMonth.keys()])).sort();
+    if (!months.length) {
+      this.trendMonths.set([]); this.trendYLabels.set([]);
+      this.subsidyPts.set([]); this.subsidyPath.set(''); this.subsidyAreaPath.set('');
+      this.salesPts.set([]); this.salesPath.set(''); this.salesAreaPath.set('');
+      return;
+    }
+
+    const niceMax = this.niceCeil(Math.max(
+      ...months.map(m => Math.max(subsidyByMonth.get(m) || 0, salesByMonth.get(m) || 0)), 1
+    ));
+    const n = months.length;
+    const xAt = (i: number) => n === 1 ? (left + right) / 2 : left + i * ((right - left) / (n - 1));
+    const yAt = (v: number) => +(base - (v / niceMax) * (base - top)).toFixed(1);
+
+    this.trendMonths.set(months.map((m, i) => ({ x: +xAt(i).toFixed(1), label: this.shortMonth(m) })));
+
+    const build = (byMonth: Map<string, number>) => {
+      const pts = months.map((m, i) => ({ x: +xAt(i).toFixed(1), y: yAt(byMonth.get(m) || 0) }));
+      const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      const area = `M ${pts[0].x} ${base} ` + pts.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${pts[pts.length - 1].x} ${base} Z`;
+      return { pts, line, area };
+    };
+
+    const subsidy = build(subsidyByMonth);
+    this.subsidyPts.set(subsidy.pts); this.subsidyPath.set(subsidy.line); this.subsidyAreaPath.set(subsidy.area);
+    const sales = build(salesByMonth);
+    this.salesPts.set(sales.pts); this.salesPath.set(sales.line); this.salesAreaPath.set(sales.area);
+
+    const labels: { y: number; label: string }[] = [];
+    for (let k = 4; k >= 0; k--) {
+      const val = niceMax * k / 4;
+      labels.push({ y: yAt(val), label: this.kFmt(val) });
+    }
+    this.trendYLabels.set(labels);
+  }
+
+  // Build the sown-area-by-season bars from real data.
+  private buildSeasonChart(coverage: any[]): void {
+    const left = 60, right = 460, top = 30, base = 170;
+    if (!coverage.length) {
+      this.seasonBars.set([]); this.seasonYLabels.set([]);
+      return;
+    }
+    const niceMax = this.niceCeil(Math.max(...coverage.map(c => c.area || 0), 1));
+    const n = coverage.length;
+    const slot = (right - left) / n;
+    const barW = Math.min(40, slot * 0.5);
+    const colors = ['#16a34a', '#f59e0b', '#3b82f6', '#a855f7', '#14b8a6', '#ef4444'];
+    this.seasonBars.set(coverage.map((c, i) => {
+      const cx = left + slot * i + slot / 2;
+      const h = ((c.area || 0) / niceMax) * (base - top);
+      return {
+        x: +(cx - barW / 2).toFixed(1), y: +(base - h).toFixed(1), height: +h.toFixed(1), width: +barW.toFixed(1),
+        label: c.season, value: c.area || 0, color: colors[i % colors.length]
+      };
+    }));
+    const labels: { y: number; label: string }[] = [];
+    for (let k = 4; k >= 0; k--) {
+      const val = niceMax * k / 4;
+      labels.push({ y: +(base - (val / niceMax) * (base - top)).toFixed(1), label: (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)) + ' Ac' });
+    }
+    this.seasonYLabels.set(labels);
+  }
+
+  // Round up to a "nice" axis maximum (1/2/5 × 10ⁿ) so gridlines read cleanly.
+  private niceCeil(v: number): number {
+    if (v <= 0) return 1;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const n = v / pow;
+    const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return m * pow;
+  }
+
+  private shortMonth(ym: string): string {
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const i = parseInt((ym || '').split('-')[1], 10) - 1;
+    return i >= 0 && i < 12 ? names[i] : ym;
+  }
+
+  private kFmt(v: number): string {
+    if (v >= 1000) return (v / 1000) % 1 === 0 ? `${v / 1000}k` : `${(v / 1000).toFixed(1)}k`;
+    return String(Math.round(v));
   }
 
   initForm(): void {

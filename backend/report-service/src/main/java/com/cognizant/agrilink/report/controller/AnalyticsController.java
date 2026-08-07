@@ -76,6 +76,11 @@ public class AnalyticsController {
 		return ResponseEntity.ok(analyticsService.getDisbursementTrend());
 	}
 
+	@GetMapping("/produce/salesTrend")
+	public ResponseEntity<List<Map<String, Object>>> getSalesTrend() {
+		return ResponseEntity.ok(analyticsService.getSalesTrend());
+	}
+
 	@GetMapping("/subsidy/eligibilityDistribution")
 	public ResponseEntity<List<Map<String, Object>>> getEligibilityDistribution() {
 		return ResponseEntity.ok(analyticsService.getEligibilityDistribution());

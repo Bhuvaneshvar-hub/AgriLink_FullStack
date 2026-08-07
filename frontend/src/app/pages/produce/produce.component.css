@@ -155,6 +155,19 @@ td.cell-name {
 .action-btn i {
   font-size: 18px;
 }
+/* Read-only status line inside the actions menu: looks like a menu item but is
+   informational, so it takes no hover or pointer. */
+.menu-item-static {
+  cursor: default;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.menu-item-static:hover {
+  background: transparent;
+}
+.menu-item-static.confirmed {
+  color: var(--primary-color);
+}
 .close-btn {
   background: transparent;
   border: none;

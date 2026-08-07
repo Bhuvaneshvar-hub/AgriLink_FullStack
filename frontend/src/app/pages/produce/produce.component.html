@@ -241,7 +241,6 @@
                          [class.active]="saleSortField() === 'saleDate'">{{ sortIcon(saleSortField() === 'saleDate', saleSortAsc()) }}</i>
                     </th>
                     <th>Payment Status</th>
-                    <th>Farmer Confirmation</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -265,19 +264,6 @@
                         </span>
                       </td>
                       <td>
-                        @if (isFarmerConfirmed(sale)) {
-                          <span class="badge badge-success"
-                                title="The selling farmer has confirmed the money reached them, which settled this payment as Paid">
-                            Received@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
-                          </span>
-                        } @else {
-                          <span class="badge badge-warning"
-                                title="Waiting for the farmer to confirm they received the payment">
-                            Awaiting Farmer
-                          </span>
-                        }
-                      </td>
-                      <td>
                         <app-action-menu>
                           <button class="menu-item" (click)="viewSaleDetails(sale)">
                             <i class="material-icons-round">visibility</i> View
@@ -291,6 +277,21 @@
                             <button class="menu-item" (click)="confirmPaymentReceived(sale)">
                               <i class="material-icons-round">task_alt</i> I Received This Payment
                             </button>
+                          }
+                          <!-- Read-only outcome of the farmer's check, shown here now
+                               that the Farmer Confirmation column is gone. -->
+                          @if (sale.paymentStatus === 'PD') {
+                            @if (isFarmerConfirmed(sale)) {
+                              <div class="menu-item menu-item-static confirmed">
+                                <i class="material-icons-round">verified</i>
+                                Receipt Confirmed@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
+                              </div>
+                            } @else if (!isFarmer()) {
+                              <div class="menu-item menu-item-static">
+                                <i class="material-icons-round">hourglass_empty</i>
+                                Awaiting Farmer Confirmation
+                              </div>
+                            }
                           }
                           @if (isProcurementOrAdmin()) {
                             <button class="menu-item danger" (click)="confirmDeleteSale(sale)">
@@ -345,7 +346,9 @@
               <div class="form-group">
                 <label for="lCrop">Crop Catalog</label>
                 <select id="lCrop" formControlName="cropId">
-                  <option value="">Select Crop</option>
+                  <!-- Prompt only: disabled so it can't be chosen, hidden so it
+                       doesn't appear among the crops once the list is open. -->
+                  <option value="" disabled hidden>Select Crop</option>
                   @for (crop of cropCatalogs(); track crop.cropId) {
                     <option [value]="crop.cropId">{{ crop.cropName }}</option>
                   }

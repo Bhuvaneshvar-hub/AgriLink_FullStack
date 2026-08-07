@@ -47,6 +47,10 @@ public class SecurityConfig {
                 // Audit logs — Admin and ComplianceAnalyst
                 .requestMatchers(HttpMethod.GET, "/agriLink/audit/**")
                     .hasAnyRole("AgriLinkAdmin", "ComplianceAnalyst")
+                // List all users — Admin needs it for management; ComplianceAnalyst needs it
+                // read-only to resolve user names shown in the audit trail.
+                .requestMatchers(HttpMethod.GET, "/agriLink/user")
+                    .hasAnyRole("AgriLinkAdmin", "ComplianceAnalyst")
                 // All other user management + role management is Admin only
                 .requestMatchers("/agriLink/user/**", "/agriLink/role/**").hasRole("AgriLinkAdmin")
                 // All other endpoints require authentication

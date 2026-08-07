@@ -144,7 +144,6 @@ import { CommonModule } from '@angular/common';
       font-size: 1.15rem;
       font-weight: 700;
       margin-bottom: 2.5rem;
-      opacity: 0.95;
     }
     .visual-brand i {
       font-size: 28px;
@@ -154,12 +153,13 @@ import { CommonModule } from '@angular/common';
       font-weight: 700;
       line-height: 1.25;
       margin-bottom: 1rem;
+      color: #E8F5E9;
     }
     .visual-content p {
       font-size: 0.95rem;
-      opacity: 0.85;
       line-height: 1.5;
       margin-bottom: 2rem;
+      color: #E8F5E9;
     }
     .visual-features {
       list-style: none;
@@ -175,7 +175,6 @@ import { CommonModule } from '@angular/common';
       gap: 0.65rem;
       font-size: 0.9rem;
       font-weight: 500;
-      opacity: 0.95;
     }
     .visual-features i {
       font-size: 20px;

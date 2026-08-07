@@ -39,7 +39,6 @@ function endAfterStartValidator(group: AbstractControl): ValidationErrors | null
           @if (!authService.hasRole(['Farmer'])) {
             <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredSchemes().length === 0" title="Export schemes to Excel">
               <i class="material-icons-round text-success">table_view</i>
-              <span>Export XLS</span>
             </button>
           }
           @if (canEdit()) {

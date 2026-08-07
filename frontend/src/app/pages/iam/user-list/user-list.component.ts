@@ -24,13 +24,11 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
           <p class="text-secondary">Manage system user profiles, permissions, and status.</p>
         </div>
         <div class="d-flex gap-2">
-          <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredUsers().length === 0">
+          <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredUsers().length === 0" title="Export to Excel">
             <i class="material-icons-round text-success">table_view</i>
-            <span>Export XLS</span>
           </button>
-          <button class="btn btn-primary" (click)="openCreateModal()">
+          <button class="btn btn-primary" (click)="openCreateModal()" title="Add User">
             <i class="material-icons-round">person_add</i>
-            <span>Add User</span>
           </button>
         </div>
       </div>

@@ -132,7 +132,7 @@ public class UserService {
         return pending.map(this::toResponseDto).toList();
     }
 
-    // ── 1a. List all users (Admin only) ────────────────────────────────────────
+    // ── 1a. List all users (Admin and ComplianceAnalyst — see SecurityConfig) ──
     public List<UserResponseDto> getAllUsers() {
         return userDetailsRepository.findAll().stream()
                 .map(this::toResponseDto)

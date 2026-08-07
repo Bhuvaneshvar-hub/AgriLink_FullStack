@@ -522,8 +522,11 @@ export class ProduceComponent implements OnInit {
       // and maintains it from there as sales are recorded.
       statusControl?.clearValidators();
       statusControl?.updateValueAndValidity({ emitEvent: false });
+      // cropId resets to '' rather than being left null so it matches the prompt
+      // option's value — a null would leave the select rendering blank.
       this.listingForm.reset({
         status: '',
+        cropId: '',
         qualityGrade: '',
         quantityKg: 50,
         askingPricePerKg: 1.5,

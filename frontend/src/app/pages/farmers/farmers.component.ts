@@ -493,16 +493,6 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   </div>
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="fVillage">Village</label>
-                      <input type="text" id="fVillage" formControlName="village" maxlength="50" />
-                      <span class="field-error" [class.visible]="pInvalid('village')">Village is required</span>
-                    </div>
-                    <div class="form-group">
-                      <label for="fDistrict">District</label>
-                      <input type="text" id="fDistrict" formControlName="district" maxlength="50" />
-                      <span class="field-error" [class.visible]="pInvalid('district')">District is required</span>
-                    </div>
-                    <div class="form-group">
                       <label for="fState">State</label>
                       <select id="fState" formControlName="state">
                         <option value="">Select State</option>
@@ -512,19 +502,31 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       </select>
                       <span class="field-error" [class.visible]="pInvalid('state')">State is required</span>
                     </div>
-                  </div>
-                  <div class="form-row">
                     <div class="form-group">
-                      <label for="fStatus">Status</label>
-                      <select id="fStatus" formControlName="status">
-                        <option value="" disabled>Select Status</option>
-                        <option value="AC">Active (AC)</option>
-                        <option value="IN">Inactive (IN)</option>
-                        <option value="VE">Verified (VE)</option>
-                      </select>
-                      <span class="field-error"></span>
+                      <label for="fDistrict">District</label>
+                      <input type="text" id="fDistrict" formControlName="district" maxlength="50" />
+                      <span class="field-error" [class.visible]="pInvalid('district')">District is required</span>
+                    </div>
+                    <div class="form-group">
+                      <label for="fVillage">Village</label>
+                      <input type="text" id="fVillage" formControlName="village" maxlength="50" />
+                      <span class="field-error" [class.visible]="pInvalid('village')">Village is required</span>
                     </div>
                   </div>
+                  @if (isEditMode()) {
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="fStatus">Status</label>
+                        <select id="fStatus" formControlName="status">
+                          <option value="" disabled>Select Status</option>
+                          <option value="AC">Active (AC)</option>
+                          <option value="IN">Inactive (IN)</option>
+                          <option value="VE">Verified (VE)</option>
+                        </select>
+                        <span class="field-error"></span>
+                      </div>
+                    </div>
+                  }
                 }
               </div>
               <div class="modal-footer">
@@ -540,7 +542,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <span>Back</span>
                     </button>
                   }
-                  <button type="submit" class="btn btn-primary">Save Profile</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
                 }
               </div>
             </form>
@@ -1340,7 +1342,7 @@ export class FarmersComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedItem.set(null);
-      this.profileForm.reset({ gender: '', status: '', userId: null });
+      this.profileForm.reset({ gender: '', status: 'AC', userId: null });
       // Registering a new farmer requires login credentials to create their IAM user.
       emailCtrl?.setValidators([Validators.required, Validators.pattern(GMAIL_PATTERN)]);
       pwdCtrl?.setValidators([Validators.required, Validators.minLength(8)]);

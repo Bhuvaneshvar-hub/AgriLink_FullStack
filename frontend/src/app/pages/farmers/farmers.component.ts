@@ -419,12 +419,10 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 @if (showProfileStep(1)) {
                   <div class="form-group">
                     <label for="fName">Full Name</label>
-                    <input type="text" id="fName" formControlName="name" />
-                    @if (pInvalid('name')) {
-                      <span class="field-error">
-                        {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
-                      </span>
-                    }
+                    <input type="text" id="fName" formControlName="name" maxlength="50" />
+                    <span class="field-error" [class.visible]="pInvalid('name')">
+                      {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
+                    </span>
                   </div>
 
                   @if (!isEditMode()) {
@@ -432,13 +430,13 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <div class="form-group">
                         <label for="fEmail">Login Email</label>
                         <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
-                        @if (pInvalid('email')) { <span class="field-error">Enter a valid Gmail address (must end with &#64;gmail.com)</span> }
-                        @else { <small class="text-secondary">A login account is created for the farmer with this email.</small> }
+                        <small class="text-secondary">A login account is created for the farmer with this email.</small>
+                        <span class="field-error" [class.visible]="pInvalid('email')">Enter a valid Gmail address (must end with &#64;gmail.com)</span>
                       </div>
                       <div class="form-group">
                         <label for="fPassword">Login Password</label>
                         <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
-                        @if (pInvalid('password')) { <span class="field-error">Password must be at least 8 characters</span> }
+                        <span class="field-error" [class.visible]="pInvalid('password')">Password must be at least 8 characters</span>
                       </div>
                     </div>
                   }
@@ -446,13 +444,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                   <div class="form-row">
                     <div class="form-group">
                       <label for="fPhone">Phone Number</label>
-                      <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits" />
-                      @if (pInvalid('phone')) { <span class="field-error">Phone must be exactly 10 digits</span> }
+                      <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits"
+                        maxlength="10" inputmode="numeric" (input)="restrictToDigits($event)" />
+                      <span class="field-error" [class.visible]="pInvalid('phone')">Phone must be exactly 10 digits</span>
                     </div>
                     @if (!isEditMode()) {
                       <div class="form-group">
                         <label for="fRegionId">Region ID</label>
                         <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
+                        <span class="field-error"></span>
                       </div>
                     }
                   </div>
@@ -463,11 +463,9 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <div class="form-group">
                       <label for="fDob">Date of Birth</label>
                       <input type="date" id="fDob" formControlName="dateOfBirth" />
-                      @if (pInvalid('dateOfBirth')) {
-                        <span class="field-error">
-                          {{ profileForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
-                        </span>
-                      }
+                      <span class="field-error" [class.visible]="pInvalid('dateOfBirth')">
+                        {{ profileForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Date of birth cannot be in the future' : 'Date of birth is required' }}
+                      </span>
                     </div>
                     <div class="form-group">
                       <label for="fGender">Gender</label>
@@ -477,30 +475,32 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
+                      <span class="field-error"></span>
                     </div>
                   </div>
                   <div class="form-row">
                     <div class="form-group">
                       <label for="fNationalId">National ID / Aadhar Number</label>
-                      <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" />
-                      @if (pInvalid('nationalIdNumber')) { <span class="field-error">Enter a valid ID (6–20 letters/digits)</span> }
+                      <input type="text" id="fNationalId" formControlName="nationalIdNumber" placeholder="Unique ID string" maxlength="20" />
+                      <span class="field-error" [class.visible]="pInvalid('nationalIdNumber')">Enter a valid ID (6–20 letters/digits)</span>
                     </div>
                     <div class="form-group">
                       <label for="fBank">Bank Account Number</label>
-                      <input type="text" id="fBank" formControlName="bankAccountNumber" placeholder="6–20 digits" />
-                      @if (pInvalid('bankAccountNumber')) { <span class="field-error">Enter a valid account number (6–20 digits)</span> }
+                      <input type="text" id="fBank" formControlName="bankAccountNumber" placeholder="6–20 digits"
+                        maxlength="20" inputmode="numeric" (input)="restrictToDigits($event)" />
+                      <span class="field-error" [class.visible]="pInvalid('bankAccountNumber')">Enter a valid account number (6–20 digits)</span>
                     </div>
                   </div>
                   <div class="form-row">
                     <div class="form-group">
                       <label for="fVillage">Village</label>
-                      <input type="text" id="fVillage" formControlName="village" />
-                      @if (pInvalid('village')) { <span class="field-error">Village is required</span> }
+                      <input type="text" id="fVillage" formControlName="village" maxlength="50" />
+                      <span class="field-error" [class.visible]="pInvalid('village')">Village is required</span>
                     </div>
                     <div class="form-group">
                       <label for="fDistrict">District</label>
-                      <input type="text" id="fDistrict" formControlName="district" />
-                      @if (pInvalid('district')) { <span class="field-error">District is required</span> }
+                      <input type="text" id="fDistrict" formControlName="district" maxlength="50" />
+                      <span class="field-error" [class.visible]="pInvalid('district')">District is required</span>
                     </div>
                     <div class="form-group">
                       <label for="fState">State</label>
@@ -510,7 +510,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <option [value]="st">{{ st }}</option>
                         }
                       </select>
-                      @if (pInvalid('state')) { <span class="field-error">State is required</span> }
+                      <span class="field-error" [class.visible]="pInvalid('state')">State is required</span>
                     </div>
                   </div>
                   <div class="form-row">
@@ -522,6 +522,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <option value="IN">Inactive (IN)</option>
                         <option value="VE">Verified (VE)</option>
                       </select>
+                      <span class="field-error"></span>
                     </div>
                   </div>
                 }
@@ -567,18 +568,18 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                     }
                   </select>
-                  @if (hInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
+                  <span class="field-error" [class.visible]="hInvalid('farmerId')">Select a farmer profile</span>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="lSurvey">Survey Number (Unique)</label>
                     <input type="text" id="lSurvey" formControlName="surveyNumber" placeholder="e.g. SVY-4012" />
-                    @if (hInvalid('surveyNumber')) { <span class="field-error">Survey number is required</span> }
+                    <span class="field-error" [class.visible]="hInvalid('surveyNumber')">Survey number is required</span>
                   </div>
                   <div class="form-group">
                     <label for="lArea">Area (in Acres)</label>
                     <input type="number" step="0.01" id="lArea" formControlName="areaAcres" />
-                    @if (hInvalid('areaAcres')) { <span class="field-error">Enter a valid area (&gt; 0)</span> }
+                    <span class="field-error" [class.visible]="hInvalid('areaAcres')">Enter a valid area (&gt; 0)</span>
                   </div>
                 </div>
                 <div class="form-row">
@@ -591,7 +592,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="Loam">Loam</option>
                       <option value="Black">Black</option>
                     </select>
-                    @if (hInvalid('soilType')) { <span class="field-error">Soil type is required</span> }
+                    <span class="field-error" [class.visible]="hInvalid('soilType')">Soil type is required</span>
                   </div>
                   <div class="form-group">
                     <label for="lIrrigation">Irrigation Source</label>
@@ -602,7 +603,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="Borewell">Borewell</option>
                       <option value="None">None</option>
                     </select>
-                    @if (hInvalid('irrigationSource')) { <span class="field-error">Irrigation source is required</span> }
+                    <span class="field-error" [class.visible]="hInvalid('irrigationSource')">Irrigation source is required</span>
                   </div>
                 </div>
                 <div class="form-row">
@@ -614,7 +615,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="Leased">Leased</option>
                       <option value="SharedCropping">Shared Cropping</option>
                     </select>
-                    @if (hInvalid('ownershipType')) { <span class="field-error">Ownership type is required</span> }
+                    <span class="field-error" [class.visible]="hInvalid('ownershipType')">Ownership type is required</span>
                   </div>
                   <div class="form-group">
                     <label for="lStatus">Status</label>
@@ -623,6 +624,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="AC">Active (AC)</option>
                       <option value="IN">Inactive (IN)</option>
                     </select>
+                    <span class="field-error"></span>
                   </div>
                 </div>
               </div>
@@ -655,7 +657,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <option [value]="prof.farmerId">{{ prof.name }}(#{{ prof.farmerId }})</option>
                       }
                     </select>
-                    @if (chInvalid('farmerId')) { <span class="field-error">Select a farmer profile</span> }
+                    <span class="field-error" [class.visible]="chInvalid('farmerId')">Select a farmer profile</span>
                   </div>
                   <div class="form-group">
                     <label for="chHolding">Land Holding</label>
@@ -665,14 +667,14 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <option [value]="land.holdingId">{{ land.surveyNumber }} ({{ land.areaAcres }} ac)</option>
                       }
                     </select>
-                    @if (chInvalid('holdingId')) { <span class="field-error">Select a land holding</span> }
+                    <span class="field-error" [class.visible]="chInvalid('holdingId')">Select a land holding</span>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="chCrop">Crop Name</label>
                     <input type="text" id="chCrop" formControlName="cropName" placeholder="e.g. Paddy" />
-                    @if (chInvalid('cropName')) { <span class="field-error">Crop name is required</span> }
+                    <span class="field-error" [class.visible]="chInvalid('cropName')">Crop name is required</span>
                   </div>
                   <div class="form-group">
                     <label for="chSeason">Season</label>
@@ -683,24 +685,24 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <option value="Zaid">Zaid</option>
                       <option value="Perennial">Perennial</option>
                     </select>
-                    @if (chInvalid('season')) { <span class="field-error">Season is required</span> }
+                    <span class="field-error" [class.visible]="chInvalid('season')">Season is required</span>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="chYear">Year</label>
                     <input type="number" id="chYear" formControlName="cropYear" placeholder="e.g. 2025" />
-                    @if (chInvalid('cropYear')) { <span class="field-error">Enter a valid year</span> }
+                    <span class="field-error" [class.visible]="chInvalid('cropYear')">Enter a valid year</span>
                   </div>
                   <div class="form-group">
                     <label for="chArea">Area Planted (Acres)</label>
                     <input type="number" step="0.01" id="chArea" formControlName="areaAcres" />
-                    @if (chInvalid('areaAcres')) { <span class="field-error">Enter a valid area (&gt; 0)</span> }
+                    <span class="field-error" [class.visible]="chInvalid('areaAcres')">Enter a valid area (&gt; 0)</span>
                   </div>
                   <div class="form-group">
                     <label for="chYield">Yield (Quintals)</label>
                     <input type="number" step="0.01" id="chYield" formControlName="yieldQuintals" />
-                    @if (chInvalid('yieldQuintals')) { <span class="field-error">Enter a valid yield (&ge; 0)</span> }
+                    <span class="field-error" [class.visible]="chInvalid('yieldQuintals')">Enter a valid yield (&ge; 0)</span>
                   </div>
                 </div>
                 <div class="form-group">
@@ -761,9 +763,16 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
     }
     .field-error {
       display: block;
+      min-height: 1.1rem;
       margin-top: 0.25rem;
       font-size: 0.75rem;
       color: var(--danger);
+      opacity: 0;
+      visibility: hidden;
+    }
+    .field-error.visible {
+      opacity: 1;
+      visibility: visible;
     }
     /* Profile registration wizard (mirrors the self-registration step indicator) */
     .profile-wizard .step-indicator {
@@ -1370,6 +1379,16 @@ export class FarmersComponent implements OnInit {
       ? this.submittedProfileStep1()
       : this.submittedProfile();
     return c.invalid && (c.touched || submitted);
+  }
+
+  /** Strips any non-digit characters as the user types (phone, bank account). */
+  restrictToDigits(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digitsOnly = input.value.replace(/\D/g, '');
+    if (digitsOnly !== input.value) {
+      input.value = digitsOnly;
+      input.dispatchEvent(new Event('input'));
+    }
   }
 
   hInvalid(field: string): boolean {

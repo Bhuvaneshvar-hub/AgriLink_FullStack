@@ -6,12 +6,13 @@ import { ToastService } from '../../../services/toast.service';
 import { PaginationComponent } from '../../../components/pagination/pagination.component';
 import { ActionMenuComponent } from '../../../components/action-menu/action-menu.component';
 import { DetailModalComponent, DetailRow } from '../../../components/detail-modal/detail-modal.component';
+import { ConfirmationModalComponent } from '../../../components/confirmation-modal/confirmation-modal.component';
 import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util';
 
 @Component({
   selector: 'app-user-pending-list',
   standalone: true,
-  imports: [CommonModule, PaginationComponent, ActionMenuComponent, DetailModalComponent],
+  imports: [CommonModule, PaginationComponent, ActionMenuComponent, DetailModalComponent, ConfirmationModalComponent],
   template: `
     <div class="pending-users-page">
       <div class="page-header mb-3">
@@ -84,6 +85,9 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
                             </button>
                             <button class="menu-item" (click)="onApprove(user)">
                               <i class="material-icons-round">done</i> Approve
+                            </button>
+                            <button class="menu-item danger" (click)="confirmReject(user)">
+                              <i class="material-icons-round">close</i> Reject
                             </button>
                           </app-action-menu>
                         </td>
@@ -175,6 +179,17 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
           [rows]="detailRows()"
           (close)="showDetailModal.set(false)">
         </app-detail-modal>
+      }
+
+      @if (showRejectConfirm()) {
+        <app-confirmation-modal
+          title="Reject User Registration"
+          [message]="'Are you sure you want to reject the registration for ' + selectedUser()?.name + '? This cannot be undone.'"
+          confirmText="Reject"
+          cancelText="Cancel"
+          (confirm)="onRejectConfirmed()"
+          (cancel)="showRejectConfirm.set(false)">
+        </app-confirmation-modal>
       }
     </div>
   `,
@@ -271,6 +286,10 @@ export class UserPendingListComponent implements OnInit {
   showDetailModal = signal(false);
   detailTitle = signal<string>('');
   detailRows = signal<DetailRow[]>([]);
+
+  // Reject confirmation
+  showRejectConfirm = signal(false);
+  selectedUser = signal<any | null>(null);
 
   // Pagination
   currentPage = 0;
@@ -383,6 +402,27 @@ export class UserPendingListComponent implements OnInit {
       },
       error: (err) => {
         this.toastService.error(err.error?.message || 'Failed to approve user.');
+      }
+    });
+  }
+
+  confirmReject(user: any): void {
+    this.selectedUser.set(user);
+    this.showRejectConfirm.set(true);
+  }
+
+  onRejectConfirmed(): void {
+    const user = this.selectedUser();
+    if (!user) return;
+    this.userService.rejectUser(user.userId).subscribe({
+      next: (res) => {
+        this.toastService.success(res.message || `Rejected registration for ${user.name}.`);
+        this.showRejectConfirm.set(false);
+        this.loadAll();
+      },
+      error: (err) => {
+        this.toastService.error(err.error?.message || 'Failed to reject user.');
+        this.showRejectConfirm.set(false);
       }
     });
   }

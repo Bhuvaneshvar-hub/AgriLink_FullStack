@@ -38,8 +38,8 @@ public class SecurityConfig {
                 // Create user: Admin (any role) or ExtensionOfficer (Farmers only — enforced in service)
                 .requestMatchers(HttpMethod.POST, "/agriLink/user/createUser")
                     .hasAnyRole("AgriLinkAdmin", "ExtensionOfficer")
-                // Approve a pending (farmer self-registration) user
-                .requestMatchers(HttpMethod.POST, "/agriLink/user/*/approve")
+                // Approve or reject a pending (farmer self-registration) user
+                .requestMatchers(HttpMethod.POST, "/agriLink/user/*/approve", "/agriLink/user/*/reject")
                     .hasAnyRole("AgriLinkAdmin", "ExtensionOfficer")
                 // List users awaiting approval — Officer or Admin
                 .requestMatchers(HttpMethod.GET, "/agriLink/user/pending")

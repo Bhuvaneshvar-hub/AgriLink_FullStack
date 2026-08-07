@@ -33,4 +33,30 @@ export class ReportService {
       responseType: 'blob'
     });
   }
+
+  // ── Live analytics endpoints (used by the Analytics tab dashboard) ──
+  // These aggregate real data live from the other services on each call.
+  getUtilisationByScheme(): Observable<any[]> {
+    return this.http.get<any[]>('/agriLink/analytics/subsidy/utilisationByScheme');
+  }
+
+  getDisbursementTrend(): Observable<any[]> {
+    return this.http.get<any[]>('/agriLink/analytics/subsidy/disbursementTrend');
+  }
+
+  getSalesTrend(): Observable<any[]> {
+    return this.http.get<any[]>('/agriLink/analytics/produce/salesTrend');
+  }
+
+  getProduceSalesSummary(): Observable<any> {
+    return this.http.get<any>('/agriLink/analytics/dashboard/produceSalesSummary');
+  }
+
+  getCropCoverage(): Observable<any[]> {
+    return this.http.get<any[]>('/agriLink/analytics/dashboard/cropCoverage');
+  }
+
+  getRegistrationSummary(): Observable<any[]> {
+    return this.http.get<any[]>('/agriLink/analytics/farmers/registrationSummary');
+  }
 }

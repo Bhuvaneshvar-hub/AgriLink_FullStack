@@ -13,24 +13,46 @@ import { ToastService } from '../../services/toast.service';
   template: `
     <div class="profile-page">
       <div class="profile-header card">
-        <div class="profile-avatar-lg">{{ userInitials }}</div>
-        <div class="profile-header-info">
-          <h1>{{ currentUser?.name }}</h1>
-          <p class="text-secondary">{{ currentUser?.email }}</p>
-          <div class="profile-header-badges">
-            <span class="badge badge-primary">{{ currentUser?.roleName }}</span>
-            @if (currentUser?.regionId) {
-              <span class="badge badge-secondary">Region {{ currentUser?.regionId }}</span>
-            }
-            @if (accountDetails()?.status) {
-              <span class="badge" [ngClass]="{
-                'badge-success': accountDetails()?.status === 'A',
-                'badge-warning': accountDetails()?.status === 'P',
-                'badge-danger': accountDetails()?.status === 'S' || accountDetails()?.status === 'I'
-              }">{{ accountStatusLabel(accountDetails()?.status) }}</span>
-            }
+        <div class="profile-header-top">
+          <div class="profile-avatar-lg">{{ userInitials }}</div>
+          <div class="profile-header-info">
+            <h1>{{ currentUser?.name }}</h1>
+            <p class="text-secondary">{{ currentUser?.email }}</p>
+            <div class="profile-header-badges">
+              <span class="badge badge-primary">{{ currentUser?.roleName }}</span>
+              @if (currentUser?.regionId) {
+                <span class="badge badge-secondary">Region {{ currentUser?.regionId }}</span>
+              }
+              @if (accountDetails()?.status) {
+                <span class="badge" [ngClass]="{
+                  'badge-success': accountDetails()?.status === 'A',
+                  'badge-warning': accountDetails()?.status === 'P',
+                  'badge-danger': accountDetails()?.status === 'S' || accountDetails()?.status === 'I'
+                }">{{ accountStatusLabel(accountDetails()?.status) }}</span>
+              }
+            </div>
           </div>
+          <button class="btn btn-secondary" (click)="togglePasswordForm()">
+            {{ showPasswordForm() ? 'Cancel' : 'Change Password' }}
+          </button>
         </div>
+        @if (showPasswordForm()) {
+          <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()" class="password-form mt-3">
+            <div class="form-group">
+              <label for="currentPassword">Current Password</label>
+              <input type="password" id="currentPassword" formControlName="currentPassword" placeholder="••••••••" />
+              <span class="error-text" [class.visible]="invalid('currentPassword')">Current password is required</span>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Password (min 8 characters)</label>
+              <input type="password" id="newPassword" formControlName="newPassword" placeholder="••••••••" />
+              <span class="error-text" [class.visible]="invalid('newPassword')">New password must be at least 8 characters</span>
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid || isChangingPassword()">
+              {{ isChangingPassword() ? 'Updating...' : 'Update Password' }}
+            </button>
+          </form>
+        }
       </div>
 
       <div class="grid-layout mt-3">
@@ -130,42 +152,28 @@ import { ToastService } from '../../services/toast.service';
             </div>
           </div>
         }
-
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h3>Change Password</h3>
-            <button class="btn btn-secondary" (click)="togglePasswordForm()">
-              {{ showPasswordForm() ? 'Cancel' : 'Change' }}
-            </button>
-          </div>
-          @if (showPasswordForm()) {
-            <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()" class="mt-3">
-              <div class="form-group">
-                <label for="currentPassword">Current Password</label>
-                <input type="password" id="currentPassword" formControlName="currentPassword" placeholder="••••••••" />
-                <span class="error-text" [class.visible]="invalid('currentPassword')">Current password is required</span>
-              </div>
-              <div class="form-group">
-                <label for="newPassword">New Password (min 8 characters)</label>
-                <input type="password" id="newPassword" formControlName="newPassword" placeholder="••••••••" />
-                <span class="error-text" [class.visible]="invalid('newPassword')">New password must be at least 8 characters</span>
-              </div>
-              <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid || isChangingPassword()">
-                {{ isChangingPassword() ? 'Updating...' : 'Update Password' }}
-              </button>
-            </form>
-          }
-        </div>
       </div>
     </div>
   `,
   styles: [`
     .profile-page { padding: 0.5rem; }
     .profile-header {
+      padding: 1.75rem;
+    }
+    .profile-header-top {
       display: flex;
       align-items: center;
       gap: 1.5rem;
-      padding: 1.75rem;
+    }
+    .profile-header-top .btn {
+      margin-left: auto;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .password-form {
+      max-width: 380px;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
     }
     .profile-avatar-lg {
       width: 84px;

@@ -222,17 +222,19 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
                 }
 
                 <div class="form-row">
-                  <div class="form-group">
-                    <label for="formScore">Eligibility Score (%)</label>
-                    <input type="number" id="formScore" formControlName="eligibilityScore" placeholder="85.5" min="0" max="100" step="0.1" />
-                    @if (isFieldInvalid('eligibilityScore')) {
-                      <span class="error-text">
-                        @if (appForm.get('eligibilityScore')?.errors?.['required']) { Eligibility Score is required. }
-                        @else if (appForm.get('eligibilityScore')?.errors?.['min']) { Eligibility Score cannot be below 0. }
-                        @else if (appForm.get('eligibilityScore')?.errors?.['max']) { Eligibility Score cannot exceed 100. }
-                      </span>
-                    }
-                  </div>
+                  @if (!isFarmer()) {
+                    <div class="form-group">
+                      <label for="formScore">Eligibility Score (%)</label>
+                      <input type="number" id="formScore" formControlName="eligibilityScore" placeholder="85.5" min="0" max="100" step="0.1" />
+                      @if (isFieldInvalid('eligibilityScore')) {
+                        <span class="error-text">
+                          @if (appForm.get('eligibilityScore')?.errors?.['required']) { Eligibility Score is required. }
+                          @else if (appForm.get('eligibilityScore')?.errors?.['min']) { Eligibility Score cannot be below 0. }
+                          @else if (appForm.get('eligibilityScore')?.errors?.['max']) { Eligibility Score cannot exceed 100. }
+                        </span>
+                      }
+                    </div>
+                  }
 
                   <div class="form-group">
                     <label for="formDate">Application Date</label>
@@ -710,7 +712,8 @@ export class ApplicationListComponent implements OnInit {
     this.appForm = this.fb.group({
       schemeId: [null, [Validators.required]],
       farmerId: [this.isFarmer() ? this.authService.currentUserValue?.userId : '', this.isFarmer() ? [] : [Validators.required, Validators.min(1), Validators.pattern(/^[0-9]+$/)]],
-      eligibilityScore: [80.0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      // Farmers do not self-assess: the score is left null and assigned by the reviewer during review.
+      eligibilityScore: [this.isFarmer() ? null : 80.0, this.isFarmer() ? [] : [Validators.required, Validators.min(0), Validators.max(100)]],
       applicationDate: [today, [Validators.required, notFutureDateValidator]]
     });
     this.showCreateModal.set(true);

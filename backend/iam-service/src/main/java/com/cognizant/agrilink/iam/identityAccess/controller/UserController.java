@@ -72,6 +72,15 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "User approved successfully"));
     }
 
+    // POST /agriLink/user/{id}/reject  — reject a pending (self-registered) user.
+    // AgriLinkAdmin or ExtensionOfficer, same as approve. Only works while the
+    // account is still Pending (enforced in UserService.deleteRegistration).
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<Map<String, String>> rejectUser(@PathVariable Integer id) {
+        userService.deleteRegistration(id);
+        return ResponseEntity.ok(Map.of("message", "User registration rejected"));
+    }
+
     // DELETE /agriLink/user/{id}  — soft delete (deactivate)
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Integer id) {

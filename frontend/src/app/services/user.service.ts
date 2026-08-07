@@ -33,6 +33,10 @@ export class UserService {
     return this.http.post<any>(`/agriLink/user/${id}/approve`, {});
   }
 
+  rejectUser(id: number): Observable<any> {
+    return this.http.post<any>(`/agriLink/user/${id}/reject`, {});
+  }
+
   deleteUser(id: number): Observable<any> {
     return this.http.delete<any>(`/agriLink/user/${id}`);
   }

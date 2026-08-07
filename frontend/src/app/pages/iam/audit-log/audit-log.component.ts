@@ -19,7 +19,7 @@ import { toggleSort, sortIcon, applySort } from '../../../utils/table-sort.util'
           <p class="text-secondary">View user actions, system operations, and security logs for compliance tracking.</p>
         </div>
         <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredLogs().length === 0" title="Export to Excel">
-          <i class="material-icons-round">file_download</i>
+          <i class="material-icons-round text-success">table_view</i>
         </button>
       </div>
 

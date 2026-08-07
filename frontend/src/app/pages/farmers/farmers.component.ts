@@ -5,7 +5,7 @@ import { FarmerService } from '../../services/farmer.service';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
+import { notFutureDate, NAME_PATTERN, EMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
 import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 import { exportTableToExcel } from '../../utils/export-excel.util';
@@ -414,12 +414,12 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
               </div>
             }
 
-            <form [formGroup]="profileForm" (ngSubmit)="submitProfileForm()">
+            <form [formGroup]="profileForm" (ngSubmit)="submitProfileForm()" autocomplete="off">
               <div class="modal-body">
                 @if (showProfileStep(1)) {
                   <div class="form-group">
                     <label for="fName">Full Name</label>
-                    <input type="text" id="fName" formControlName="name" maxlength="50" />
+                    <input type="text" id="fName" formControlName="name" maxlength="50" autocomplete="off" />
                     <span class="field-error" [class.visible]="pInvalid('name')">
                       {{ profileForm.get('name')?.errors?.['pattern'] ? 'Name must be letters only (2–50 characters)' : 'Full name is required' }}
                     </span>
@@ -429,14 +429,20 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <div class="form-row">
                       <div class="form-group">
                         <label for="fEmail">Login Email</label>
-                        <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com" />
+                        <input type="email" id="fEmail" formControlName="email" placeholder="farmer@gmail.com"
+                          name="farmerLoginEmail" autocomplete="off" maxlength="100" />
                         <small class="text-secondary">A login account is created for the farmer with this email.</small>
-                        <span class="field-error" [class.visible]="pInvalid('email')">Enter a valid Gmail address (must end with &#64;gmail.com)</span>
+                        <span class="field-error" [class.visible]="pInvalid('email')">
+                          {{ profileForm.get('email')?.errors?.['required'] ? 'Login email is required' : 'Enter a valid email address (e.g. farmer@gmail.com)' }}
+                        </span>
                       </div>
                       <div class="form-group">
                         <label for="fPassword">Login Password</label>
-                        <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters" />
-                        <span class="field-error" [class.visible]="pInvalid('password')">Password must be at least 8 characters</span>
+                        <input type="password" id="fPassword" formControlName="password" placeholder="Min 8 characters"
+                          name="farmerLoginPassword" autocomplete="new-password" maxlength="64" />
+                        <span class="field-error" [class.visible]="pInvalid('password')">
+                          {{ profileForm.get('password')?.errors?.['required'] ? 'Login password is required' : 'Password must be at least 8 characters' }}
+                        </span>
                       </div>
                     </div>
                   }
@@ -445,14 +451,19 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                     <div class="form-group">
                       <label for="fPhone">Phone Number</label>
                       <input type="text" id="fPhone" formControlName="phone" placeholder="10 digits"
-                        maxlength="10" inputmode="numeric" (input)="restrictToDigits($event)" />
-                      <span class="field-error" [class.visible]="pInvalid('phone')">Phone must be exactly 10 digits</span>
+                        maxlength="10" inputmode="numeric" autocomplete="off" (input)="restrictToDigits($event)" />
+                      <span class="field-error" [class.visible]="pInvalid('phone')">
+                        {{ profileForm.get('phone')?.errors?.['required'] ? 'Phone number is required' : 'Phone must be exactly 10 digits' }}
+                      </span>
                     </div>
                     @if (!isEditMode()) {
                       <div class="form-group">
                         <label for="fRegionId">Region ID</label>
-                        <input type="number" id="fRegionId" formControlName="regionId" min="1" placeholder="e.g. 1" />
-                        <span class="field-error"></span>
+                        <input type="number" id="fRegionId" formControlName="regionId" min="1" step="1"
+                          placeholder="e.g. 1" autocomplete="off" />
+                        <span class="field-error" [class.visible]="pInvalid('regionId')">
+                          {{ profileForm.get('regionId')?.errors?.['required'] ? 'Region ID is required' : 'Region ID must be a positive number' }}
+                        </span>
                       </div>
                     }
                   </div>
@@ -475,7 +486,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
-                      <span class="field-error"></span>
+                      <span class="field-error" [class.visible]="pInvalid('gender')">Gender is required</span>
                     </div>
                   </div>
                   <div class="form-row">
@@ -523,7 +534,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                           <option value="IN">Inactive (IN)</option>
                           <option value="VE">Verified (VE)</option>
                         </select>
-                        <span class="field-error"></span>
+                        <span class="field-error" [class.visible]="pInvalid('status')">Status is required</span>
                       </div>
                     </div>
                   }
@@ -542,7 +553,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                       <span>Back</span>
                     </button>
                   }
-                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button type="submit" class="btn btn-primary" title="Save Profile"><i class="material-icons-round">save</i><span>Save Profile</span></button>
                 }
               </div>
             </form>
@@ -631,7 +642,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Register</button>
+                <button type="submit" class="btn btn-primary" title="Register"><i class="material-icons-round">save</i><span>Register</span></button>
               </div>
             </form>
           </div>
@@ -713,7 +724,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Record</button>
+                <button type="submit" class="btn btn-primary" title="Save Record"><i class="material-icons-round">save</i><span>Save Record</span></button>
               </div>
             </form>
           </div>
@@ -775,6 +786,19 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
     .field-error.visible {
       opacity: 1;
       visibility: visible;
+    }
+    /* The wizard's two steps differ a lot in height, and step 2 plus the header,
+       step bar and footer can total more than the viewport — the centred overlay
+       then clips the top of the dialog off-screen. Cap the whole dialog and let
+       only the body scroll, so the header and footer always stay reachable. */
+    .profile-wizard {
+      max-height: 92vh;
+      overflow: hidden;
+    }
+    .profile-wizard .modal-body {
+      max-height: none;
+      flex: 1 1 auto;
+      min-height: 0;
     }
     /* Profile registration wizard (mirrors the self-registration step indicator) */
     .profile-wizard .step-indicator {
@@ -972,7 +996,7 @@ export class FarmersComponent implements OnInit {
       // account (IAM user) is created and linked to this profile via userId.
       email: [''],
       password: [''],
-      regionId: [1],
+      regionId: [null, [Validators.required, Validators.min(1)]],
       status: ['', Validators.required]
     });
 
@@ -1329,12 +1353,16 @@ export class FarmersComponent implements OnInit {
     this.currentProfileStep.set(1);
     const emailCtrl = this.profileForm.get('email');
     const pwdCtrl = this.profileForm.get('password');
+    const regionCtrl = this.profileForm.get('regionId');
     if (profile) {
       this.isEditMode.set(true);
       this.selectedItem.set(profile);
-      // Editing an existing profile does not touch the login account.
+      // Editing an existing profile does not touch the login account, and the
+      // region field isn't rendered — validating either would block saving with
+      // no visible error to explain why.
       emailCtrl?.clearValidators();
       pwdCtrl?.clearValidators();
+      regionCtrl?.clearValidators();
       this.profileForm.patchValue({
         ...profile,
         dateOfBirth: profile.dateOfBirth ? String(profile.dateOfBirth).split('T')[0] : ''
@@ -1342,13 +1370,17 @@ export class FarmersComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedItem.set(null);
-      this.profileForm.reset({ gender: '', status: 'AC', userId: null });
+      // Blank email/password on every open so a stale value (or the admin's own
+      // browser-saved credentials) is never carried into a new farmer's account.
+      this.profileForm.reset({ gender: '', status: 'AC', userId: null, email: '', password: '', regionId: null });
       // Registering a new farmer requires login credentials to create their IAM user.
-      emailCtrl?.setValidators([Validators.required, Validators.pattern(GMAIL_PATTERN)]);
+      emailCtrl?.setValidators([Validators.required, Validators.pattern(EMAIL_PATTERN)]);
       pwdCtrl?.setValidators([Validators.required, Validators.minLength(8)]);
+      regionCtrl?.setValidators([Validators.required, Validators.min(1)]);
     }
     emailCtrl?.updateValueAndValidity();
     pwdCtrl?.updateValueAndValidity();
+    regionCtrl?.updateValueAndValidity();
     this.showProfileModal.set(true);
   }
 

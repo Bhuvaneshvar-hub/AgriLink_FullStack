@@ -8,6 +8,7 @@ import { ToastService } from '../../services/toast.service';
 import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
 import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
+import { exportTableToExcel } from '../../utils/export-excel.util';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { ConfirmationModalComponent } from '../../components/confirmation-modal/confirmation-modal.component';
 import { ActionMenuComponent } from '../../components/action-menu/action-menu.component';
@@ -52,10 +53,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3>Registered Farmers</h3>
-              <button class="btn btn-primary" (click)="openProfileModal()">
-                <i class="material-icons-round">person_add</i>
-                <span>Register </span>
-              </button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-secondary" (click)="exportProfiles()" [disabled]="filteredProfiles().length === 0" title="Export to Excel">
+                  <i class="material-icons-round text-success">table_view</i>
+                </button>
+                <button class="btn btn-primary" (click)="openProfileModal()">
+                  <i class="material-icons-round">person_add</i>
+                  <span>Register </span>
+                </button>
+              </div>
             </div>
 
             <div class="card filters-card">
@@ -168,10 +174,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3>Registered Land Holdings</h3>
-              <button class="btn btn-primary" (click)="openHoldingModal()">
-                <i class="material-icons-round">add_location_alt</i>
-                <span>Register </span>
-              </button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-secondary" (click)="exportHoldings()" [disabled]="filteredHoldings().length === 0" title="Export to Excel">
+                  <i class="material-icons-round text-success">table_view</i>
+                </button>
+                <button class="btn btn-primary" (click)="openHoldingModal()">
+                  <i class="material-icons-round">add_location_alt</i>
+                  <span>Register </span>
+                </button>
+              </div>
             </div>
 
             <div class="card filters-card">
@@ -275,10 +286,15 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
           <div class="tab-content">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3>Crop History Records</h3>
-              <button class="btn btn-primary" (click)="openHistoryModal()">
-                <i class="material-icons-round">add</i>
-                <span>Record </span>
-              </button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-secondary" (click)="exportHistories()" [disabled]="filteredHistories().length === 0" title="Export to Excel">
+                  <i class="material-icons-round text-success">table_view</i>
+                </button>
+                <button class="btn btn-primary" (click)="openHistoryModal()">
+                  <i class="material-icons-round">add</i>
+                  <span>Record </span>
+                </button>
+              </div>
             </div>
 
             <div class="card filters-card">
@@ -1046,6 +1062,50 @@ export class FarmersComponent implements OnInit {
       case 'IN': return 'Inactive';
       default: return status;
     }
+  }
+
+  exportProfiles(): void {
+    const headers = ['Name', 'Gender', 'Date of Birth', 'National ID', 'Village', 'District', 'State', 'Phone', 'Status'];
+    const rows = this.filteredProfiles().map(p => [
+      p.name,
+      p.gender,
+      p.dateOfBirth,
+      p.nationalIdNumber,
+      p.village,
+      p.district,
+      p.state,
+      p.phone,
+      this.getStatusLabel(p.status)
+    ]);
+    exportTableToExcel(headers, rows, `farmer-profiles-${Date.now()}`);
+  }
+
+  exportHoldings(): void {
+    const headers = ['Farmer', 'Survey Number', 'Area (Acres)', 'Soil Type', 'Irrigation', 'Ownership', 'Status'];
+    const rows = this.filteredHoldings().map(l => [
+      this.getFarmerNameOnly(l.farmerId),
+      l.surveyNumber,
+      l.areaAcres,
+      l.soilType,
+      l.irrigationSource,
+      l.ownershipType,
+      this.getHoldingStatusLabel(l.status)
+    ]);
+    exportTableToExcel(headers, rows, `land-holdings-${Date.now()}`);
+  }
+
+  exportHistories(): void {
+    const headers = ['Farmer', 'Survey No.', 'Crop', 'Season', 'Year', 'Area (Acres)', 'Yield (Qtl)'];
+    const rows = this.filteredHistories().map(r => [
+      this.getFarmerNameOnly(r.farmerId),
+      this.getSurveyNumber(r.holdingId),
+      r.cropName,
+      r.season,
+      r.cropYear,
+      r.areaAcres,
+      r.yieldQuintals
+    ]);
+    exportTableToExcel(headers, rows, `crop-history-${Date.now()}`);
   }
 
   approveHolding(land: any) {

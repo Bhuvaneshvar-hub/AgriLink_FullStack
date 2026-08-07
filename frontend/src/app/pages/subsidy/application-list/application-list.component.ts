@@ -44,7 +44,6 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
           @if (!isFarmer()) {
             <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredApplications().length === 0" title="Export applications to Excel">
               <i class="material-icons-round text-success">table_view</i>
-              <span>Export XLS</span>
             </button>
           }
           <!-- Farmers and Extension Officers can file applications -->

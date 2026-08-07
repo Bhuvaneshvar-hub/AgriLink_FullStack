@@ -14,7 +14,7 @@ import { DetailModalComponent, DetailRow } from '../../components/detail-modal/d
 @Component({
   selector: 'app-inputs',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmationModalComponent, ActionMenuComponent, DetailModalComponent],
   template: `
     <div class="inputs-page">
       <div class="page-header d-flex justify-content-between align-items-center mb-3">

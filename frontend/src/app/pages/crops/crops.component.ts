@@ -71,13 +71,16 @@ export class CropsComponent implements OnInit {
   readonly MIN_AREA_ACRES = MIN_AREA_ACRES;
   readonly MAX_AREA_ACRES = MAX_AREA_ACRES;
 
-  // Column sorting state for the catalog and plan tables (null = default order).
-  catalogSortField = signal<string | null>(null);
-  catalogSortAsc = signal<boolean>(true);
-  planSortField = signal<string | null>(null);
-  planSortAsc = signal<boolean>(true);
-  obsSortField = signal<string | null>(null);
-  obsSortAsc = signal<boolean>(true);
+  // Column sorting state for the catalog, plan and observation tables.
+  // All three default to their auto-increment id descending, so the most recently
+  // added crop / plan / logged observation is always the first row. Clicking any
+  // sortable header takes over from there.
+  catalogSortField = signal<string | null>('cropId');
+  catalogSortAsc = signal<boolean>(false);
+  planSortField = signal<string | null>('planId');
+  planSortAsc = signal<boolean>(false);
+  obsSortField = signal<string | null>('observationId');
+  obsSortAsc = signal<boolean>(false);
 
   // Crop plan lifecycle statuses, used by the inline status editor.
   readonly planStatuses = ['PLANNED', 'SOWING', 'GROWING', 'HARVESTED', 'FAILED'];
@@ -106,8 +109,9 @@ export class CropsComponent implements OnInit {
 
   // Pagination state (page index is 0-based)
   catalogPage = 0;   catalogPageSize = 5;
-  planPage = 0;      planPageSize = 5;
-  obsPage = 0;       obsPageSize = 5;
+  // Crop plans and growth observations have taller rows, so they open on 3.
+  planPage = 0;      planPageSize = 3;
+  obsPage = 0;       obsPageSize = 3;
   profilePage = 0;   profilePageSize = 5;
   holdingPage = 0;   holdingPageSize = 5;
 
@@ -301,20 +305,20 @@ export class CropsComponent implements OnInit {
         this.cropCatalogs.set(this.sortByIdDesc(catalogs, 'cropId'));
         this.catalogPage = 0;
 
-        // Load plans (newest sowing date first)
+        // Load plans (most recently created first)
         this.cropService.getAllCropPlans().subscribe({
           next: (plans) => {
-            this.cropPlans.set(this.sortByDateDesc(plans, 'sowingDate', 'planId'));
+            this.cropPlans.set(this.sortByIdDesc(plans, 'planId'));
             this.planPage = 0;
           }
         });
 
-        // Load growth logs (newest observation date first) — only for roles
+        // Load growth logs (most recently logged first) — only for roles
         // the backend permits; Farmer/Procurement would get a 403 otherwise.
         if (this.canViewObservations()) {
           this.cropService.getAllGrowthObservations().subscribe({
             next: (observations) => {
-              this.growthObservations.set(this.sortByDateDesc(observations, 'observationDate', 'observationId'));
+              this.growthObservations.set(this.sortByIdDesc(observations, 'observationId'));
               this.obsPage = 0;
             }
           });
@@ -349,16 +353,6 @@ export class CropsComponent implements OnInit {
   // auto-increment id (higher id = added more recently).
   private sortByIdDesc(list: any[], idField: string): any[] {
     return [...(list || [])].sort((a, b) => (b[idField] || 0) - (a[idField] || 0));
-  }
-
-  // Newest date first; ties broken by id so ordering stays stable.
-  private sortByDateDesc(list: any[], dateField: string, idField: string): any[] {
-    return [...(list || [])].sort((a, b) => {
-      const da = a[dateField] ? new Date(a[dateField]).getTime() : 0;
-      const db = b[dateField] ? new Date(b[dateField]).getTime() : 0;
-      if (db !== da) return db - da;
-      return (b[idField] || 0) - (a[idField] || 0);
-    });
   }
 
   private page(list: any[], pageIndex: number, size: number): any[] {

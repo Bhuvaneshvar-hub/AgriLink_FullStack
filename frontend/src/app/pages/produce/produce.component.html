@@ -409,8 +409,9 @@
             }
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save" aria-label="Save">
+            <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save">
               <i class="material-icons-round">save</i>
+              <span>Save</span>
             </button>
           </div>
         </form>
@@ -469,7 +470,10 @@
             </p>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-primary" [disabled]="saleForm.invalid">Record Sale</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saleForm.invalid" title="Record Sale">
+              <i class="material-icons-round">save</i>
+              <span>Record Sale</span>
+            </button>
           </div>
         </form>
       </div>

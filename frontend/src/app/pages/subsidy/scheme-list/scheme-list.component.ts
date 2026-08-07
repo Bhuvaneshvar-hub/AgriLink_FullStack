@@ -265,7 +265,8 @@ function endAfterStartValidator(group: AbstractControl): ValidationErrors | null
                 <button type="submit" class="btn btn-primary" [disabled]="schemeForm.invalid"
                         [title]="isEditMode() ? 'Save Changes' : 'Create'"
                         [attr.aria-label]="isEditMode() ? 'Save Changes' : 'Create'">
-                  <i class="material-icons-round">save</i>
+                  <i class="material-icons-round">{{ isEditMode() ? 'save' : 'add_circle' }}</i>
+                  <span>{{ isEditMode() ? 'Save Changes' : 'Create' }}</span>
                 </button>
               </div>
             </form>

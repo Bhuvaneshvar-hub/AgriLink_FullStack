@@ -250,6 +250,7 @@ function notFutureDateValidator(control: AbstractControl): ValidationErrors | nu
               <div class="modal-footer">
                 <button type="submit" class="btn btn-primary" [disabled]="appForm.invalid" title="Submit Application" aria-label="Submit Application">
                   <i class="material-icons-round">save</i>
+                  <span>Submit</span>
                 </button>
               </div>
             </form>

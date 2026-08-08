@@ -1,0 +1,121 @@
+/* Farmer name column — matches the Crops module: one line, never split. */
+    td.cell-name {
+      white-space: nowrap;
+      min-width: 140px;
+    }
+    .field-error {
+      display: block;
+      min-height: 1.1rem;
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--danger);
+      opacity: 0;
+      visibility: hidden;
+    }
+    .field-error.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    /* Profile registration wizard (mirrors the self-registration step indicator) */
+    .profile-wizard .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.9rem 1.5rem 0;
+    }
+    .profile-wizard .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background-color: var(--bg-dark);
+      border: 2px solid var(--border-color);
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+    .profile-wizard .step-dot.active,
+    .profile-wizard .step-dot.done {
+      border-color: var(--primary-color);
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+    .profile-wizard .step-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .profile-wizard .step-label.active {
+      color: var(--primary-color);
+    }
+    .profile-wizard .step-line {
+      width: 24px;
+      height: 2px;
+      background-color: var(--border-color);
+    }
+    .profile-wizard .step-line.done {
+      background-color: var(--primary-color);
+    }
+    .profile-wizard .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+    .profile-wizard .modal-footer .btn-secondary {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-right: auto;
+    }
+    .profile-wizard .btn i {
+      font-size: 16px;
+    }
+    .farmers-page {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .tabs-container {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.25rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      outline: none;
+    }
+    .tab-btn i { font-size: 20px; }
+    .tab-btn:hover { color: var(--primary-hover); }
+    .tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .tab-content { animation: fadeIn var(--transition-normal); }
+    .spinner-large {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }

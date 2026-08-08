@@ -1,0 +1,265 @@
+    <div class="scheme-list-page">
+      <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1>Subsidy & Scheme Catalog</h1>
+          <p class="text-secondary">Browse available agricultural relief funds, machinery grants, and seed subsidies.</p>
+        </div>
+        <div class="header-actions">
+          @if (!authService.hasRole(['Farmer'])) {
+            <button class="btn btn-secondary" (click)="onExportExcel()" [disabled]="filteredSchemes().length === 0" title="Export schemes to Excel">
+              <i class="material-icons-round text-success">table_view</i>
+            </button>
+          }
+          @if (canEdit()) {
+            <button class="btn btn-primary" (click)="openCreateModal()" title="Create Scheme">
+              <i class="material-icons-round">add_circle</i>
+              <span>Scheme</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="card filters-card">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="search">Search Scheme Name</label>
+            <div class="search-field">
+              <input
+                type="text"
+                id="search"
+                [(ngModel)]="searchQuery"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. fertilizer, seed..." />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input
+              type="text"
+              id="category"
+              [(ngModel)]="categoryFilter"
+              (ngModelChange)="applyFilters()"
+              placeholder="e.g. Crop, Machinery..." />
+          </div>
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Statuses</option>
+              <option value="AC">Active (AC)</option>
+              <option value="IN">Inactive (IN)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      @if (isLoading()) {
+        <div class="empty-state">
+          <span class="spinner-large"></span>
+          <p class="mt-3">Loading schemes...</p>
+        </div>
+      } @else if (filteredSchemes().length === 0) {
+        <div class="empty-state card">
+          <i class="material-icons-round">inventory_2</i>
+          <h3>No Schemes Found</h3>
+          <p>No schemes match your filter choices.</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scheme Name</th>
+                  <th>Category</th>
+                  <th class="sortable" (click)="sortBy('benefitAmount')" title="Sort by Benefit Amount">
+                    <span>Benefit Amount</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'benefitAmount'">{{ sortIcon(sortField() === 'benefitAmount', sortAsc()) }}</i>
+                  </th>
+                  <th>Funding Source</th>
+                  <th>Eligibility Criteria</th>
+                  <th class="sortable" (click)="sortBy('startDate')" title="Sort by Validity Period">
+                    <span>Validity Period</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'startDate'">{{ sortIcon(sortField() === 'startDate', sortAsc()) }}</i>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (scheme of paginatedSchemes(); track scheme.schemeId) {
+                  <tr>
+                    <td><strong>{{ scheme.schemeName }}</strong></td>
+                    <td>{{ scheme.category }}</td>
+                    <td>{{ scheme.benefitAmount | currency:'INR':'symbol-narrow' }}</td>
+                    <td>{{ scheme.fundingSource }}</td>
+                    <td class="criteria-cell" [title]="scheme.eligibilityCriteria">{{ scheme.eligibilityCriteria }}</td>
+                    <td>{{ scheme.startDate | date:'shortDate' }} - {{ scheme.endDate | date:'shortDate' }}</td>
+                    <td>
+                      <app-action-menu>
+                        <button class="menu-item" (click)="viewSchemeDetails(scheme)" title="View scheme details">
+                          <i class="material-icons-round">visibility</i> View
+                        </button>
+                        @if (canEdit()) {
+                          <button class="menu-item" (click)="openEditModal(scheme)" title="Edit scheme">
+                            <i class="material-icons-round">edit</i> Edit
+                          </button>
+                          <button class="menu-item" (click)="toggleStatus(scheme)" [title]="scheme.status === 'AC' ? 'Set scheme inactive' : 'Set scheme active'">
+                            <i class="material-icons-round">
+                              {{ scheme.status === 'AC' ? 'pause_circle' : 'play_circle' }}
+                            </i>
+                            {{ scheme.status === 'AC' ? 'Set Inactive' : 'Set Active' }}
+                          </button>
+                          <button class="menu-item danger" (click)="confirmDelete(scheme)" title="Delete scheme">
+                            <i class="material-icons-round">delete</i> Delete
+                          </button>
+                        }
+                      </app-action-menu>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [currentPage]="currentPage"
+            [pageSize]="pageSize"
+            [totalElements]="filteredSchemes().length"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)">
+          </app-pagination>
+        </div>
+      }
+
+      <!-- Create/Edit Modal -->
+      @if (showFormModal()) {
+        <div class="modal-overlay" (click)="closeFormModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ isEditMode() ? 'Edit Scheme Details' : 'Create New Subsidy Scheme' }}</h3>
+              <button class="close-btn" (click)="closeFormModal()" title="Close">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <form [formGroup]="schemeForm" (ngSubmit)="onFormSubmit()">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="name">Scheme Name</label>
+                  <input type="text" id="name" formControlName="schemeName" placeholder="e.g. Fertilizer Subsidy Phase 2" />
+                  @if (isFieldInvalid('schemeName')) {
+                    <span class="error-text">
+                      @if (schemeForm.get('schemeName')?.errors?.['required']) { Scheme Name is required. }
+                      @else if (schemeForm.get('schemeName')?.errors?.['minlength']) { Scheme Name must be at least 3 characters. }
+                      @else if (schemeForm.get('schemeName')?.errors?.['maxlength']) { Scheme Name cannot exceed 100 characters. }
+                      @else if (schemeForm.get('schemeName')?.errors?.['pattern']) { Only letters, numbers, spaces and - & ( ) , . are allowed. }
+                    </span>
+                  }
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="categoryVal">Category</label>
+                    <input type="text" id="categoryVal" formControlName="category" placeholder="e.g. Crop, Seed, Irrigation" />
+                    @if (isFieldInvalid('category')) {
+                      <span class="error-text">
+                        @if (schemeForm.get('category')?.errors?.['required']) { Category is required. }
+                        @else if (schemeForm.get('category')?.errors?.['minlength']) { Category must be at least 2 characters. }
+                        @else if (schemeForm.get('category')?.errors?.['maxlength']) { Category cannot exceed 50 characters. }
+                        @else if (schemeForm.get('category')?.errors?.['pattern']) { Category must be text (letters only, e.g. Crop, Seed). }
+                      </span>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="benefit">Benefit Amount (₹)</label>
+                    <input type="number" id="benefit" formControlName="benefitAmount" placeholder="e.g. 500" min="1" step="0.01" />
+                    @if (isFieldInvalid('benefitAmount')) {
+                      <span class="error-text">
+                        @if (schemeForm.get('benefitAmount')?.errors?.['required']) { Benefit Amount is required. }
+                        @else if (schemeForm.get('benefitAmount')?.errors?.['min']) { Benefit Amount must be at least ₹1. }
+                        @else if (schemeForm.get('benefitAmount')?.errors?.['max']) { Benefit Amount cannot exceed ₹1,00,00,000. }
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="funding">Funding Source</label>
+                  <input type="text" id="funding" formControlName="fundingSource" placeholder="e.g. Federal Govt" />
+                  @if (isFieldInvalid('fundingSource')) {
+                    <span class="error-text">
+                      @if (schemeForm.get('fundingSource')?.errors?.['required']) { Funding Source is required. }
+                      @else if (schemeForm.get('fundingSource')?.errors?.['minlength']) { Funding Source must be at least 2 characters. }
+                      @else if (schemeForm.get('fundingSource')?.errors?.['maxlength']) { Funding Source cannot exceed 80 characters. }
+                      @else if (schemeForm.get('fundingSource')?.errors?.['pattern']) { Funding Source must be text (e.g. Federal Govt). }
+                    </span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="criteria">Eligibility Criteria</label>
+                  <textarea id="criteria" formControlName="eligibilityCriteria" placeholder="e.g. Minimum landholding of 2 hectares..." rows="3"></textarea>
+                  @if (isFieldInvalid('eligibilityCriteria')) {
+                    <span class="error-text">
+                      @if (schemeForm.get('eligibilityCriteria')?.errors?.['required']) { Eligibility Criteria is required. }
+                      @else if (schemeForm.get('eligibilityCriteria')?.errors?.['minlength']) { Please describe the criteria in at least 10 characters. }
+                      @else if (schemeForm.get('eligibilityCriteria')?.errors?.['maxlength']) { Eligibility Criteria cannot exceed 500 characters. }
+                    </span>
+                  }
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" formControlName="startDate" />
+                    @if (isFieldInvalid('startDate')) {
+                      <span class="error-text">Start Date is required</span>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" formControlName="endDate" />
+                    @if (isFieldInvalid('endDate')) {
+                      <span class="error-text">End Date is required.</span>
+                    } @else if (schemeForm.errors?.['dateRange'] && schemeForm.get('endDate')?.value && (schemeForm.get('endDate')?.touched || schemeForm.get('endDate')?.dirty)) {
+                      <span class="error-text">End Date must be after the Start Date.</span>
+                    }
+                  </div>
+                </div>
+
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" [disabled]="schemeForm.invalid"
+                        [title]="isEditMode() ? 'Save Changes' : 'Create'"
+                        [attr.aria-label]="isEditMode() ? 'Save Changes' : 'Create'">
+                  <i class="material-icons-round">{{ isEditMode() ? 'save' : 'add_circle' }}</i>
+                  <span>{{ isEditMode() ? 'Save Changes' : 'Create' }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Delete Confirmation -->
+      @if (showDeleteConfirm()) {
+        <app-confirmation-modal
+          title="Delete Scheme Catalog Entry"
+          [message]="'Are you sure you want to permanently delete scheme: ' + selectedScheme()?.schemeName + '? This operation cannot be undone.'"
+          confirmText="Delete"
+          cancelText="Cancel"
+          (confirm)="onDelete()"
+          (cancel)="closeDeleteConfirm()">
+        </app-confirmation-modal>
+      }
+
+      @if (showDetailModal()) {
+        <app-detail-modal
+          [title]="detailTitle()"
+          [rows]="detailRows()"
+          (close)="showDetailModal.set(false)">
+        </app-detail-modal>
+      }
+    </div>

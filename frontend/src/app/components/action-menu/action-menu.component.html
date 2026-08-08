@@ -1,0 +1,14 @@
+    <div class="action-menu">
+      <button type="button" class="action-menu-toggle" [class.active]="open()"
+              (click)="toggle($event)" aria-haspopup="menu"
+              [attr.aria-expanded]="open()" title="Actions">
+        <i class="material-icons-round">more_vert</i>
+      </button>
+      @if (open()) {
+        <div class="action-menu-panel" role="menu"
+             [style.top.px]="panelTop()" [style.left.px]="panelLeft()"
+             (click)="close()">
+          <ng-content></ng-content>
+        </div>
+      }
+    </div>

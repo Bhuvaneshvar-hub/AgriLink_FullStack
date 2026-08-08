@@ -21,63 +21,8 @@ import { Component, signal, HostListener, ChangeDetectionStrategy } from '@angul
   selector: 'app-action-menu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="action-menu">
-      <button type="button" class="action-menu-toggle" [class.active]="open()"
-              (click)="toggle($event)" aria-haspopup="menu"
-              [attr.aria-expanded]="open()" title="Actions">
-        <i class="material-icons-round">more_vert</i>
-      </button>
-      @if (open()) {
-        <div class="action-menu-panel" role="menu"
-             [style.top.px]="panelTop()" [style.left.px]="panelLeft()"
-             (click)="close()">
-          <ng-content></ng-content>
-        </div>
-      }
-    </div>
-  `,
-  styles: [`
-    .action-menu { display: inline-flex; }
-    .action-menu-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 0.5rem;
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-    }
-    .action-menu-toggle:hover,
-    .action-menu-toggle.active {
-      background: var(--primary-light);
-      color: var(--primary-color);
-      border-color: var(--border-color);
-    }
-    .action-menu-toggle i { font-size: 20px; }
-    .action-menu-panel {
-      position: fixed;
-      z-index: 1200;
-      min-width: 190px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 0.6rem;
-      box-shadow: var(--shadow-lg);
-      padding: 0.35rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-      animation: amFade 0.12s ease-out;
-    }
-    @keyframes amFade {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: none; }
-    }
-  `]
+  templateUrl: './action-menu.component.html',
+  styleUrls: ['./action-menu.component.css']
 })
 export class ActionMenuComponent {
   readonly open = signal(false);

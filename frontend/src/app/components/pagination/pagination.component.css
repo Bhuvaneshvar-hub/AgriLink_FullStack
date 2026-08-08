@@ -1,0 +1,78 @@
+    .pagination-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .pagination-info {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .pagination-info span {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .page-size-selector select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.35rem;
+      background-color: var(--bg-dark);
+      border-color: var(--border-color);
+    }
+    .pagination-buttons {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .pagination-buttons button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border-color);
+      background-color: transparent;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .pagination-buttons button:hover:not(:disabled) {
+      border-color: var(--primary-color);
+      color: var(--text-primary);
+      background-color: var(--primary-light);
+    }
+    .pagination-buttons button.active {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .pagination-buttons button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .pagination-buttons button i {
+      font-size: 18px;
+    }
+    .pagination-ellipsis {
+      color: var(--text-muted);
+      padding: 0 0.25rem;
+    }

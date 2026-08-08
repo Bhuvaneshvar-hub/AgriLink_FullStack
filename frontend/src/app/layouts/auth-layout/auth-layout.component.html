@@ -1,0 +1,46 @@
+
+    <div class="auth-layout split">
+      <div class="auth-visual">
+        <div class="visual-glow glow-a"></div>
+        <div class="visual-glow glow-b"></div>
+
+        <div class="visual-content">
+          <div class="visual-brand">
+            <i class="material-icons-round">agriculture</i>
+            <span>AgriLink</span>
+          </div>
+
+          @if (isRegister()) {
+            <h2>Join AgriLink as a registered farmer</h2>
+            <p>Create your profile in minutes and get access to subsidies, procurement and support once approved.</p>
+
+            <ul class="visual-features">
+              <li><i class="material-icons-round">verified_user</i> Simple, guided self-registration</li>
+              <li><i class="material-icons-round">payments</i> Access subsidy &amp; procurement programs</li>
+              <li><i class="material-icons-round">support_agent</i> Support from extension officers</li>
+              <li><i class="material-icons-round">insights</i> Track your applications in real time</li>
+            </ul>
+          } @else {
+            <h2>Empowering agriculture with smarter technology</h2>
+            <p>One platform to manage farmers, subsidies, procurement and compliance — end to end.</p>
+
+            <ul class="visual-features">
+              <li><i class="material-icons-round">eco</i> Farmer &amp; crop lifecycle management</li>
+              <li><i class="material-icons-round">payments</i> Subsidy &amp; procurement tracking</li>
+              <li><i class="material-icons-round">fact_check</i> Compliance &amp; audit visibility</li>
+              <li><i class="material-icons-round">insights</i> Real-time analytics &amp; reporting</li>
+            </ul>
+          }
+        </div>
+
+        <div class="floating-icon icon-1"><i class="material-icons-round">local_florist</i></div>
+        <div class="floating-icon icon-2"><i class="material-icons-round">water_drop</i></div>
+        <div class="floating-icon icon-3"><i class="material-icons-round">grass</i></div>
+      </div>
+
+      <div class="auth-panel">
+        <div class="auth-card" [class.wide]="isRegister()">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </div>

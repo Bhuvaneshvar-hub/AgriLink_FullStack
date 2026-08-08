@@ -44,6 +44,10 @@ public class SecurityConfig {
                 // List users awaiting approval — Officer or Admin
                 .requestMatchers(HttpMethod.GET, "/agriLink/user/pending")
                     .hasAnyRole("AgriLinkAdmin", "ExtensionOfficer")
+                // Internal status-sync callbacks from farmer-service (see FarmerStatusClient /
+                // IamStatusClient) — same role gate as farmer-service's own activate/deactivate
+                .requestMatchers(HttpMethod.PUT, "/agriLink/user/*/sync-activate", "/agriLink/user/*/sync-deactivate")
+                    .hasAnyRole("AgriLinkAdmin", "ExtensionOfficer")
                 // Audit logs — Admin and ComplianceAnalyst
                 .requestMatchers(HttpMethod.GET, "/agriLink/audit/**")
                     .hasAnyRole("AgriLinkAdmin", "ComplianceAnalyst")

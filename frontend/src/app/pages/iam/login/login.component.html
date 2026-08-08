@@ -1,0 +1,67 @@
+
+    <div class="login-wrapper">
+      <div class="brand">
+        <i class="material-icons-round brand-icon">agriculture</i>
+        <h1>AgriLink</h1>
+        <p class="text-secondary">Agricultural Management Platform</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-3">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            placeholder="name@agrilink.com"
+            [class.input-error]="isFieldInvalid('email')" />
+          <span class="error-text" [class.visible]="isFieldInvalid('email')">Please enter a valid email address</span>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-input-wrap">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              id="password"
+              formControlName="password"
+              placeholder="••••••••"
+              [class.input-error]="isFieldInvalid('password')" />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              (click)="showPassword.set(!showPassword())"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+              <i class="material-icons-round">{{ showPassword() ? 'visibility_off' : 'visibility' }}</i>
+            </button>
+          </div>
+          <span class="error-text" [class.visible]="isFieldInvalid('password')">Password is required</span>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select id="role" formControlName="role">
+            <option value="">Select</option>
+            <option value="AgriLinkAdmin">System Administrator</option>
+            <option value="ExtensionOfficer">Extension Officer</option>
+            <option value="ProcurementOfficer">Procurement Officer</option>
+            <option value="SubsidyAdmin">Subsidy Administrator</option>
+            <option value="ComplianceAnalyst">Compliance Analyst</option>
+            <option value="Farmer">Farmer</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="isLoading()">
+          @if (isLoading()) {
+            <span class="loading-spinner"></span>
+            Signing In...
+          } @else {
+            <span>Sign In</span>
+          }
+        </button>
+      </form>
+
+      <div class="form-footer mt-3">
+        <p class="text-secondary">Are you a Farmer? <a routerLink="/register">Self Register Here</a></p>
+      </div>
+    </div>

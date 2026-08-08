@@ -1,0 +1,77 @@
+    /* Wider, scroll-free Create/Edit Scheme modal (scoped to this component only) */
+    .modal-content {
+      max-width: 760px;
+    }
+    .modal-body {
+      max-height: none;
+      overflow-y: visible;
+    }
+    /* Keep the form a constant height: validation messages overlay a reserved
+       slot below each field instead of pushing the layout taller. */
+    form .form-group {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+    form .error-text {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.15rem;
+      line-height: 1.15;
+    }
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .filters-card {
+      padding: 1rem 1.5rem 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .criteria-cell {
+      max-width: 240px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .table-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .action-btn:hover {
+      background-color: var(--border-color);
+    }
+    .action-btn i {
+      font-size: 20px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spinner-large {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border-color);
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }

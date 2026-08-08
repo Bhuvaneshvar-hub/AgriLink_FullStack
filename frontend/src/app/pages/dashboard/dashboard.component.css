@@ -1,0 +1,469 @@
+/* Subsidy Overview (SubsidyAdmin headline stats) */
+    .subsidy-overview-grid {
+      margin-bottom: 1.5rem;
+    }
+    .subsidy-stat-link {
+      text-decoration: none;
+      color: inherit;
+      transition: transform var(--transition-normal), border-color var(--transition-normal);
+    }
+    .subsidy-stat-link:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+    }
+    .subsidy-icon-blue {
+      background-color: rgba(59, 130, 246, 0.14);
+      color: var(--secondary-color);
+    }
+    .subsidy-icon-teal {
+      background-color: rgba(6, 182, 212, 0.14);
+      color: var(--info);
+    }
+    .subsidy-icon-green {
+      background-color: rgba(22, 163, 74, 0.14);
+      color: var(--success);
+    }
+
+    /* Compact alert banner (e.g. "Awaiting Action" highlight) — a slim strip
+       instead of a full hero tile, so it reads as an inline nudge rather than
+       another equally-weighted stat block. */
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.9rem 1.25rem;
+      border-radius: 0.65rem;
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all var(--transition-normal);
+    }
+    .alert-banner:hover {
+      background-color: rgba(245, 158, 11, 0.16);
+      border-color: var(--warning);
+      transform: translateY(-1px);
+    }
+    .alert-banner-icon {
+      font-size: 22px;
+      color: var(--warning);
+      flex-shrink: 0;
+    }
+    .alert-banner-text {
+      flex-grow: 1;
+      font-size: 0.9rem;
+    }
+    .alert-banner-text strong {
+      font-size: 1.1rem;
+      font-family: var(--font-title);
+      color: var(--warning);
+    }
+    .alert-banner-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--warning);
+      flex-shrink: 0;
+    }
+    .alert-banner-cta i {
+      font-size: 16px;
+    }
+    .subsidy-icon-amber {
+      background-color: rgba(245, 158, 11, 0.14);
+      color: var(--warning);
+    }
+
+    /* Hero cards */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .hero-card {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 150px;
+      box-shadow: var(--shadow-md);
+      transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    }
+    a.hero-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+    /* Accent color per card status: amber = needs review, blue = awaiting action, teal = live/positive */
+    .hero-amber { --hero-accent: var(--warning); }
+    .hero-blue { --hero-accent: var(--secondary-color); }
+    .hero-teal { --hero-accent: var(--info); }
+    .hero-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hero-card-top i {
+      font-size: 22px;
+      color: var(--hero-accent);
+    }
+    .hero-chip {
+      background: color-mix(in srgb, var(--hero-accent) 15%, transparent);
+      color: var(--hero-accent);
+      padding: 0.2rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .hero-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+    }
+    .hero-value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: var(--hero-accent);
+    }
+    .hero-sub {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .hero-footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.65rem;
+      font-size: 0.8rem;
+    }
+    .hero-footer-label {
+      color: var(--text-secondary);
+    }
+    .hero-footer-value {
+      font-weight: 700;
+    }
+
+    /* Status overview bar charts */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-card-icon {
+      font-size: 18px;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+      color: var(--primary-color);
+    }
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 32px;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .bar-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .bar-track {
+      height: 10px;
+      background-color: var(--bg-dark);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width var(--transition-normal);
+      min-width: 3px;
+    }
+    .bar-count {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: right;
+      font-family: var(--font-title);
+    }
+
+    /* Mini activity row */
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .mini-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+    }
+    .mini-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+    .mini-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .mini-count {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: var(--primary-color);
+    }
+    .sparkline {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.35rem;
+      height: 48px;
+    }
+    .sparkline-bar-wrap {
+      position: relative;
+      flex: 1;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      background-color: var(--bg-dark);
+      border-radius: 4px;
+      cursor: default;
+    }
+    .sparkline-bar {
+      width: 100%;
+      min-height: 3px;
+      border-radius: 4px;
+      background-color: var(--primary-color);
+      transition: height var(--transition-normal), background-color var(--transition-fast);
+    }
+    .sparkline-tooltip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background-color: var(--sidebar-bg);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: 0.35rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      z-index: 5;
+    }
+    .sparkline-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--sidebar-bg);
+    }
+    .sparkline-bar-wrap:hover .sparkline-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .sparkline-bar-wrap:hover .sparkline-bar {
+      background-color: var(--primary-dark, #15803d);
+    }
+    .mini-caption {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .mini-big-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      margin: 0.25rem 0;
+    }
+    .mini-card-link {
+      text-decoration: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: transform var(--transition-normal);
+    }
+    .mini-card-link:hover {
+      transform: translateY(-2px);
+    }
+
+    /* My Farm Overview (Farmer role) */
+    .my-farm-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .farm-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+    .farm-stat-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .farm-stat-label {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .farm-stat-value {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    /* Bottom layout */
+    .grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+    .recent-activity-card, .action-needed-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .view-all-link {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    .view-all-link:hover {
+      text-decoration: underline;
+    }
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .activity-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+    .activity-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .activity-icon {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-top: 0.15rem;
+    }
+    .activity-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .activity-action {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .activity-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Action needed list */
+    .action-needed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .action-needed-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.5rem;
+      border-left: 3px solid transparent;
+      background-color: rgba(148, 163, 184, 0.05);
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: background-color var(--transition-fast), transform var(--transition-fast);
+    }
+    .action-needed-row:hover {
+      background-color: var(--primary-light);
+      transform: translateX(2px);
+    }
+    .action-needed-icon {
+      font-size: 20px;
+    }
+    .action-needed-details {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .action-needed-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .action-needed-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .action-needed-arrow {
+      color: var(--text-muted);
+      font-size: 20px;
+    }
+
+    /* Quick operations */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .action-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+      background-color: rgba(241, 245, 249, 0.8);
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all var(--transition-normal);
+      gap: 0.5rem;
+    }
+    .action-link:hover {
+      border-color: var(--primary-color);
+      background-color: var(--primary-light);
+      transform: translateY(-2px);
+    }
+    .action-link i {
+      font-size: 28px;
+      color: var(--primary-color);
+    }
+    .action-link span {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }

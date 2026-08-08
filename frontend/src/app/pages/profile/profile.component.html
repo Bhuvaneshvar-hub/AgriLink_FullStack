@@ -1,0 +1,143 @@
+    <div class="profile-page">
+      <div class="profile-header card">
+        <div class="profile-header-top">
+          <div class="profile-avatar-lg">{{ userInitials }}</div>
+          <div class="profile-header-info">
+            <h1>{{ currentUser?.name }}</h1>
+            <p class="text-secondary">{{ currentUser?.email }}</p>
+            <div class="profile-header-badges">
+              <span class="badge badge-primary">{{ currentUser?.roleName }}</span>
+              @if (currentUser?.regionId) {
+                <span class="badge badge-secondary">Region {{ currentUser?.regionId }}</span>
+              }
+              @if (accountDetails()?.status) {
+                <span class="badge" [ngClass]="{
+                  'badge-success': accountDetails()?.status === 'A',
+                  'badge-warning': accountDetails()?.status === 'P',
+                  'badge-danger': accountDetails()?.status === 'S' || accountDetails()?.status === 'I'
+                }">{{ accountStatusLabel(accountDetails()?.status) }}</span>
+              }
+            </div>
+          </div>
+          <button class="btn btn-secondary" (click)="togglePasswordForm()">
+            {{ showPasswordForm() ? 'Cancel' : 'Change Password' }}
+          </button>
+        </div>
+        @if (showPasswordForm()) {
+          <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()" class="password-form mt-3">
+            <div class="form-group">
+              <label for="currentPassword">Current Password</label>
+              <input type="password" id="currentPassword" formControlName="currentPassword" placeholder="••••••••" />
+              <span class="error-text" [class.visible]="invalid('currentPassword')">Current password is required</span>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Password (min 8 characters)</label>
+              <input type="password" id="newPassword" formControlName="newPassword" placeholder="••••••••" />
+              <span class="error-text" [class.visible]="invalid('newPassword')">New password must be at least 8 characters</span>
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid || isChangingPassword()">
+              {{ isChangingPassword() ? 'Updating...' : 'Update Password' }}
+            </button>
+          </form>
+        }
+      </div>
+
+      <div class="grid-layout mt-3">
+        <div class="card">
+          <div class="card-header"><h3>Account Details</h3></div>
+          <div class="detail-list mt-3">
+            <div class="detail-row">
+              <span class="detail-label">Full Name</span>
+              <span class="detail-value">{{ currentUser?.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ currentUser?.email }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Role</span>
+              <span class="detail-value">{{ currentUser?.roleName }}</span>
+            </div>
+            @if (currentUser?.regionId) {
+              <div class="detail-row">
+                <span class="detail-label">Region ID</span>
+                <span class="detail-value">{{ currentUser?.regionId }}</span>
+              </div>
+            }
+            @if (accountDetails()?.phone) {
+              <div class="detail-row">
+                <span class="detail-label">Phone</span>
+                <span class="detail-value">{{ accountDetails()?.phone }}</span>
+              </div>
+            }
+            @if (accountDetails()?.createdAt) {
+              <div class="detail-row">
+                <span class="detail-label">Member Since</span>
+                <span class="detail-value">{{ accountDetails()?.createdAt | date:'mediumDate' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (isFarmer() && farmProfile()) {
+          <div class="card">
+            <div class="card-header"><h3>Farm Details</h3></div>
+            <div class="detail-list mt-3">
+              <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span class="badge" [ngClass]="{
+                  'badge-success': farmProfile()?.status === 'AC' || farmProfile()?.status === 'VE',
+                  'badge-warning': farmProfile()?.status === 'PE',
+                  'badge-danger': farmProfile()?.status === 'DP',
+                  'badge-secondary': farmProfile()?.status === 'IN'
+                }">{{ farmStatusLabel(farmProfile()?.status) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date of Birth</span>
+                <span class="detail-value">{{ farmProfile()?.dateOfBirth | date:'mediumDate' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Gender</span>
+                <span class="detail-value">{{ farmProfile()?.gender }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">National ID</span>
+                <span class="detail-value">{{ farmProfile()?.nationalIdNumber }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Village</span>
+                <span class="detail-value">{{ farmProfile()?.village }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">District</span>
+                <span class="detail-value">{{ farmProfile()?.district }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">State</span>
+                <span class="detail-value">{{ farmProfile()?.state }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Bank Account</span>
+                <span class="detail-value">{{ farmProfile()?.bankAccountNumber }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>My Land Holdings</h3></div>
+            <div class="detail-list mt-3">
+              @if (landHoldings().length === 0) {
+                <p class="text-secondary">No land holdings registered yet.</p>
+              } @else {
+                @for (land of landHoldings(); track land.holdingId) {
+                  <div class="detail-row">
+                    <span class="detail-label">{{ land.surveyNumber }}</span>
+                    <span class="detail-value">{{ land.areaAcres }} acres &middot; {{ land.soilType }}</span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>

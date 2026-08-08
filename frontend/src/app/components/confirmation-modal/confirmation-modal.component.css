@@ -1,0 +1,17 @@
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition-fast);
+    }
+    .close-btn:hover {
+      color: var(--text-primary);
+    }
+    .modal-body p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }

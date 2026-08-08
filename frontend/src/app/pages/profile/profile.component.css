@@ -1,0 +1,86 @@
+    .profile-page { padding: 0.5rem; }
+    .profile-header {
+      padding: 1.75rem;
+    }
+    .profile-header-top {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .profile-header-top .btn {
+      margin-left: auto;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .password-form {
+      max-width: 380px;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .profile-avatar-lg {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sidebar-bg) 0%, var(--primary-color) 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+    .profile-header-info h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.15rem;
+    }
+    .profile-header-badges {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .detail-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: right;
+    }
+    .error-text {
+      display: block;
+      min-height: 1rem;
+      font-size: 0.75rem;
+      color: var(--danger);
+      opacity: 0;
+      visibility: hidden;
+    }
+    .error-text.visible {
+      opacity: 1;
+      visibility: visible;
+    }

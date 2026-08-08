@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cognizant.agrilink.farmer.client.IamStatusClient;
 import com.cognizant.agrilink.farmer.dto.FarmerProfileDto;
 import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.enums.Status;
@@ -32,6 +33,9 @@ class FarmerProfileControllerTest {
 
 	@Mock
 	private FarmerProfileService farmerProfileService;
+
+	@Mock
+	private IamStatusClient iamStatusClient;
 
 	@InjectMocks
 	private FarmerProfileController farmerProfileController;

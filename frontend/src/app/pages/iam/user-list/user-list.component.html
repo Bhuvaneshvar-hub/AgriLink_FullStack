@@ -1,0 +1,281 @@
+    <div class="user-list-page">
+      <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1>User Accounts</h1>
+          <p class="text-secondary">Manage system user profiles, permissions, and status.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredUsers().length === 0" title="Export to Excel">
+            <i class="material-icons-round text-success">table_view</i>
+          </button>
+          <button class="btn btn-primary" (click)="openCreateModal()" title="Add User">
+            <i class="material-icons-round">person_add</i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="card filters-card">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="search">Search Name / Email</label>
+            <div class="search-field">
+              <input
+                type="text"
+                id="search"
+                [(ngModel)]="searchQuery"
+                (ngModelChange)="applyFilters()"
+                placeholder="Type name or email to search..." />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="roleFilter">Role</label>
+            <select id="roleFilter" [(ngModel)]="roleFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Roles</option>
+              @for (role of roles(); track role.roleId) {
+                <option [value]="role.roleName">{{ role.roleName }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Statuses</option>
+              <option value="A">Active</option>
+              <option value="I">Inactive</option>
+              <option value="P">Pending</option>
+              <option value="S">Suspended</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      @if (isLoading()) {
+        <div class="empty-state">
+          <span class="spinner-large"></span>
+          <p class="mt-3">Loading users...</p>
+        </div>
+      } @else if (filteredUsers().length === 0) {
+        <div class="empty-state card">
+          <i class="material-icons-round">people_outline</i>
+          <h3>No Users Found</h3>
+          <p>Try modifying your search query or filters.</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Region ID</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (user of paginatedUsers(); track user.userId) {
+                  <tr>
+                    <td><strong>{{ user.name }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone }}</td>
+                    <td>{{ user.roleName }}</td>
+                    <td>{{ user.regionId || 'N/A' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'badge-success': user.status === 'A',
+                        'badge-secondary': user.status === 'I',
+                        'badge-warning': user.status === 'P',
+                        'badge-danger': user.status === 'S'
+                      }">
+                        {{ getStatusLabel(user.status) }}
+                      </span>
+                    </td>
+                    <td>
+                      <app-action-menu>
+                        <button class="menu-item" (click)="viewUserDetails(user)">
+                          <i class="material-icons-round">visibility</i> View
+                        </button>
+                        <button class="menu-item" (click)="openEditModal(user)">
+                          <i class="material-icons-round">edit</i> Edit
+                        </button>
+                        <button class="menu-item" (click)="openResetModal(user)">
+                          <i class="material-icons-round">vpn_key</i> Reset Password
+                        </button>
+                        @if (user.status !== 'I') {
+                          <button class="menu-item danger" (click)="confirmDeactivate(user)">
+                            <i class="material-icons-round">block</i> Deactivate
+                          </button>
+                        }
+                      </app-action-menu>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [currentPage]="currentPage"
+            [pageSize]="pageSize"
+            [totalElements]="filteredUsers().length"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)">
+          </app-pagination>
+        </div>
+      }
+
+      <!-- Create/Edit Modal -->
+      @if (showFormModal()) {
+        <div class="modal-overlay" (click)="closeFormModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ isEditMode() ? 'Edit User Profile' : 'Add New User Account' }}</h3>
+              <button class="close-btn" (click)="closeFormModal()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <form [formGroup]="userForm" (ngSubmit)="onFormSubmit()">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="formName">Full Name</label>
+                  <input type="text" id="formName" formControlName="name" placeholder="John Doe" />
+                  @if (isFieldInvalid('name')) {
+                    <span class="error-text">Full name is required</span>
+                  }
+                </div>
+
+                @if (!isEditMode()) {
+                  <div class="form-group">
+                    <label for="formEmail">Email Address</label>
+                    <input type="email" id="formEmail" formControlName="email" placeholder="john.doe@example.com" />
+                    @if (isFieldInvalid('email')) {
+                      <span class="error-text">Valid email is required</span>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="formPassword">Password (min 8 characters)</label>
+                    <input type="password" id="formPassword" formControlName="password" placeholder="••••••••" />
+                    @if (isFieldInvalid('password')) {
+                      <span class="error-text">Password must be at least 8 characters</span>
+                    }
+                  </div>
+                }
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="formPhone">Phone Number (10 digits)</label>
+                    <input type="text" id="formPhone" formControlName="phone" placeholder="9876543210" />
+                    @if (isFieldInvalid('phone')) {
+                      <span class="error-text">Phone must be exactly 10 digits</span>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="formRegion">Region ID</label>
+                    <input type="number" id="formRegion" formControlName="regionId" placeholder="1" />
+                    @if (isFieldInvalid('regionId')) {
+                      <span class="error-text">Valid Region ID is required</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="formRole">System Role</label>
+                    <select id="formRole" formControlName="roleId">
+                      <option [value]="null" disabled>Select role...</option>
+                      @for (role of roles(); track role.roleId) {
+                        <option [value]="role.roleId" [disabled]="!isEditMode() && role.roleName === 'Farmer'">
+                          {{ role.roleName }}{{ !isEditMode() && role.roleName === 'Farmer' ? ' (use Farmer Registration)' : '' }}
+                        </option>
+                      }
+                    </select>
+                    @if (isFieldInvalid('roleId')) {
+                      <span class="error-text">Role selection is required</span>
+                    }
+                    @if (!isEditMode()) {
+                      <small class="text-secondary">
+                        Farmer accounts need a full profile (land/ID/bank details) —
+                        create them from <a routerLink="/farmers">Farmer Registration</a> instead.
+                      </small>
+                    }
+                  </div>
+
+                  @if (isEditMode()) {
+                    <div class="form-group">
+                      <label for="formStatus">Account Status</label>
+                      <select id="formStatus" formControlName="status">
+                        <option value="A">Active</option>
+                        <option value="I">Inactive</option>
+                        <option value="P">Pending</option>
+                        <option value="S">Suspended</option>
+                      </select>
+                    </div>
+                  }
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+                  {{ isEditMode() ? 'Save Changes' : 'Create User' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Reset Password Modal -->
+      @if (showResetModal()) {
+        <div class="modal-overlay" (click)="closeResetModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Reset Password</h3>
+              <button class="close-btn" (click)="closeResetModal()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <form [formGroup]="resetForm" (ngSubmit)="onResetSubmit()">
+              <div class="modal-body">
+                <p class="mb-3 text-secondary">Set a new password for user <strong>{{ selectedUser()?.email }}</strong>.</p>
+                <div class="form-group">
+                  <label for="resetPassword">New Password (min 8 characters)</label>
+                  <input type="password" id="resetPassword" formControlName="newPassword" placeholder="••••••••" />
+                  @if (resetForm.get('newPassword')?.invalid && (resetForm.get('newPassword')?.dirty || resetForm.get('newPassword')?.touched)) {
+                    <span class="error-text">Password must be at least 8 characters</span>
+                  }
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" [disabled]="resetForm.invalid">Reset Password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Confirmation dialog for deactivation -->
+      @if (showDeactivateConfirm()) {
+        <app-confirmation-modal
+          title="Deactivate Account"
+          [message]="'Are you sure you want to deactivate ' + selectedUser()?.name + '\'s account? This will set their status to Inactive.'"
+          confirmText="Deactivate"
+          cancelText="Cancel"
+          (confirm)="onDeactivate()"
+          (cancel)="closeDeactivateConfirm()">
+        </app-confirmation-modal>
+      }
+
+      @if (showDetailModal()) {
+        <app-detail-modal
+          [title]="detailTitle()"
+          [rows]="detailRows()"
+          (close)="showDetailModal.set(false)">
+        </app-detail-modal>
+      }
+    </div>

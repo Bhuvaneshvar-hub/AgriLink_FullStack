@@ -1,0 +1,223 @@
+
+    <div class="register-wrapper">
+      <div class="brand">
+        <div class="brand-icon-badge"><i class="material-icons-round">person_add</i></div>
+        <h1>Farmer Registration</h1>
+        <p class="text-secondary">Create your profile — it'll be reviewed and activated by an officer</p>
+      </div>
+
+      <div class="step-indicator">
+        <div class="step-dot" [class.active]="currentStep() === 1" [class.done]="currentStep() > 1">
+          <span>1</span>
+        </div>
+        <span class="step-label" [class.active]="currentStep() === 1">Account Details</span>
+        <div class="step-line" [class.done]="currentStep() > 1"></div>
+        <div class="step-dot" [class.active]="currentStep() === 2">
+          <span>2</span>
+        </div>
+        <span class="step-label" [class.active]="currentStep() === 2">Farmer &amp; Land Details</span>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        @if (currentStep() === 1) {
+          <div class="form-section">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="name">Full Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  formControlName="name"
+                  placeholder="John Doe"
+                  maxlength="50"
+                  [class.input-error]="isFieldInvalid('name')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('name')">
+                  {{ registerForm.get('name')?.errors?.['pattern'] ? 'Letters only (2–50 characters)' : 'Full name is required' }}
+                </span>
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  formControlName="email"
+                  placeholder="john.doe@gmail.com"
+                  [class.input-error]="isFieldInvalid('email')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('email')">Must be a valid &#64;gmail.com address</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <input
+                type="text"
+                id="phone"
+                formControlName="phone"
+                placeholder="9876543210"
+                maxlength="10"
+                inputmode="numeric"
+                (input)="restrictToDigits($event)"
+                [class.input-error]="isFieldInvalid('phone')" />
+              <span class="error-text" [class.visible]="isFieldInvalid('phone')">Phone must be exactly 10 digits</span>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-input-wrap">
+                  <input
+                    [type]="showPassword() ? 'text' : 'password'"
+                    id="password"
+                    formControlName="password"
+                    placeholder="Min. 8 characters"
+                    [class.input-error]="isFieldInvalid('password')" />
+                  <button
+                    type="button"
+                    class="password-toggle-btn"
+                    (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                    <i class="material-icons-round">{{ showPassword() ? 'visibility_off' : 'visibility' }}</i>
+                  </button>
+                </div>
+                <span class="error-text" [class.visible]="isFieldInvalid('password')">At least 8 characters</span>
+              </div>
+
+              <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="password-input-wrap">
+                  <input
+                    [type]="showConfirmPassword() ? 'text' : 'password'"
+                    id="confirmPassword"
+                    formControlName="confirmPassword"
+                    placeholder="Re-enter password"
+                    [class.input-error]="isFieldInvalid('confirmPassword')" />
+                  <button
+                    type="button"
+                    class="password-toggle-btn"
+                    (click)="showConfirmPassword.set(!showConfirmPassword())"
+                    [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'">
+                    <i class="material-icons-round">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</i>
+                  </button>
+                </div>
+                <span class="error-text" [class.visible]="isFieldInvalid('confirmPassword')">
+                  {{ registerForm.get('confirmPassword')?.errors?.['mismatch'] ? 'Passwords do not match' : 'Please confirm' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary w-100 mt-2" (click)="goNext()">
+            <span>Next</span>
+            <i class="material-icons-round">arrow_forward</i>
+          </button>
+        }
+
+        @if (currentStep() === 2) {
+          <div class="form-section">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="regionId">Region ID</label>
+                <input
+                  type="number"
+                  id="regionId"
+                  formControlName="regionId"
+                  placeholder="1"
+                  [class.input-error]="isFieldInvalid('regionId')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('regionId')">Region ID is required</span>
+              </div>
+
+              <div class="form-group">
+                <label for="dateOfBirth">Date of Birth</label>
+                <input type="date" id="dateOfBirth" formControlName="dateOfBirth"
+                  [class.input-error]="isFieldInvalid('dateOfBirth')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('dateOfBirth')">
+                  {{ registerForm.get('dateOfBirth')?.errors?.['futureDate'] ? 'Cannot be in the future' : 'Date of birth is required' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" formControlName="gender">
+                  <option value="" disabled>Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span class="error-text"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="nationalIdNumber">National ID / Aadhar Number</label>
+                <input type="text" id="nationalIdNumber" formControlName="nationalIdNumber" placeholder="12-digit Aadhar number"
+                  maxlength="12" inputmode="numeric" (input)="restrictToDigits($event)"
+                  [class.input-error]="isFieldInvalid('nationalIdNumber')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('nationalIdNumber')">National ID must be exactly 12 digits</span>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="village">Village</label>
+                <input type="text" id="village" formControlName="village" maxlength="50"
+                  [class.input-error]="isFieldInvalid('village')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('village')">Village is required</span>
+              </div>
+
+              <div class="form-group">
+                <label for="district">District</label>
+                <input type="text" id="district" formControlName="district" maxlength="50"
+                  [class.input-error]="isFieldInvalid('district')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('district')">District is required</span>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="state">State</label>
+                <select id="state" formControlName="state"
+                  [class.input-error]="isFieldInvalid('state')">
+                  <option value="">Select State</option>
+                  @for (st of indianStates; track st) {
+                    <option [value]="st">{{ st }}</option>
+                  }
+                </select>
+                <span class="error-text" [class.visible]="isFieldInvalid('state')">State is required</span>
+              </div>
+
+              <div class="form-group">
+                <label for="bankAccountNumber">Bank Account Number</label>
+                <input type="text" id="bankAccountNumber" formControlName="bankAccountNumber"
+                  maxlength="18" inputmode="numeric" (input)="restrictToDigits($event)"
+                  [class.input-error]="isFieldInvalid('bankAccountNumber')" />
+                <span class="error-text" [class.visible]="isFieldInvalid('bankAccountNumber')">
+                  {{ registerForm.get('bankAccountNumber')?.errors?.['pattern'] ? 'Enter a valid 9–18 digit account number' : 'Bank account is required' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-actions mt-2">
+            <button type="button" class="btn btn-secondary" (click)="goBack()">
+              <i class="material-icons-round">arrow_back</i>
+              <span>Back</span>
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading()">
+              @if (isLoading()) {
+                <span class="loading-spinner"></span>
+                Registering...
+              } @else {
+                <i class="material-icons-round">how_to_reg</i>
+                <span>Submit Registration</span>
+              }
+            </button>
+          </div>
+        }
+      </form>
+
+      <div class="form-footer mt-2">
+        <p class="text-secondary">Already have an account? <a routerLink="/login">Sign In</a></p>
+      </div>
+    </div>

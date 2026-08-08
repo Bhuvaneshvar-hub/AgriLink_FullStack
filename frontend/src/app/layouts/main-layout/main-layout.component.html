@@ -1,0 +1,186 @@
+
+    <div class="main-wrapper">
+      <!-- Mobile Sidebar Toggle -->
+      <button class="mobile-toggle" (click)="toggleSidebar()">
+        <i class="material-icons-round">{{ isSidebarOpen() ? 'close' : 'menu' }}</i>
+      </button>
+
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" [class.open]="isSidebarOpen()">
+        <div class="sidebar-brand">
+          <i class="material-icons-round brand-icon">agriculture</i>
+          <h2>AgriLink</h2>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+            <i class="material-icons-round">dashboard</i>
+            <span>Dashboard</span>
+          </a>
+
+          @if (authService.hasRole(['AgriLinkAdmin'])) {
+            <a routerLink="/users" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">people</i>
+              <span>User Accounts</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+            <a routerLink="/pending-users" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">how_to_reg</i>
+              <span>Pending Approvals</span>
+              @if (pendingApprovalsCount() > 0) {
+                <span class="nav-badge">{{ pendingApprovalsCount() }}</span>
+              }
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+            <a routerLink="/schemes" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">inventory_2</i>
+              <span>Subsidy Schemes</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'Farmer'])) {
+            <a routerLink="/applications" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">assignment</i>
+              <span>Subsidy Applications</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+            <a routerLink="/reports" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">analytics</i>
+              <span>Reports & Analytics</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
+            <a routerLink="/audit-logs" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">history</i>
+              <span>Audit Logs</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+            <a routerLink="/farmers" routerLinkActive="active" (click)="navigateToFarmers()">
+              <i class="material-icons-round">groups</i>
+              <span>Farmer Registration</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['Farmer'])) {
+            <a routerLink="/my-land" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">terrain</i>
+              <span>My Land Holdings</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'Farmer'])) {
+            <a routerLink="/crops" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">eco</i>
+              <span>Crops Management</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer'])) {
+            <a routerLink="/produce" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">storefront</i>
+              <span>Produce Market</span>
+            </a>
+          }
+
+          @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer', 'ProcurementOfficer'])) {
+            <a routerLink="/inputs" routerLinkActive="active" (click)="closeSidebar()">
+              <i class="material-icons-round">shopping_bag</i>
+              <span>Input Operations</span>
+            </a>
+          }
+
+        </nav>
+      </aside>
+
+      <!-- Main Panel -->
+      <div class="main-panel">
+        <header class="top-header">
+          <div class="header-breadcrumb">
+            <span class="breadcrumb-item">Platform</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Management</span>
+          </div>
+
+          <div class="header-actions">
+            @if (currentUser?.regionId) {
+              <div class="region-badge">
+                <i class="material-icons-round">pin_drop</i>
+                <span>Region ID: {{ currentUser?.regionId }}</span>
+              </div>
+            }
+
+            <div class="notif-menu">
+              <button class="notif-trigger" [class.active]="isNotifMenuOpen()" (click)="toggleNotifMenu($event)" aria-label="Notifications">
+                <i class="material-icons-round">notifications</i>
+                @if (unreadCount() > 0) {
+                  <span class="notif-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+                }
+              </button>
+              @if (isNotifMenuOpen()) {
+                <div class="notif-dropdown">
+                  <div class="notif-dropdown-header">
+                    <span>Notifications</span>
+                    @if (unreadCount() > 0) {
+                      <span class="notif-unread-chip">{{ unreadCount() }} new</span>
+                    }
+                  </div>
+                  <div class="notif-list">
+                    @if (isLoadingNotifs()) {
+                      <p class="notif-empty">Loading...</p>
+                    } @else if (recentNotifs().length === 0) {
+                      <p class="notif-empty">You're all caught up!</p>
+                    } @else {
+                      @for (note of recentNotifs(); track note.notificationId) {
+                        <button class="notif-row" [class.unread]="note.status === 'UN'" (click)="openNotification(note)">
+                          <i class="material-icons-round notif-row-icon">{{ notifIcon(note.category) }}</i>
+                          <span class="notif-row-text">{{ note.message }}</span>
+                          @if (note.status === 'UN') {
+                            <span class="notif-row-dot"></span>
+                          }
+                        </button>
+                      }
+                    }
+                  </div>
+                  <a routerLink="/notifications" class="notif-view-all" (click)="closeNotifMenu()">View All</a>
+                </div>
+              }
+            </div>
+
+            <div class="profile-menu">
+              <button class="profile-trigger" [class.active]="isProfileMenuOpen()" (click)="toggleProfileMenu($event)">
+                <span class="profile-avatar">{{ userInitials }}</span>
+                <span class="profile-text">
+                  <span class="profile-name">{{ currentUser?.name }}</span>
+                  <span class="profile-role">{{ currentUser?.roleName }}</span>
+                </span>
+                <i class="material-icons-round chevron" [class.open]="isProfileMenuOpen()">expand_more</i>
+              </button>
+              @if (isProfileMenuOpen()) {
+                <div class="profile-dropdown">
+                  <button class="profile-item" (click)="goToProfile()">
+                    <i class="material-icons-round">person</i> Profile
+                  </button>
+                  <div class="profile-divider"></div>
+                  <button class="profile-item danger" (click)="onLogout()">
+                    <i class="material-icons-round">logout</i> Logout
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </header>
+
+        <main class="main-content-area">
+          <router-outlet></router-outlet>
+        </main>
+      </div>
+    </div>

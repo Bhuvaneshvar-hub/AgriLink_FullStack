@@ -1,0 +1,20 @@
+    <div class="modal-overlay" (click)="close.emit()">
+      <div class="modal-content detail-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ title }}</h3>
+          <button class="close-btn" (click)="close.emit()">
+            <i class="material-icons-round">close</i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            @for (row of rows; track row.label) {
+              <div class="detail-item">
+                <span class="detail-label">{{ row.label }}</span>
+                <span class="detail-value">{{ (row.value === null || row.value === undefined || row.value === '') ? '—' : row.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>

@@ -65,10 +65,6 @@ export class FarmerService {
   }
 
   // Officer/Admin farmer-profile lifecycle actions
-  verifyFarmerProfile(id: number): Observable<any> {
-    return this.http.put<any>(`/agrilink/farmer/farmer-profiles/${id}/verify`, {});
-  }
-
   activateFarmerProfile(id: number): Observable<any> {
     return this.http.put<any>(`/agrilink/farmer/farmer-profiles/${id}/activate`, {});
   }

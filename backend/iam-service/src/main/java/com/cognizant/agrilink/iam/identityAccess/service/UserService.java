@@ -19,6 +19,7 @@ import com.cognizant.agrilink.iam.identityAccess.repository.AuditLogRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserDetailsRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserRoleRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserSessionRepository;
+import com.cognizant.agrilink.iam.client.FarmerStatusClient;
 import com.cognizant.agrilink.iam.notification.NotificationClient;
 import com.cognizant.agrilink.iam.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,7 @@ public class UserService {
     private final PasswordEncoder       passwordEncoder;
     private final JwtUtil               jwtUtil;
     private final NotificationClient    notificationClient;
+    private final FarmerStatusClient    farmerStatusClient;
 
     @Value("${jwt.access-token-expiry-ms}")
     private long accessTokenExpiryMs;
@@ -167,11 +169,24 @@ public class UserService {
             }
             user.setRole(role);
         }
+        UserDetails.Status previousStatus = user.getStatus();
+        UserDetails.Status newStatus = previousStatus;
         if (dto.getStatus() != null) {
-            user.setStatus(UserDetails.Status.valueOf(dto.getStatus()));
+            newStatus = UserDetails.Status.valueOf(dto.getStatus());
+            user.setStatus(newStatus);
         }
 
         userDetailsRepository.save(user);
+
+        // Cascade to farmer-service so a farmer's registration status stays in step
+        // with their login status when an admin edits it from the Users screen.
+        if (newStatus != previousStatus) {
+            if (newStatus == UserDetails.Status.A) {
+                farmerStatusClient.activate(user.getUserId(), currentBearerToken());
+            } else if (newStatus == UserDetails.Status.I) {
+                farmerStatusClient.deactivate(user.getUserId(), currentBearerToken());
+            }
+        }
 
         return toResponseDto(user);
     }
@@ -184,6 +199,21 @@ public class UserService {
         userDetailsRepository.save(user);
         // Revoke active sessions so the deactivated user can't keep using existing tokens
         userSessionRepository.revokeAllActiveSessionsByUserId(id);
+        // Cascade to farmer-service so the linked farmer profile is deactivated too.
+        farmerStatusClient.deactivate(user.getUserId(), currentBearerToken());
+    }
+
+    // ── 1d-sync. Apply a status change without cascading back to farmer-service ─
+    // Used only when farmer-service itself initiated the change (see FarmerProfileController's
+    // activate/deactivate), so the two services' sync calls don't loop back and forth.
+    @Transactional
+    public void syncStatus(Integer id, UserDetails.Status status) {
+        UserDetails user = findOrThrow(id);
+        user.setStatus(status);
+        userDetailsRepository.save(user);
+        if (status == UserDetails.Status.I) {
+            userSessionRepository.revokeAllActiveSessionsByUserId(id);
+        }
     }
 
     // ── 1e. Farmer self-registration ────────────────────────────────────────────
@@ -264,6 +294,10 @@ public class UserService {
 
         notificationClient.notify(user.getUserId(),
                 "Your account has been approved. You can now log in.", "Compliance", currentBearerToken());
+
+        // Cascade to farmer-service so a newly-approved farmer's profile (created
+        // Inactive at self-registration) is activated in step with their login.
+        farmerStatusClient.activate(user.getUserId(), currentBearerToken());
 
         return toResponseDto(user);
     }

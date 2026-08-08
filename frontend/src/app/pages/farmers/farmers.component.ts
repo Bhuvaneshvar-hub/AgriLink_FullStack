@@ -5,7 +5,7 @@ import { FarmerService } from '../../services/farmer.service';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-import { notFutureDate, NAME_PATTERN, GMAIL_PATTERN } from '../../utils/validators';
+import { notFutureDate, NAME_PATTERN, EMAIL_PATTERN } from '../../utils/validators';
 import { INDIAN_STATES } from '../../utils/indian-states';
 import { toggleSort, sortIcon, applySort } from '../../utils/table-sort.util';
 import { exportTableToExcel } from '../../utils/export-excel.util';
@@ -112,7 +112,7 @@ export class FarmersComponent implements OnInit {
       // account (IAM user) is created and linked to this profile via userId.
       email: [''],
       password: [''],
-      regionId: [1],
+      regionId: [null, [Validators.required, Validators.min(1)]],
       status: ['', Validators.required]
     });
 
@@ -462,12 +462,16 @@ export class FarmersComponent implements OnInit {
     this.currentProfileStep.set(1);
     const emailCtrl = this.profileForm.get('email');
     const pwdCtrl = this.profileForm.get('password');
+    const regionCtrl = this.profileForm.get('regionId');
     if (profile) {
       this.isEditMode.set(true);
       this.selectedItem.set(profile);
-      // Editing an existing profile does not touch the login account.
+      // Editing an existing profile does not touch the login account, and the
+      // region field isn't rendered — validating either would block saving with
+      // no visible error to explain why.
       emailCtrl?.clearValidators();
       pwdCtrl?.clearValidators();
+      regionCtrl?.clearValidators();
       this.profileForm.patchValue({
         ...profile,
         dateOfBirth: profile.dateOfBirth ? String(profile.dateOfBirth).split('T')[0] : ''
@@ -475,13 +479,17 @@ export class FarmersComponent implements OnInit {
     } else {
       this.isEditMode.set(false);
       this.selectedItem.set(null);
-      this.profileForm.reset({ gender: '', status: 'AC', userId: null });
+      // Blank email/password on every open so a stale value (or the admin's own
+      // browser-saved credentials) is never carried into a new farmer's account.
+      this.profileForm.reset({ gender: '', status: 'AC', userId: null, email: '', password: '', regionId: null });
       // Registering a new farmer requires login credentials to create their IAM user.
-      emailCtrl?.setValidators([Validators.required, Validators.pattern(GMAIL_PATTERN)]);
+      emailCtrl?.setValidators([Validators.required, Validators.pattern(EMAIL_PATTERN)]);
       pwdCtrl?.setValidators([Validators.required, Validators.minLength(8)]);
+      regionCtrl?.setValidators([Validators.required, Validators.min(1)]);
     }
     emailCtrl?.updateValueAndValidity();
     pwdCtrl?.updateValueAndValidity();
+    regionCtrl?.updateValueAndValidity();
     this.showProfileModal.set(true);
   }
 

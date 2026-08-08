@@ -38,18 +38,9 @@
 .tab-content {
   animation: fadeIn var(--transition-normal);
 }
-/* Icon-only submit button in modal footers — the tooltip/aria-label carries
-   the action name ("Save", "Register", ...). */
-.btn-save-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6rem 1.4rem;
-  border-radius: 0.6rem;
-  gap: 0;
-}
-.btn-save-icon .material-icons-round {
-  font-size: 22px;
+/* Submit buttons in modal footers show the save icon next to their label. */
+.modal-footer .btn-primary .material-icons-round {
+  font-size: 20px;
   line-height: 1;
 }
 .btn-small {

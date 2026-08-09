@@ -3,6 +3,7 @@ package com.cognizant.agrilink.input.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -87,11 +88,42 @@ class RequestServiceTest {
 
 	@Test
 	void createSavesRecord() {
+		// A pending request deducts nothing, but its quantity is still checked against
+		// the catalog, so the lookup has to be stubbed even for the plain-save case.
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(200).build();
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
 		when(requestRepository.save(any(Request.class))).thenReturn(request);
 
 		requestService.create(dto);
 
 		verify(requestRepository).save(any(Request.class));
+		assertThat(catalog.getAvailableStock()).isEqualTo(200);
+	}
+
+	@Test
+	void creatingPendingRequestBeyondStockIsRejected() {
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(20).build();
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+
+		// dto asks for 50 against 20 in stock, as PE.
+		assertThatThrownBy(() -> requestService.create(dto))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("Insufficient stock");
+		assertThat(catalog.getAvailableStock()).isEqualTo(20);
+		verify(requestRepository, never()).save(any(Request.class));
+	}
+
+	@Test
+	void creatingPendingRequestDoesNotDeductStock() {
+		Catalog catalog = Catalog.builder().inputId(10).name("Urea").availableStock(200).build();
+		when(catalogRepository.findById(10)).thenReturn(Optional.of(catalog));
+		when(requestRepository.save(any(Request.class))).thenReturn(request);
+
+		requestService.create(dto);
+
+		// Stock only moves on approval, so the catalog must be left alone here.
+		assertThat(catalog.getAvailableStock()).isEqualTo(200);
+		verify(catalogRepository, never()).save(any(Catalog.class));
 	}
 
 	@Test

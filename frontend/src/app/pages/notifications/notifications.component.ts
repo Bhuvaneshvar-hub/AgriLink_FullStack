@@ -29,6 +29,49 @@ import { FarmerService } from '../../services/farmer.service';
         
       </div>
 
+      <!-- Unread summary bar: only worth showing when something is actually unread. -->
+      @if (unreadVisibleCount() > 0) {
+        <div class="card unread-bar mb-3">
+          <span class="unread-info">
+            <i class="material-icons-round">mark_email_unread</i>
+            <span><strong>{{ unreadVisibleCount() }}</strong> unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' in this view' : '' }}</span>
+          </span>
+          <button class="btn btn-secondary btn-sm" (click)="openMarkAllConfirm()" [disabled]="isMarkingAll()">
+            <i class="material-icons-round">done_all</i>
+            <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+          </button>
+        </div>
+      }
+
+      <!-- Mark-all confirmation -->
+      @if (showMarkAllConfirm()) {
+        <div class="modal-overlay" (click)="closeMarkAllConfirm()">
+          <div class="modal-content compact" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Mark all as read</h3>
+              <button class="close-btn" (click)="closeMarkAllConfirm()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p class="confirm-text">
+                Mark {{ unreadVisibleCount() }} unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' matching the current filters' : '' }} as read?
+              </p>
+              @if (hasActiveFilter()) {
+                <p class="confirm-hint">Unread alerts hidden by the current filters are left untouched.</p>
+              }
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeMarkAllConfirm()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="markAllAsRead()" [disabled]="isMarkingAll()">
+                <i class="material-icons-round">done_all</i>
+                <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Filters -->
       <div class="card filters-card mb-3">
         <div class="form-row">
@@ -222,6 +265,49 @@ import { FarmerService } from '../../services/farmer.service';
       display: flex;
       flex-direction: column;
       width: 100%;
+    }
+    /* Unread summary bar sitting above the filters. */
+    .unread-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+    }
+    .unread-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .unread-info i {
+      font-size: 20px;
+      color: var(--primary-color);
+    }
+    .unread-info strong {
+      color: var(--text-primary);
+    }
+    .btn-sm {
+      font-size: 0.82rem;
+      padding: 0.4rem 0.8rem;
+    }
+    .unread-bar .btn i,
+    .modal-footer .btn i {
+      font-size: 16px;
+    }
+    .modal-content.compact {
+      max-width: 420px;
+    }
+    .confirm-text {
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .confirm-hint {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0.5rem 0 0;
     }
     .notifications-list {
       display: flex;
@@ -494,6 +580,8 @@ export class NotificationsComponent implements OnInit {
 
   // Modals
   showBroadcastModal = signal<boolean>(false);
+  showMarkAllConfirm = signal<boolean>(false);
+  isMarkingAll = signal<boolean>(false);
 
   // Forms
   broadcastForm!: FormGroup;
@@ -628,6 +716,57 @@ export class NotificationsComponent implements OnInit {
     this.notificationService.markAsRead(alert.notificationId).subscribe({
       next: () => { this.toast.success('Notification marked as read'); this.loadNotifications(); },
       error: () => this.toast.error('Failed to update status')
+    });
+  }
+
+  // ===== Mark all as read =====
+  // Scoped to what the user can currently see, so the action never silently
+  // touches alerts the active filters have hidden from them.
+  private unreadVisible(): any[] {
+    return this.filteredNotifications().filter(n => n.status === 'UN');
+  }
+
+  unreadVisibleCount(): number {
+    return this.unreadVisible().length;
+  }
+
+  hasActiveFilter(): boolean {
+    return !!this.statusFilter || !!this.categoryFilter || this.dateRangeFilter !== 'all';
+  }
+
+  openMarkAllConfirm() {
+    if (this.unreadVisibleCount() === 0) return;
+    this.showMarkAllConfirm.set(true);
+  }
+
+  closeMarkAllConfirm() {
+    if (this.isMarkingAll()) return;
+    this.showMarkAllConfirm.set(false);
+  }
+
+  // There's no bulk endpoint, so fan out the per-id call and report how many
+  // actually succeeded rather than assuming all of them did.
+  markAllAsRead() {
+    const targets = this.unreadVisible();
+    if (targets.length === 0) return;
+
+    this.isMarkingAll.set(true);
+    forkJoin(
+      targets.map(n =>
+        this.notificationService.markAsRead(n.notificationId).pipe(catchError(() => of(null)))
+      )
+    ).subscribe(results => {
+      this.isMarkingAll.set(false);
+      this.showMarkAllConfirm.set(false);
+      const done = results.filter(r => r !== null).length;
+      if (done === 0) {
+        this.toast.error('Failed to mark the alerts as read.');
+      } else if (done < targets.length) {
+        this.toast.error(`Marked ${done} of ${targets.length} alerts as read.`);
+      } else {
+        this.toast.success(`Marked ${done} alert${done === 1 ? '' : 's'} as read`);
+      }
+      this.loadNotifications();
     });
   }
 

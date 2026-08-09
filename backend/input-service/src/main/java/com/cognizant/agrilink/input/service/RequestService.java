@@ -44,6 +44,12 @@ public class RequestService {
 				.build();
 		if (holdsStock(request.getStatus())) {
 			reserveStock(request.getInputId(), request.getQuantityRequested());
+		} else {
+			// A pending request reserves nothing, but there's no point accepting one that
+			// could never be fulfilled — reject it here rather than at approval time, when
+			// the officer would be the one to see a confusing failure. The Angular form
+			// checks this too; that check is a convenience, not the enforcement point.
+			ensureStockAvailable(request.getInputId(), request.getQuantityRequested());
 		}
 		return requestRepository.save(request);
 	}
@@ -95,14 +101,29 @@ public class RequestService {
 		if (inputId == null || qty <= 0) {
 			return;
 		}
+		Catalog catalog = ensureStockAvailable(inputId, qty);
+		int stock = catalog.getAvailableStock() != null ? catalog.getAvailableStock() : 0;
+		catalog.setAvailableStock(stock - qty);
+		catalogRepository.save(catalog);
+	}
+
+	/**
+	 * Verifies the catalog exists and carries enough stock for {@code quantity}, without
+	 * deducting anything. Returns the catalog so callers that go on to deduct don't have
+	 * to look it up twice.
+	 */
+	private Catalog ensureStockAvailable(Integer inputId, Integer quantity) {
+		int qty = quantity != null ? quantity : 0;
+		if (inputId == null || qty <= 0) {
+			return null;
+		}
 		Catalog catalog = findCatalog(inputId);
 		int stock = catalog.getAvailableStock() != null ? catalog.getAvailableStock() : 0;
 		if (qty > stock) {
 			throw new IllegalStateException("Insufficient stock for " + catalog.getName()
 					+ ": " + stock + " available, " + qty + " requested");
 		}
-		catalog.setAvailableStock(stock - qty);
-		catalogRepository.save(catalog);
+		return catalog;
 	}
 
 	private void releaseStock(Integer inputId, Integer quantity) {

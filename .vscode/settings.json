@@ -24,5 +24,14 @@
     "**/.git/**",
     "**/target/**"
   ],
-  "java.compile.nullAnalysis.mode": "automatic"
+  // Disabled deliberately. With "automatic", JDT turns on annotation-based null
+  // analysis, which floods the Problems panel with ~45 "Null type safety:
+  // parameter 'this' provided via method descriptor ..." warnings on ordinary
+  // method references (CropPlan::getPlanId, ProduceSale::getTotalAmount, the
+  // Spring Security csrf disable lambda, ...). Those are false positives: they
+  // fire because the JDK functional interfaces and Spring's APIs carry no null
+  // annotations of their own, not because anything can actually NPE. The project
+  // doesn't use JSR-305/JDT null annotations, so the analysis has nothing real
+  // to check and only hides genuine warnings in the noise.
+  "java.compile.nullAnalysis.mode": "disabled"
 }

@@ -255,12 +255,14 @@
                       <td><strong>{{ sale.totalAmount | currency:'INR':'symbol-narrow' }}</strong></td>
                       <td>{{ sale.saleDate | date:'mediumDate' }}</td>
                       <td>
+                        <!-- A Farmer reads Pending until they confirm receipt themselves,
+                             even once the buyer has marked the sale Paid. -->
                         <span class="badge" [ngClass]="{
-                          'badge-success': sale.paymentStatus === 'PD',
-                          'badge-warning': sale.paymentStatus === 'PE',
-                          'badge-danger': sale.paymentStatus === 'OV'
+                          'badge-success': effectivePaymentStatus(sale) === 'PD',
+                          'badge-warning': effectivePaymentStatus(sale) === 'PE',
+                          'badge-danger': effectivePaymentStatus(sale) === 'OV'
                         }">
-                          {{ getPaymentStatusLabel(sale.paymentStatus) }}
+                          {{ getPaymentStatusLabel(effectivePaymentStatus(sale)) }}
                         </span>
                       </td>
                       <td>
@@ -277,21 +279,6 @@
                             <button class="menu-item" (click)="confirmPaymentReceived(sale)">
                               <i class="material-icons-round">task_alt</i> I Received This Payment
                             </button>
-                          }
-                          <!-- Read-only outcome of the farmer's check, shown here now
-                               that the Farmer Confirmation column is gone. -->
-                          @if (sale.paymentStatus === 'PD') {
-                            @if (isFarmerConfirmed(sale)) {
-                              <div class="menu-item menu-item-static confirmed">
-                                <i class="material-icons-round">verified</i>
-                                Receipt Confirmed@if (sale.farmerConfirmedDate) { · {{ sale.farmerConfirmedDate | date:'mediumDate' }} }
-                              </div>
-                            } @else if (!isFarmer()) {
-                              <div class="menu-item menu-item-static">
-                                <i class="material-icons-round">hourglass_empty</i>
-                                Awaiting Farmer Confirmation
-                              </div>
-                            }
                           }
                           @if (isProcurementOrAdmin()) {
                             <button class="menu-item danger" (click)="confirmDeleteSale(sale)">
@@ -378,18 +365,14 @@
                 <input type="number" id="lQty" formControlName="quantityKg" placeholder="e.g. 500"
                        [min]="MIN_QUANTITY_KG" [max]="MAX_QUANTITY_KG" step="0.1"
                        title="Harvest weight offered for sale, between 1 and 100000 Kg" />
-                @if (showError(listingForm, 'quantityKg')) {
-                  <p class="field-error">{{ quantityError() }}</p>
-                }
+                <span class="error-text" [class.visible]="showError(listingForm, 'quantityKg')">{{ quantityError() }}</span>
               </div>
               <div class="form-group">
                 <label for="lPrice">Asking Price (₹/Kg)</label>
                 <input type="number" step="0.01" id="lPrice" formControlName="askingPricePerKg" placeholder="e.g. 25.50"
                        [min]="MIN_PRICE_PER_KG" [max]="MAX_PRICE_PER_KG"
                        title="Price per Kg, between ₹1 and ₹10000" />
-                @if (showError(listingForm, 'askingPricePerKg')) {
-                  <p class="field-error">{{ askingPriceError() }}</p>
-                }
+                <span class="error-text" [class.visible]="showError(listingForm, 'askingPricePerKg')">{{ askingPriceError() }}</span>
               </div>
             </div>
 
@@ -409,8 +392,9 @@
             }
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save" aria-label="Save">
+            <button type="submit" class="btn btn-primary" [disabled]="listingForm.invalid" title="Save">
               <i class="material-icons-round">save</i>
+              <span>Save</span>
             </button>
           </div>
         </form>
@@ -442,9 +426,10 @@
                 [max]="availableQty(selectedListing())"
                 (input)="calculateTotal()" />
               <small class="field-hint">Up to {{ availableQty(selectedListing()) }} Kg still available on this listing.</small>
-              @if (saleForm.get('quantitySoldKg')?.touched && saleForm.get('quantitySoldKg')?.invalid) {
-                <small class="field-error">Enter between 0.1 and {{ availableQty(selectedListing()) }} Kg.</small>
-              }
+              <span class="error-text"
+                    [class.visible]="saleForm.get('quantitySoldKg')?.touched && saleForm.get('quantitySoldKg')?.invalid">
+                Enter between 0.1 and {{ availableQty(selectedListing()) }} Kg.
+              </span>
             </div>
 
             <div class="form-row mt-3">

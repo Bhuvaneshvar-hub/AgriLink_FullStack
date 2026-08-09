@@ -203,7 +203,9 @@ export class ProduceComponent implements OnInit {
       sale.buyerId, '#' + sale.buyerId,
       sale.quantitySoldKg, sale.agreedPricePerKg, sale.totalAmount,
       this.fmtDate(sale.saleDate),
-      sale.paymentStatus, this.getPaymentStatusLabel(sale.paymentStatus),
+      // Searched on the status the viewer actually sees, so a Farmer typing
+      // "pending" finds the rows their own table shows as Pending.
+      this.effectivePaymentStatus(sale), this.getPaymentStatusLabel(this.effectivePaymentStatus(sale)),
       this.getFarmerConfirmationLabel(sale)
     ].join(' ').toLowerCase();
   }
@@ -380,7 +382,7 @@ export class ProduceComponent implements OnInit {
       { label: 'Agreed Price/Kg', value: this.fmtMoney(sale.agreedPricePerKg) },
       { label: 'Total Amount', value: this.fmtMoney(sale.totalAmount) },
       { label: 'Sale Date', value: this.fmtDate(sale.saleDate) },
-      { label: 'Payment Status', value: this.getPaymentStatusLabel(sale.paymentStatus) },
+      { label: 'Payment Status', value: this.getPaymentStatusLabel(this.effectivePaymentStatus(sale)) },
       { label: 'Farmer Confirmed Receipt', value: this.getFarmerConfirmationLabel(sale) },
       { label: 'Confirmed On', value: sale.farmerConfirmedDate ? this.fmtDate(sale.farmerConfirmedDate) : '—' }
     ]);
@@ -427,6 +429,21 @@ export class ProduceComponent implements OnInit {
       case 'OV': return 'Overdue';
       default: return status;
     }
+  }
+
+  /**
+   * Payment status as the viewing role is entitled to read it.
+   *
+   * The buyer marking a sale Paid is only their own claim that the money was sent,
+   * so a Farmer keeps seeing Pending until they have confirmed receipt themselves —
+   * their status flips to Paid on their own confirmation, not on the buyer's word.
+   * The buyer and the admin always see the actual recorded status.
+   */
+  effectivePaymentStatus(sale: any): string {
+    if (this.isFarmer() && sale?.paymentStatus === 'PD' && !this.isFarmerConfirmed(sale)) {
+      return 'PE';
+    }
+    return sale?.paymentStatus;
   }
 
   // ================= EXPORTS =================

@@ -113,20 +113,34 @@ td.cell-name {
   margin-top: 0.25rem;
   font-size: 0.75rem;
   color: var(--text-secondary);
+  /* Always occupies one line, so a hint whose number grows can't reflow the modal. */
+  min-height: 1.1em;
 }
-/* Inline validation message under a field */
-.field-error {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0.3rem 0 0;
+/* Inline validation message under a field. Always rendered and space is always
+   reserved — only visibility toggles — so showing or clearing an error never
+   changes the modal's height. Mirrors the register screen's .error-text. */
+.error-text {
+  display: block;
+  min-height: 1.15rem;
+  margin-top: 0.3rem;
   font-size: 0.78rem;
+  line-height: 1.15;
   color: var(--danger);
+  opacity: 0;
+  visibility: hidden;
+}
+.error-text.visible {
+  opacity: 1;
+  visibility: visible;
 }
 .derived-value {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
+  /* A longer amount must not wrap onto a second line and push the modal taller. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .derived-total {
   font-size: 1.5rem;
@@ -154,19 +168,6 @@ td.cell-name {
 }
 .action-btn i {
   font-size: 18px;
-}
-/* Read-only status line inside the actions menu: looks like a menu item but is
-   informational, so it takes no hover or pointer. */
-.menu-item-static {
-  cursor: default;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-.menu-item-static:hover {
-  background: transparent;
-}
-.menu-item-static.confirmed {
-  color: var(--primary-color);
 }
 .close-btn {
   background: transparent;

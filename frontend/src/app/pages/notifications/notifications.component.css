@@ -3,6 +3,49 @@
       flex-direction: column;
       width: 100%;
     }
+    /* Unread summary bar sitting above the filters. */
+    .unread-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+    }
+    .unread-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .unread-info i {
+      font-size: 20px;
+      color: var(--primary-color);
+    }
+    .unread-info strong {
+      color: var(--text-primary);
+    }
+    .btn-sm {
+      font-size: 0.82rem;
+      padding: 0.4rem 0.8rem;
+    }
+    .unread-bar .btn i,
+    .modal-footer .btn i {
+      font-size: 16px;
+    }
+    .modal-content.compact {
+      max-width: 420px;
+    }
+    .confirm-text {
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .confirm-hint {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0.5rem 0 0;
+    }
     .notifications-list {
       display: flex;
       flex-direction: column;

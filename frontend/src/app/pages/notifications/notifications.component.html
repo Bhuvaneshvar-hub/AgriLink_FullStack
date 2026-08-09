@@ -13,6 +13,49 @@
 
       </div>
 
+      <!-- Unread summary bar: only worth showing when something is actually unread. -->
+      @if (unreadVisibleCount() > 0) {
+        <div class="card unread-bar mb-3">
+          <span class="unread-info">
+            <i class="material-icons-round">mark_email_unread</i>
+            <span><strong>{{ unreadVisibleCount() }}</strong> unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' in this view' : '' }}</span>
+          </span>
+          <button class="btn btn-secondary btn-sm" (click)="openMarkAllConfirm()" [disabled]="isMarkingAll()">
+            <i class="material-icons-round">done_all</i>
+            <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+          </button>
+        </div>
+      }
+
+      <!-- Mark-all confirmation -->
+      @if (showMarkAllConfirm()) {
+        <div class="modal-overlay" (click)="closeMarkAllConfirm()">
+          <div class="modal-content compact" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Mark all as read</h3>
+              <button class="close-btn" (click)="closeMarkAllConfirm()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p class="confirm-text">
+                Mark {{ unreadVisibleCount() }} unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' matching the current filters' : '' }} as read?
+              </p>
+              @if (hasActiveFilter()) {
+                <p class="confirm-hint">Unread alerts hidden by the current filters are left untouched.</p>
+              }
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeMarkAllConfirm()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="markAllAsRead()" [disabled]="isMarkingAll()">
+                <i class="material-icons-round">done_all</i>
+                <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Filters -->
       <div class="card filters-card mb-3">
         <div class="form-row">

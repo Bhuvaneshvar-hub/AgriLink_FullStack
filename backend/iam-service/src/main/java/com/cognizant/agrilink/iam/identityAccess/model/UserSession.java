@@ -38,6 +38,10 @@ public class UserSession {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // @Builder.Default is required, not cosmetic: without it Lombok's builder
+    // ignores this initializer and leaves status null, which would fail the
+    // NOT NULL constraint for any builder call that doesn't set it explicitly.
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status = Status.Active;

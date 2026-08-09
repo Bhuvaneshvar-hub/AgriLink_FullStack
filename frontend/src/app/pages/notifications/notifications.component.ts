@@ -45,6 +45,8 @@ export class NotificationsComponent implements OnInit {
 
   // Modals
   showBroadcastModal = signal<boolean>(false);
+  showMarkAllConfirm = signal<boolean>(false);
+  isMarkingAll = signal<boolean>(false);
 
   // Forms
   broadcastForm!: FormGroup;
@@ -179,6 +181,57 @@ export class NotificationsComponent implements OnInit {
     this.notificationService.markAsRead(alert.notificationId).subscribe({
       next: () => { this.toast.success('Notification marked as read'); this.loadNotifications(); },
       error: () => this.toast.error('Failed to update status')
+    });
+  }
+
+  // ===== Mark all as read =====
+  // Scoped to what the user can currently see, so the action never silently
+  // touches alerts the active filters have hidden from them.
+  private unreadVisible(): any[] {
+    return this.filteredNotifications().filter(n => n.status === 'UN');
+  }
+
+  unreadVisibleCount(): number {
+    return this.unreadVisible().length;
+  }
+
+  hasActiveFilter(): boolean {
+    return !!this.statusFilter || !!this.categoryFilter || this.dateRangeFilter !== 'all';
+  }
+
+  openMarkAllConfirm() {
+    if (this.unreadVisibleCount() === 0) return;
+    this.showMarkAllConfirm.set(true);
+  }
+
+  closeMarkAllConfirm() {
+    if (this.isMarkingAll()) return;
+    this.showMarkAllConfirm.set(false);
+  }
+
+  // There's no bulk endpoint, so fan out the per-id call and report how many
+  // actually succeeded rather than assuming all of them did.
+  markAllAsRead() {
+    const targets = this.unreadVisible();
+    if (targets.length === 0) return;
+
+    this.isMarkingAll.set(true);
+    forkJoin(
+      targets.map(n =>
+        this.notificationService.markAsRead(n.notificationId).pipe(catchError(() => of(null)))
+      )
+    ).subscribe(results => {
+      this.isMarkingAll.set(false);
+      this.showMarkAllConfirm.set(false);
+      const done = results.filter(r => r !== null).length;
+      if (done === 0) {
+        this.toast.error('Failed to mark the alerts as read.');
+      } else if (done < targets.length) {
+        this.toast.error(`Marked ${done} of ${targets.length} alerts as read.`);
+      } else {
+        this.toast.success(`Marked ${done} alert${done === 1 ? '' : 's'} as read`);
+      }
+      this.loadNotifications();
     });
   }
 

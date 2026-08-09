@@ -1,5 +1,6 @@
 package com.cognizant.agrilink.farmer.controller;
 
+import com.cognizant.agrilink.farmer.client.IamStatusClient;
 import com.cognizant.agrilink.farmer.dto.FarmerProfileDto;
 import com.cognizant.agrilink.farmer.dto.MessageResponse;
 import com.cognizant.agrilink.farmer.dto.SelfRegisterFarmerDto;
@@ -7,6 +8,7 @@ import com.cognizant.agrilink.farmer.entity.FarmerProfile;
 import com.cognizant.agrilink.farmer.enums.Status;
 import com.cognizant.agrilink.farmer.service.FarmerProfileService;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -19,15 +21,19 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @RestController
 @RequestMapping("/farmer-profiles")
 public class FarmerProfileController {
 
 	private final FarmerProfileService farmerProfileService;
+	private final IamStatusClient iamStatusClient;
 
-	public FarmerProfileController(FarmerProfileService farmerProfileService) {
+	public FarmerProfileController(FarmerProfileService farmerProfileService, IamStatusClient iamStatusClient) {
 		this.farmerProfileService = farmerProfileService;
+		this.iamStatusClient = iamStatusClient;
 	}
 
 	private static final String ROLE_FARMER = "ROLE_Farmer";
@@ -103,18 +109,39 @@ public class FarmerProfileController {
 		return ResponseEntity.ok(new MessageResponse("FarmerProfile verified"));
 	}
 
-	// Officer/admin (re)activates a farmer profile -> Active.
+	// Officer/admin (re)activates a farmer profile -> Active. Cascades to iam-service
+	// so the linked login account is reactivated too (see IamStatusClient).
 	@PutMapping("/{id}/activate")
 	public ResponseEntity<MessageResponse> activate(@PathVariable Integer id) {
-		farmerProfileService.setStatus(id, Status.AC);
+		FarmerProfile profile = farmerProfileService.setStatus(id, Status.AC);
+		iamStatusClient.activate(profile.getUserId(), currentBearerToken());
 		return ResponseEntity.ok(new MessageResponse("FarmerProfile activated"));
 	}
 
-	// Officer/admin deactivates a farmer profile -> Inactive.
+	// Officer/admin deactivates a farmer profile -> Inactive. Cascades to iam-service
+	// so the linked login account is deactivated too (see IamStatusClient).
 	@PutMapping("/{id}/deactivate")
 	public ResponseEntity<MessageResponse> deactivate(@PathVariable Integer id) {
-		farmerProfileService.setStatus(id, Status.IN);
+		FarmerProfile profile = farmerProfileService.setStatus(id, Status.IN);
+		iamStatusClient.deactivate(profile.getUserId(), currentBearerToken());
 		return ResponseEntity.ok(new MessageResponse("FarmerProfile deactivated"));
+	}
+
+	// Internal: called only by iam-service's own activate/deactivate cascade (UserService /
+	// FarmerStatusClient) when the login account's status changes. Applies the status change
+	// directly without calling back out to iam-service, which is what keeps the sync from looping.
+	@PutMapping("/by-user/{userId}/sync-activate")
+	public ResponseEntity<MessageResponse> syncActivate(@PathVariable Integer userId) {
+		farmerProfileService.getByUserId(userId).stream().findFirst()
+				.ifPresent(p -> farmerProfileService.setStatus(p.getFarmerId(), Status.AC));
+		return ResponseEntity.ok(new MessageResponse("Synced"));
+	}
+
+	@PutMapping("/by-user/{userId}/sync-deactivate")
+	public ResponseEntity<MessageResponse> syncDeactivate(@PathVariable Integer userId) {
+		farmerProfileService.getByUserId(userId).stream().findFirst()
+				.ifPresent(p -> farmerProfileService.setStatus(p.getFarmerId(), Status.IN));
+		return ResponseEntity.ok(new MessageResponse("Synced"));
 	}
 
 	@PutMapping("/{id}")
@@ -144,5 +171,12 @@ public class FarmerProfileController {
 		}
 		farmerProfileService.delete(id);
 		return ResponseEntity.ok(new MessageResponse("FarmerProfile deleted successfully"));
+	}
+
+	/** Reads the caller's Authorization header on the request thread (for JWT forwarding). */
+	private String currentBearerToken() {
+		ServletRequestAttributes attributes =
+				(ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		return attributes != null ? attributes.getRequest().getHeader(HttpHeaders.AUTHORIZATION) : null;
 	}
 }

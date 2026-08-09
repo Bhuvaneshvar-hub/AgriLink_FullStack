@@ -17,6 +17,7 @@ import com.cognizant.agrilink.iam.identityAccess.repository.AuditLogRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserDetailsRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserRoleRepository;
 import com.cognizant.agrilink.iam.identityAccess.repository.UserSessionRepository;
+import com.cognizant.agrilink.iam.client.FarmerStatusClient;
 import com.cognizant.agrilink.iam.notification.NotificationClient;
 import com.cognizant.agrilink.iam.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,6 +53,7 @@ class UserServiceTest {
     @Mock private JwtUtil               jwtUtil;
     @Mock private HttpServletRequest    request;
     @Mock private NotificationClient    notificationClient;
+    @Mock private FarmerStatusClient    farmerStatusClient;
 
     @InjectMocks private UserService userService;
 

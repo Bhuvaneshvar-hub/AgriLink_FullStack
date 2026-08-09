@@ -88,6 +88,22 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "User deactivated successfully"));
     }
 
+    // PUT /agriLink/user/{id}/sync-activate, /sync-deactivate — internal, called only by
+    // farmer-service's own activate/deactivate cascade (see FarmerStatusClient / IamStatusClient)
+    // when a farmer profile's status changes. Applies the status directly without cascading back
+    // out to farmer-service, which is what keeps the two services' sync calls from looping.
+    @PutMapping("/{id}/sync-activate")
+    public ResponseEntity<Map<String, String>> syncActivate(@PathVariable Integer id) {
+        userService.syncStatus(id, UserDetails.Status.A);
+        return ResponseEntity.ok(Map.of("message", "Synced"));
+    }
+
+    @PutMapping("/{id}/sync-deactivate")
+    public ResponseEntity<Map<String, String>> syncDeactivate(@PathVariable Integer id) {
+        userService.syncStatus(id, UserDetails.Status.I);
+        return ResponseEntity.ok(Map.of("message", "Synced"));
+    }
+
     // POST /agriLink/user/{id}/reset-password  — Admin resets a user's password
     @PostMapping("/{id}/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(

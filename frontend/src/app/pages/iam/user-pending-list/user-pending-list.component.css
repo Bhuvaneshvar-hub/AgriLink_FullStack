@@ -1,0 +1,72 @@
+    .section-title {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .tab-count {
+      background-color: var(--danger, #dc2626);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .id-note {
+      color: var(--text-muted);
+      font-size: 0.8em;
+    }
+    .approve-btn {
+      padding: 0.35rem 0.75rem !important;
+      font-size: 0.8rem !important;
+      border-radius: 0.35rem !important;
+    }
+    .approve-btn i {
+      font-size: 16px;
+    }
+    .spinner-large {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border-color);
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }

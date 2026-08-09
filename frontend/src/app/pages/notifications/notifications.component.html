@@ -1,0 +1,245 @@
+    <div class="notifications-page">
+      <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1>Alerts & System Notifications</h1>
+          <p class="text-secondary">View critical alerts, subsidy application updates, scheme deadlines, and broadcast messages.</p>
+        </div>
+        @if (isAdminOrOfficer()) {
+          <button class="btn btn-primary" (click)="openBroadcastModal()">
+            <i class="material-icons-round">campaign</i>
+            <span> Alert</span>
+          </button>
+        }
+
+      </div>
+
+      <!-- Unread summary bar: only worth showing when something is actually unread. -->
+      @if (unreadVisibleCount() > 0) {
+        <div class="card unread-bar mb-3">
+          <span class="unread-info">
+            <i class="material-icons-round">mark_email_unread</i>
+            <span><strong>{{ unreadVisibleCount() }}</strong> unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' in this view' : '' }}</span>
+          </span>
+          <button class="btn btn-secondary btn-sm" (click)="openMarkAllConfirm()" [disabled]="isMarkingAll()">
+            <i class="material-icons-round">done_all</i>
+            <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+          </button>
+        </div>
+      }
+
+      <!-- Mark-all confirmation -->
+      @if (showMarkAllConfirm()) {
+        <div class="modal-overlay" (click)="closeMarkAllConfirm()">
+          <div class="modal-content compact" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Mark all as read</h3>
+              <button class="close-btn" (click)="closeMarkAllConfirm()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p class="confirm-text">
+                Mark {{ unreadVisibleCount() }} unread {{ unreadVisibleCount() === 1 ? 'alert' : 'alerts' }}{{ hasActiveFilter() ? ' matching the current filters' : '' }} as read?
+              </p>
+              @if (hasActiveFilter()) {
+                <p class="confirm-hint">Unread alerts hidden by the current filters are left untouched.</p>
+              }
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeMarkAllConfirm()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="markAllAsRead()" [disabled]="isMarkingAll()">
+                <i class="material-icons-round">done_all</i>
+                <span>{{ isMarkingAll() ? 'Marking...' : 'Mark all as read' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Filters -->
+      <div class="card filters-card mb-3">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="statusFilter">Status Filter</label>
+            <select id="statusFilter" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Notifications</option>
+              <option value="UN">Unread Alerts</option>
+              <option value="RD">Read Alerts</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="categoryFilter">Category</label>
+            <select id="categoryFilter" [(ngModel)]="categoryFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Categories</option>
+              @for (cat of categories; track cat.value) {
+                <option [value]="cat.value">{{ cat.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dateRangeFilter">Date Range</label>
+            <select id="dateRangeFilter" [(ngModel)]="dateRangeFilter" (ngModelChange)="applyFilters()">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="empty-state">
+          <span class="spinner-large"></span>
+          <p class="mt-3">Loading system alerts...</p>
+        </div>
+      } @else if (filteredNotifications().length === 0) {
+        <div class="empty-state card">
+          <i class="material-icons-round">notifications_off</i>
+          <h3>No Alerts Found</h3>
+          <p>You have no notifications matching the filters.</p>
+        </div>
+      } @else {
+        <div class="notifications-list">
+          @for (alert of filteredNotifications(); track alert.notificationId) {
+            <div class="notification-item" [class.unread]="alert.status === 'UN'" [class.dismissed]="alert.status === 'DI'">
+              <div class="notification-icon" [ngClass]="iconTheme(alert.category)">
+                <i class="material-icons-round">
+                  {{ getIconForCategory(alert.category) }}
+                </i>
+              </div>
+              <div class="notification-body">
+                <div class="notification-header">
+                  <span class="category-badge">{{ categoryLabel(alert.category) }}</span>
+                  <span class="date">{{ alert.createdDate | date:'mediumDate' }}</span>
+                </div>
+                <p class="message">{{ alert.message }}</p>
+                <div class="notification-footer">
+                  <div class="actions">
+                    @if (alert.status === 'UN') {
+                      <button class="action-link-btn" (click)="markAsRead(alert)">
+                        <i class="material-icons-round">done</i>
+                        <span>Mark as Read</span>
+                      </button>
+                    } @else if (alert.status === 'RD') {
+                      <button class="action-link-btn" (click)="markAsUnread(alert)">
+                        <i class="material-icons-round">mark_email_unread</i>
+                        <span>Mark as Unread</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Broadcast Modal -->
+      @if (showBroadcastModal()) {
+        <div class="modal-overlay" (click)="closeBroadcastModal()">
+          <div class="modal-content wide" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>Broadcast New Alert</h3>
+              <button class="close-btn" (click)="closeBroadcastModal()">
+                <i class="material-icons-round">close</i>
+              </button>
+            </div>
+            <form [formGroup]="broadcastForm" (ngSubmit)="submitBroadcastForm()">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label>Send To (Roles)</label>
+                  <div class="role-checks">
+                    @for (role of availableRoles(); track role) {
+                      <label class="check-chip" [class.checked]="isRoleSelected(role)">
+                        <input type="checkbox" [checked]="isRoleSelected(role)" (change)="toggleRole(role)" />
+                        <span>{{ role }}</span>
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                @if (isRoleSelected('Farmer')) {
+                  <div class="form-group">
+                    <div class="picker-head">
+                      <label>Farmers ({{ selectAllFarmers() ? visibleFarmerOptions().length : selectedFarmerIds().length }} selected)</label>
+                      <button type="button" class="select-all-btn" (click)="toggleSelectAllFarmers()">
+                        {{ selectAllFarmers() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    </div>
+                    <input type="number" [(ngModel)]="regionFilter" [ngModelOptions]="{standalone: true}"
+                      placeholder="Filter by region (optional)" class="mb-2" />
+                    @if (isLoadingFarmers()) {
+                      <p class="text-muted picker-empty">Loading farmers...</p>
+                    } @else if (visibleFarmerOptions().length === 0) {
+                      <p class="text-muted picker-empty">No farmers found for this region.</p>
+                    } @else {
+                      <div class="user-picker" [class.disabled]="selectAllFarmers()">
+                        @for (f of visibleFarmerOptions(); track f.farmerId) {
+                          <label class="picker-row">
+                            <input type="checkbox" [checked]="selectAllFarmers() || isFarmerSelected(f.farmerId)"
+                              [disabled]="selectAllFarmers()" (change)="toggleFarmer(f.farmerId)" />
+                            <span>{{ f.name }}</span>
+                            <span class="picker-meta">Region {{ f.regionId ?? '—' }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (hasNonFarmerRoleSelected()) {
+                  <div class="form-group">
+                    <div class="picker-head">
+                      <label>Staff ({{ selectAllStaff() ? visibleStaffOptions().length : selectedStaffIds().length }} selected)</label>
+                      <button type="button" class="select-all-btn" (click)="toggleSelectAllStaff()">
+                        {{ selectAllStaff() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    </div>
+                    @if (isLoadingStaff()) {
+                      <p class="text-muted picker-empty">Loading users...</p>
+                    } @else if (visibleStaffOptions().length === 0) {
+                      <p class="text-muted picker-empty">No active users found for the selected roles.</p>
+                    } @else {
+                      <div class="user-picker" [class.disabled]="selectAllStaff()">
+                        @for (u of visibleStaffOptions(); track u.userId) {
+                          <label class="picker-row">
+                            <input type="checkbox" [checked]="selectAllStaff() || isStaffSelected(u.userId)"
+                              [disabled]="selectAllStaff()" (change)="toggleStaff(u.userId)" />
+                            <span>{{ u.name }}</span>
+                            <span class="picker-meta">{{ u.roleName }} &middot; Region {{ u.regionId ?? '—' }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                <div class="form-group">
+                  <label for="bCategory">Alert Category</label>
+                  <select id="bCategory" formControlName="category">
+                    @for (cat of categories; track cat.value) {
+                      <option [value]="cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="bMessage">Message Content</label>
+                  <textarea id="bMessage" formControlName="message" rows="3" placeholder="Enter the broadcast description..."></textarea>
+                </div>
+
+                <p class="recipient-summary">
+                  <i class="material-icons-round">groups</i>
+                  {{ recipientCountLabel() }}
+                </p>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" [disabled]="broadcastForm.invalid || isSending() || !hasAnyRecipientSelectable()">
+                  {{ isSending() ? 'Sending...' : 'Send Alert' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+    </div>

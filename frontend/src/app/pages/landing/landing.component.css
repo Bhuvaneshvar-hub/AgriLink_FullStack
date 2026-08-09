@@ -1,0 +1,153 @@
+    .landing { min-height: 100vh; display: flex; flex-direction: column; background-color: var(--bg-dark); }
+
+    /* Nav */
+    .landing-nav {
+      display: flex; align-items: center; gap: 1.5rem;
+      padding: 1rem 2.5rem;
+      position: sticky; top: 0; z-index: 20;
+      background-color: color-mix(in srgb, var(--bg-dark) 88%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .brand i { color: var(--primary-color); font-size: 28px; }
+    .nav-links { display: flex; gap: 1.5rem; margin-left: auto; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+    .nav-links a:hover { color: var(--primary-color); }
+    .btn-nav {
+      background-color: var(--primary-color); color: #fff;
+      padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-weight: 600;
+      text-decoration: none; font-size: 0.9rem; white-space: nowrap;
+    }
+    .btn-nav:hover { background-color: var(--primary-hover, #15803d); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.7rem 1.6rem; border-radius: 0.5rem; font-weight: 600;
+      text-decoration: none; font-size: 0.95rem;
+    }
+    .btn i { font-size: 20px; }
+    .btn.lg { padding: 0.85rem 2rem; font-size: 1rem; }
+    .btn-primary { background-color: #fff; color: #15803d; }
+    .btn-primary:hover { background-color: #f0fdf4; }
+    .btn-outline { border: 1px solid rgba(255,255,255,0.85); color: #fff; }
+    .btn-outline:hover { background-color: rgba(255,255,255,0.12); }
+    .btn-ghost { border: 1px solid var(--border-color); color: var(--text-primary); background: transparent; }
+    .btn-ghost:hover { border-color: var(--primary-color); }
+
+    /* Hero */
+    .hero {
+      position: relative; overflow: hidden;
+      margin: 1.5rem 2.5rem 0;
+      border-radius: 1.5rem;
+      background: linear-gradient(155deg, #14532d 0%, #16a34a 48%, #0f766e 100%);
+      color: #fff; padding: 5rem 2rem; text-align: center;
+    }
+    .hero-glow { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; pointer-events: none; }
+    .glow-a { width: 360px; height: 360px; top: -100px; left: -70px; background: rgba(255,255,255,0.18); }
+    .glow-b { width: 420px; height: 420px; bottom: -140px; right: -90px; background: rgba(59,130,246,0.35); }
+    .hero-content { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+      padding: 0.4rem 1rem; border-radius: 2rem; font-size: 0.85rem; font-weight: 500; margin-bottom: 1.5rem;
+    }
+    .hero-badge i { font-size: 18px; }
+    .hero-content h1 { font-size: 2.75rem; font-weight: 800; line-height: 1.15; margin-bottom: 1rem; }
+    .hero-content h1 span { color: #bbf7d0; }
+    .hero-content p { font-size: 1.1rem; opacity: 0.92; margin-bottom: 2rem; line-height: 1.6; }
+    .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
+    .hero-stats { display: flex; align-items: center; justify-content: center; gap: 3rem; flex-wrap: wrap; }
+    .stat { display: flex; flex-direction: column; }
+    .stat strong { font-size: 2rem; font-weight: 800; }
+    .stat span { font-size: 0.85rem; opacity: 0.85; }
+    .stat-divider { width: 1px; height: 40px; background: rgba(255,255,255,0.25); }
+
+    /* Sections */
+    .section { padding: 4rem 2.5rem; }
+    #features, #how, #roles { scroll-margin-top: 90px; }
+    .section.alt { background-color: var(--bg-card); }
+    .section-head { text-align: center; max-width: 620px; margin: 0 auto 2.5rem; }
+    .section-head h2 { font-size: 1.9rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
+    .section-head p { font-size: 1rem; color: var(--text-secondary); }
+
+    /* Features */
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1100px; margin: 0 auto; }
+    .feature-card {
+      background-color: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 1rem; padding: 1.75rem 1.5rem;
+      transition: border-color var(--transition-normal, 0.2s), transform var(--transition-normal, 0.2s);
+    }
+    .section.alt .feature-card { background-color: var(--bg-dark); }
+    .feature-card:hover { border-color: var(--primary-color); transform: translateY(-4px); }
+    .feature-card i {
+      font-size: 30px; color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+      border-radius: 0.75rem; padding: 0.55rem;
+    }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.5rem; color: var(--text-primary); }
+    .feature-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+
+    /* Steps */
+    .steps { display: flex; align-items: stretch; justify-content: center; gap: 0.5rem; flex-wrap: wrap; max-width: 1150px; margin: 0 auto; }
+    .step {
+      flex: 1 1 150px; max-width: 175px;
+      background-color: var(--bg-dark); border: 1px solid var(--border-color);
+      border-radius: 1rem; padding: 1.5rem 1rem; text-align: center; position: relative;
+    }
+    .step-no {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--primary-color); color: #fff; font-size: 0.8rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step i { font-size: 28px; color: var(--primary-color); margin-top: 0.5rem; }
+    .step h4 { font-size: 0.95rem; font-weight: 700; margin: 0.6rem 0 0.35rem; color: var(--text-primary); }
+    .step p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+    .step-arrow { display: flex; align-items: center; color: var(--text-secondary); opacity: 0.5; }
+    .step-arrow i { font-size: 22px; }
+
+    /* Farmer CTA */
+    .farmer-cta { padding: 2rem 2.5rem; }
+    .farmer-cta-inner {
+      background: linear-gradient(120deg, #15803d 0%, #0f766e 100%);
+      border-radius: 1.5rem; padding: 2.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+      color: #fff;
+    }
+    .farmer-cta-text { display: flex; align-items: center; gap: 1rem; }
+    .farmer-cta-text > i { font-size: 44px; background: rgba(255,255,255,0.18); border-radius: 1rem; padding: 0.6rem; }
+    .farmer-cta-text h2 { font-size: 1.75rem; font-weight: 800; margin: 0 0 0.3rem; }
+    .farmer-cta-text p { font-size: 0.95rem; opacity: 0.92; margin: 0; max-width: 480px; }
+
+    /* Roles */
+    .roles { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; max-width: 900px; margin: 0 auto; }
+    .role-chip {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background-color: var(--bg-card); border: 1px solid var(--border-color);
+      padding: 0.7rem 1.25rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 500; color: var(--text-primary);
+    }
+    .role-chip i { font-size: 20px; color: var(--primary-color); }
+
+    /* Footer */
+    .landing-footer {
+      margin-top: auto; padding: 2.5rem;
+      display: grid; grid-template-columns: 1fr; gap: 1rem;
+      border-top: 1px solid var(--border-color); background-color: var(--bg-card);
+    }
+    .footer-brand p { font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0 0; }
+    .footer-actions { display: flex; gap: 0.75rem; align-items: center; }
+    .footer-copy { grid-column: 1 / -1; border-top: 1px solid var(--border-color); padding-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); }
+
+    /* Responsive */
+    @media (max-width: 1024px) { .features { grid-template-columns: repeat(2, 1fr); } .step-arrow { display: none; } }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { margin: 1rem 1.25rem 0; padding: 3.5rem 1.25rem; }
+      .hero-content h1 { font-size: 2rem; }
+      .section { padding: 3rem 1.25rem; }
+      .farmer-cta-inner { padding: 1.75rem; }
+      .landing-footer { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }

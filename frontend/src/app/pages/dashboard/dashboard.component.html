@@ -1,0 +1,412 @@
+    <div class="dashboard-page">
+      <div class="dashboard-greeting mb-3">
+        <h1>Welcome Back, {{ currentUser?.name }}!</h1>
+        <p class="text-secondary">Here is an overview of the agricultural portal activities based on your role.</p>
+      </div>
+
+      <!-- Subsidy Overview (SubsidyAdmin only) — headline totals shown up top -->
+      @if (authService.hasRole(['SubsidyAdmin'])) {
+        <div class="stats-grid subsidy-overview-grid">
+          <a routerLink="/schemes" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-blue"><i class="material-icons-round">inventory_2</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Schemes</span>
+              <span class="stat-value">{{ isLoadingRoleStats() ? '...' : totalSchemesCount() }}</span>
+            </div>
+          </a>
+          <a routerLink="/applications" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-teal"><i class="material-icons-round">assignment</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Applications</span>
+              <span class="stat-value">{{ isLoadingStats() ? '...' : totalApplicationsCount() }}</span>
+            </div>
+          </a>
+          <a routerLink="/schemes" class="stat-card subsidy-stat-link">
+            <div class="stat-icon subsidy-icon-green"><i class="material-icons-round">check_circle</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Active Schemes</span>
+              <span class="stat-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</span>
+            </div>
+          </a>
+          <div class="stat-card">
+            <div class="stat-icon subsidy-icon-amber"><i class="material-icons-round">payments</i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Disbursed</span>
+              <span class="stat-value">₹{{ isLoadingRoleStats() ? '...' : (totalDisbursedAmount() | number) }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (!isLoadingStats() && pendingApplicationsCount() > 0) {
+          <a routerLink="/applications" class="alert-banner mb-3">
+            <i class="material-icons-round alert-banner-icon">assignment_late</i>
+            <div class="alert-banner-text">
+              <strong>{{ pendingApplicationsCount() }}</strong> subsidy application{{ pendingApplicationsCount() === 1 ? '' : 's' }} awaiting your review
+            </div>
+            <span class="alert-banner-cta">Review Now <i class="material-icons-round">arrow_forward</i></span>
+          </a>
+        }
+      }
+
+      <!-- Hero Row -->
+      <div class="hero-grid">
+        @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+          <a routerLink="/pending-users" class="hero-card hero-amber">
+            <div class="hero-card-top">
+              <span class="hero-chip">Needs Review</span>
+              <i class="material-icons-round">how_to_reg</i>
+            </div>
+            <div class="hero-value">{{ isLoadingStats() ? '...' : pendingUsersCount() }}</div>
+            <div class="hero-sub">Pending User Approvals</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ComplianceAnalyst'])) {
+          <a routerLink="/applications" class="hero-card hero-blue">
+            <div class="hero-card-top">
+              <span class="hero-chip">Awaiting Action</span>
+              <i class="material-icons-round">assignment_late</i>
+            </div>
+            <div class="hero-value">{{ isLoadingStats() ? '...' : pendingApplicationsCount() }}</div>
+            <div class="hero-sub">Pending Subsidy Applications</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['AgriLinkAdmin'])) {
+          <a routerLink="/farmers" class="hero-card hero-amber" (click)="goToFarmers()">
+            <div class="hero-card-top">
+              <span class="hero-chip">Needs Review</span>
+              <i class="material-icons-round">terrain</i>
+            </div>
+            <div class="hero-value">{{ isLoadingStats() ? '...' : pendingLandCount() }}</div>
+            <div class="hero-sub">Pending Land Approvals</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['ProcurementOfficer'])) {
+          <a routerLink="/schemes" class="hero-card hero-blue">
+            <div class="hero-card-top">
+              <span class="hero-chip">Live</span>
+              <i class="material-icons-round">inventory_2</i>
+            </div>
+            <div class="hero-value">{{ isLoadingRoleStats() ? '...' : activeSchemesCount() }}</div>
+            <div class="hero-sub">Active Subsidy Schemes</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['ComplianceAnalyst'])) {
+          <a routerLink="/applications" class="hero-card hero-teal">
+            <div class="hero-card-top">
+              <span class="hero-chip">Flagged</span>
+              <i class="material-icons-round">gpp_bad</i>
+            </div>
+            <div class="hero-value">{{ isLoadingRoleStats() ? '...' : rejectedApplicationsCount() }}</div>
+            <div class="hero-sub">Rejected Applications</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['ProcurementOfficer'])) {
+          <a routerLink="/produce" class="hero-card hero-teal">
+            <div class="hero-card-top">
+              <span class="hero-chip">Ready</span>
+              <i class="material-icons-round">storefront</i>
+            </div>
+            <div class="hero-value">{{ isLoadingRoleStats() ? '...' : availableListingsCount() }}</div>
+            <div class="hero-sub">Available for Procurement</div>
+          </a>
+        }
+
+        @if (authService.hasRole(['Farmer'])) {
+          <a routerLink="/crops" class="hero-card hero-teal">
+            <div class="hero-card-top">
+              <span class="hero-chip">In Progress</span>
+              <i class="material-icons-round">eco</i>
+            </div>
+            <div class="hero-value">{{ isLoadingRoleStats() ? '...' : myCropPlanStats().growing }}</div>
+            <div class="hero-sub">Crop Plans Growing</div>
+          </a>
+        }
+      </div>
+
+      <!-- Status Overview (role-specific bar-graph breakdowns) -->
+      @if (isLoadingRoleStats()) {
+        <div class="chart-grid mb-3">
+          <div class="card chart-card"><p class="text-secondary">Loading status overview...</p></div>
+        </div>
+      } @else if (chartCards().length > 0) {
+        <div class="chart-grid mb-3">
+          @for (chart of chartCards(); track chart.title) {
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3><i class="material-icons-round chart-card-icon">{{ chart.icon }}</i>{{ chart.title }}</h3>
+              </div>
+              <div class="bar-chart mt-3">
+                @for (bar of chart.bars; track bar.label) {
+                  <div class="bar-row">
+                    <span class="bar-label">{{ bar.label }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="bar.percent" [style.background-color]="bar.color"></div>
+                    </div>
+                    <span class="bar-count">{{ bar.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Mini Activity Row (audit-log based; only roles with audit read access) -->
+      @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
+        <div class="mini-grid">
+          @if (isLoadingActivity()) {
+            <div class="mini-card"><p class="text-secondary">Loading activity breakdown...</p></div>
+          } @else if (moduleActivityStats().length === 0) {
+            <div class="mini-card"><p class="text-secondary">No activity recorded yet.</p></div>
+          } @else {
+            @for (stat of moduleActivityStats(); track stat.module) {
+              <div class="mini-card">
+                <div class="mini-card-header">
+                  <span class="mini-label">{{ stat.module }} Activity</span>
+                  <span class="mini-count">{{ stat.totalCount }}</span>
+                </div>
+                <div class="sparkline">
+                  @for (day of stat.days; track day.label) {
+                    <div class="sparkline-bar-wrap">
+                      <span class="sparkline-tooltip">{{ day.label }}: {{ day.count }}</span>
+                      <div class="sparkline-bar" [style.height.%]="day.percent"></div>
+                    </div>
+                  }
+                </div>
+                <span class="mini-caption">Last 7 days</span>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Role Insights Row (responsibility-specific KPIs) -->
+      @if (authService.hasRole(['ExtensionOfficer', 'ProcurementOfficer', 'ComplianceAnalyst'])) {
+        <div class="mini-grid">
+          @if (authService.hasRole(['ExtensionOfficer'])) {
+            <div class="mini-card">
+              <div class="mini-card-header"><span class="mini-label">Registered Farmers</span></div>
+              <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : registeredFarmersCount() }}</div>
+              <span class="mini-caption">Active farmer accounts in the system</span>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card-header"><span class="mini-label">Pest / Disease Alerts</span></div>
+              <div class="mini-big-value" [class.text-danger]="pestAlertsCount() > 0">{{ isLoadingRoleStats() ? '...' : pestAlertsCount() }}</div>
+              <span class="mini-caption">Flagged during growth observations</span>
+            </div>
+          }
+          @if (authService.hasRole(['ProcurementOfficer'])) {
+            <a routerLink="/produce" class="mini-card mini-card-link">
+              <div class="mini-card-header"><span class="mini-label">Available for Procurement</span></div>
+              <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : availableListingsCount() }}</div>
+              <span class="mini-caption">Produce listings ready to buy</span>
+            </a>
+            <a routerLink="/produce" class="mini-card mini-card-link">
+              <div class="mini-card-header"><span class="mini-label">Payments Pending</span></div>
+              <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : pendingPaymentsCount() }}</div>
+              <span class="mini-caption">Produce sales awaiting payment</span>
+            </a>
+          }
+          @if (authService.hasRole(['ComplianceAnalyst'])) {
+            <a routerLink="/applications" class="mini-card mini-card-link">
+              <div class="mini-card-header"><span class="mini-label">Rejected Applications</span></div>
+              <div class="mini-big-value">{{ isLoadingRoleStats() ? '...' : rejectedApplicationsCount() }}</div>
+              <span class="mini-caption">Subsidy applications marked rejected</span>
+            </a>
+          }
+        </div>
+      }
+
+      <div class="grid-layout">
+        @if (authService.hasRole(['Farmer'])) {
+          <!-- My Farm Overview Card (Farmer-scoped data) -->
+          <div class="card my-farm-card">
+            <div class="card-header">
+              <h3>My Farm Overview</h3>
+            </div>
+            <div class="my-farm-stats mt-3">
+              @if (isLoadingRoleStats()) {
+                <p class="text-secondary">Loading your farm data...</p>
+              } @else {
+                <div class="farm-stat-row">
+                  <span class="farm-stat-label">Land Holdings</span>
+                  <span class="farm-stat-value">{{ myLandHoldingsCount() }} registered</span>
+                </div>
+                <div class="farm-stat-row">
+                  <span class="farm-stat-label">Crop Plans</span>
+                  <span class="farm-stat-value">{{ myCropPlanStats().total }} total &middot; {{ myCropPlanStats().growing }} growing</span>
+                </div>
+                <div class="farm-stat-row">
+                  <span class="farm-stat-label">Produce Listings</span>
+                  <span class="farm-stat-value">{{ myProduceListingsCount() }} active</span>
+                </div>
+                <div class="farm-stat-row">
+                  <span class="farm-stat-label">Subsidy Applications</span>
+                  <span class="farm-stat-value">{{ mySubsidyStats().total }} total &middot; {{ mySubsidyStats().pending }} pending</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
+          <!-- Recent Activity Card (audit read access only) -->
+          <div class="card recent-activity-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h3>Recent Activity</h3>
+              <a routerLink="/audit-logs" class="view-all-link">View All</a>
+            </div>
+            <div class="activity-list mt-3">
+              @if (isLoadingActivity()) {
+                <p class="text-secondary">Loading recent activity...</p>
+              } @else if (recentActivity().length === 0) {
+                <p class="text-secondary">No recent activity to show.</p>
+              } @else {
+                @for (log of recentActivity(); track log.auditId) {
+                  <div class="activity-row">
+                    <i class="material-icons-round activity-icon">history</i>
+                    <div class="activity-details">
+                      <span class="activity-action">{{ log.action }}</span>
+                      <span class="activity-meta">{{ log.module }} &middot; {{ log.timestamp | date:'medium' }}</span>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+
+        @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+          <!-- Action Needed Card (pending users / applications access) -->
+          <div class="card action-needed-card">
+            <div class="card-header">
+              <h3>Action Needed</h3>
+            </div>
+            <div class="action-needed-list mt-3">
+              @if (isLoadingStats()) {
+                <p class="text-secondary">Loading pending items...</p>
+              } @else if (actionNeededItems().length === 0) {
+                <p class="text-secondary">Nothing pending &mdash; you're all caught up!</p>
+              } @else {
+                @for (item of actionNeededItems(); track item.key) {
+                  <a [routerLink]="item.link" class="action-needed-row" [style.border-left-color]="item.color">
+                    <i class="material-icons-round action-needed-icon" [style.color]="item.color">{{ item.icon }}</i>
+                    <div class="action-needed-details">
+                      <span class="action-needed-title">{{ item.title }}</span>
+                      <span class="action-needed-meta">{{ item.subtitle }}</span>
+                    </div>
+                    <i class="material-icons-round action-needed-arrow">chevron_right</i>
+                  </a>
+                }
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Recent Alerts Card — surfaces approvals & other notifications on the dashboard -->
+        <div class="card recent-activity-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Recent Alerts</h3>
+            <a routerLink="/notifications" class="view-all-link">View All</a>
+          </div>
+          <div class="activity-list mt-3">
+            @if (isLoadingNotifications()) {
+              <p class="text-secondary">Loading alerts...</p>
+            } @else if (recentNotifications().length === 0) {
+              <p class="text-secondary">No alerts yet.</p>
+            } @else {
+              @for (note of recentNotifications(); track note.notificationId) {
+                <div class="activity-row">
+                  <i class="material-icons-round activity-icon">{{ notificationIcon(note.category) }}</i>
+                  <div class="activity-details">
+                    <span class="activity-action">{{ note.message }}</span>
+                    <span class="activity-meta">{{ note.category }} &middot; {{ note.createdDate | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="card quick-actions-card">
+          <div class="card-header">
+            <h3>Quick Operations</h3>
+          </div>
+          <div class="actions-grid mt-3">
+            @if (authService.hasRole(['AgriLinkAdmin'])) {
+              <a routerLink="/users" class="action-link">
+                <i class="material-icons-round">people</i>
+                <span>Manage Users</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer'])) {
+              <a routerLink="/pending-users" class="action-link">
+                <i class="material-icons-round">how_to_reg</i>
+                <span>Pending Approvals</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+              <a routerLink="/schemes" class="action-link">
+                <i class="material-icons-round">inventory_2</i>
+                <span>View Schemes</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'SubsidyAdmin', 'ComplianceAnalyst', 'Farmer'])) {
+              <a routerLink="/applications" class="action-link">
+                <i class="material-icons-round">assignment</i>
+                <span>Subsidy Applications</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'ProcurementOfficer', 'SubsidyAdmin', 'ComplianceAnalyst'])) {
+              <a routerLink="/reports" class="action-link">
+                <i class="material-icons-round">analytics</i>
+                <span>Generate Reports</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ComplianceAnalyst'])) {
+              <a routerLink="/audit-logs" class="action-link">
+                <i class="material-icons-round">history</i>
+                <span>Audit Logs</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'ExtensionOfficer', 'Farmer'])) {
+              <a routerLink="/crops" class="action-link">
+                <i class="material-icons-round">eco</i>
+                <span>Crops Management</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ProcurementOfficer', 'ExtensionOfficer'])) {
+              <a routerLink="/produce" class="action-link">
+                <i class="material-icons-round">storefront</i>
+                <span>Produce Market</span>
+              </a>
+            }
+
+            @if (authService.hasRole(['AgriLinkAdmin', 'Farmer', 'ExtensionOfficer', 'ProcurementOfficer'])) {
+              <a routerLink="/inputs" class="action-link">
+                <i class="material-icons-round">shopping_bag</i>
+                <span>Input Operations</span>
+              </a>
+            }
+
+            <a routerLink="/notifications" class="action-link">
+              <i class="material-icons-round">notifications</i>
+              <span>System Alerts</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>

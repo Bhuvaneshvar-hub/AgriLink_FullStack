@@ -1,0 +1,106 @@
+    <div class="audit-logs-page">
+      <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h1>Audit Trail</h1>
+          <p class="text-secondary">View user actions, system operations, and security logs for compliance tracking.</p>
+        </div>
+        <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="filteredLogs().length === 0" title="Export to Excel">
+          <i class="material-icons-round text-success">table_view</i>
+        </button>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="card filters-card">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="searchUser">Search User</label>
+            <div class="search-field">
+              <input
+                type="number"
+                id="searchUser"
+                [(ngModel)]="userIdFilter"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. 1" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="moduleFilter">Module</label>
+            <select id="moduleFilter" [(ngModel)]="moduleFilter" (ngModelChange)="applyFilters()">
+              <option value="">All Modules</option>
+              <option value="IAM">IAM</option>
+              <option value="Farmer">Farmer</option>
+              <option value="Crop">Crop</option>
+              <option value="Input">Input</option>
+              <option value="Subsidy">Subsidy</option>
+              <option value="Produce">Produce</option>
+              <option value="Report">Report</option>
+              <option value="Notification">Notification</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="actionQuery">Search Action</label>
+            <div class="search-field">
+              <input
+                type="text"
+                id="actionQuery"
+                [(ngModel)]="actionQuery"
+                (ngModelChange)="applyFilters()"
+                placeholder="e.g. login, delete" />
+              <i class="material-icons-round search-icon">search</i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      @if (isLoading()) {
+        <div class="empty-state">
+          <span class="spinner-large"></span>
+          <p class="mt-3">Loading audit trail...</p>
+        </div>
+      } @else if (filteredLogs().length === 0) {
+        <div class="empty-state card">
+          <i class="material-icons-round">history_toggle_off</i>
+          <h3>No Logs Found</h3>
+          <p>No system activity matches your filter configuration.</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>User Name</th>
+                  <th>Module</th>
+                  <th>Action performed</th>
+                  <th>IP Address</th>
+                  <th class="sortable" (click)="sortBy('timestamp')" title="Sort by Timestamp (click again to reverse)">
+                    <span>Timestamp</span>
+                    <i class="material-icons-round sort-icon" [class.active]="sortField() === 'timestamp'">{{ sortIcon(sortField() === 'timestamp', sortAsc()) }}</i>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (log of paginatedLogs(); track log.auditId) {
+                  <tr>
+                    <td><strong>{{ getUserName(log.userId) }}</strong></td>
+                    <td><span class="module-label">{{ log.module }}</span></td>
+                    <td>{{ log.action }}</td>
+                    <td><code>{{ log.ipAddress || '127.0.0.1' }}</code></td>
+                    <td>{{ log.timestamp | date:'medium' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [currentPage]="currentPage"
+            [pageSize]="pageSize"
+            [totalElements]="filteredLogs().length"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)">
+          </app-pagination>
+        </div>
+      }
+    </div>

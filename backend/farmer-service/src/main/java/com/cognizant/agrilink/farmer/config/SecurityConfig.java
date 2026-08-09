@@ -38,6 +38,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/farmer-profiles/*/verify",
                                 "/farmer-profiles/*/activate", "/farmer-profiles/*/deactivate")
                         .hasAnyRole("ExtensionOfficer", "AgriLinkAdmin")
+                        // internal status-sync callbacks from iam-service (see IamStatusClient /
+                        // FarmerStatusClient) — same role gate as the public activate/deactivate above
+                        .requestMatchers(HttpMethod.PUT, "/farmer-profiles/by-user/*/sync-activate",
+                                "/farmer-profiles/by-user/*/sync-deactivate")
+                        .hasAnyRole("ExtensionOfficer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.PUT, "/farmer-profiles/**")
                         .hasAnyRole("Farmer", "AgriLinkAdmin")
                         .requestMatchers(HttpMethod.DELETE, "/farmer-profiles/**")

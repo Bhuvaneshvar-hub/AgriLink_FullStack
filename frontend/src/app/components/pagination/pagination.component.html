@@ -1,0 +1,46 @@
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing <span>{{ startItem }}</span> to <span>{{ endItem }}</span> of <span>{{ totalElements }}</span> entries
+      </div>
+
+      <div class="pagination-controls">
+        <div class="page-size-selector">
+          <label>Show</label>
+          <!-- Selection is marked per-option rather than with [value] on the select:
+               a select's value assignment is discarded while it still has no
+               options, which left the control showing sizeOptions[0] regardless of
+               the real pageSize - and then picking that first size fired no change
+               event, so it looked dead. -->
+          <select (change)="onPageSizeChange($event)" aria-label="Rows per page">
+            @for (size of sizeOptions; track size) {
+              <option [value]="size" [selected]="size === pageSize">{{ size }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="pagination-buttons">
+          <button [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">
+            <i class="material-icons-round">chevron_left</i>
+          </button>
+
+          <!-- Tracked by position, not value: a page range with a window in the
+               middle carries the -1 ellipsis sentinel twice ("1 ... 4 5 6 ... 9"),
+               and tracking by value would make those two entries duplicate keys. -->
+          @for (page of pages; track $index) {
+            @if (page === -1) {
+              <span class="pagination-ellipsis">...</span>
+            } @else {
+              <button
+                [class.active]="currentPage === page"
+                (click)="goToPage(page)">
+                {{ page + 1 }}
+              </button>
+            }
+          }
+
+          <button [disabled]="currentPage >= totalPages - 1" (click)="goToPage(currentPage + 1)">
+            <i class="material-icons-round">chevron_right</i>
+          </button>
+        </div>
+      </div>
+    </div>
